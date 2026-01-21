@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -18,13 +18,28 @@
 package org.moeaframework.problem.misc;
 
 import org.junit.Test;
+import org.moeaframework.Assert;
+import org.moeaframework.problem.Problem;
 import org.moeaframework.problem.ProblemTest;
 
 public class KursaweTest extends ProblemTest {
 
 	@Test
-	public void testJMetal() throws Exception {
-		test(new org.uma.jmetal.problem.multiobjective.Kursawe(3), new Kursawe(3));
+	public void testJMetal() {
+		testAgainstJMetal("Kursawe");
+	}
+	
+	@Test
+	public void test() {
+		Problem problem = new Kursawe();
+		
+		Assert.assertArrayEquals(new double[] { -4.862334, 20.112302 },
+				evaluateAtLowerBounds(problem).getObjectiveValues(),
+				0.000001);
+		
+		Assert.assertArrayEquals(new double[] { -4.862334, 1.631088 },
+				evaluateAtUpperBounds(problem).getObjectiveValues(),
+				0.000001);
 	}
 
 }

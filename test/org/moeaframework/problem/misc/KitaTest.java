@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,33 +17,37 @@
  */
 package org.moeaframework.problem.misc;
 
-import org.junit.Assert;
 import org.junit.Test;
-import org.moeaframework.TestUtils;
-import org.moeaframework.core.Problem;
-import org.moeaframework.core.Settings;
+import org.moeaframework.Assert;
+import org.moeaframework.TestEnvironment;
+import org.moeaframework.problem.Problem;
+import org.moeaframework.problem.ProblemTest;
 
-public class KitaTest {
+public class KitaTest extends ProblemTest {
 	
 	@Test
 	public void test() {
 		Problem problem = new Kita();
 		
-		Assert.assertArrayEquals(new double[] { 0.0, -1.0 }, 
-				TestUtils.evaluateAt(problem, 0.0, 0.0).getObjectives(),
-				Settings.EPS);
+		Assert.assertArrayEquals(new double[] { 0.0, 1.0 },
+				evaluateAtLowerBounds(problem).getObjectiveValues(),
+				TestEnvironment.HIGH_PRECISION);
 		
-		Assert.assertArrayEquals(new double[] { 0.0, 0.0, 0.0 }, 
-				TestUtils.evaluateAt(problem, 0.0, 0.0).getConstraints(),
-				Settings.EPS);
+		Assert.assertArrayEquals(new double[] { -6.5, -7.5, -30.0 },
+				evaluateAtLowerBounds(problem).getConstraintValues(),
+				TestEnvironment.HIGH_PRECISION);
 		
-		Assert.assertArrayEquals(new double[] { 42.0, -11.5 }, 
-				TestUtils.evaluateAt(problem, 7.0, 7.0).getObjectives(),
-				Settings.EPS);
+		Assert.assertTrue(evaluateAtLowerBounds(problem).isFeasible());
 		
-		Assert.assertArrayEquals(new double[] { 5.0/3.0, 3.0, 12.0 }, 
-				TestUtils.evaluateAt(problem, 7.0, 7.0).getConstraints(),
-				Settings.EPS);
+		Assert.assertArrayEquals(new double[] { -42.0, 11.5 },
+				evaluateAtUpperBounds(problem).getObjectiveValues(),
+				TestEnvironment.HIGH_PRECISION);
+		
+		Assert.assertArrayEquals(new double[] { 5.0/3.0, 3.0, 12.0 },
+				evaluateAtUpperBounds(problem).getConstraintValues(),
+				TestEnvironment.HIGH_PRECISION);
+		
+		Assert.assertFalse(evaluateAtUpperBounds(problem).isFeasible());
 	}
 
 }

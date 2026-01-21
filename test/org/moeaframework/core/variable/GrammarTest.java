@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,106 +17,69 @@
  */
 package org.moeaframework.core.variable;
 
+import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.moeaframework.Assert;
+import org.moeaframework.CIRunner;
+import org.moeaframework.Retryable;
+import org.moeaframework.TestEnvironment;
 
-/**
- * Tests the {@link Grammar} class.
- */
+@RunWith(CIRunner.class)
 public class GrammarTest {
 
-	/**
-	 * The grammar instance used for testing.
-	 */
 	private Grammar grammar;
 
-	/**
-	 * Sets up the grammar instance used for testing.
-	 */
 	@Before
 	public void setUp() {
-		grammar = new Grammar(new int[] { 0, 1, 2, 3, 4 });
+		grammar = new Grammar(5);
+		grammar.fromArray(new int[] { 0, 1, 2, 3, 4 });
 	}
 
-	/**
-	 * Destroys the grammar instance used for testing.
-	 */
 	@After
 	public void tearDown() {
 		grammar = null;
 	}
-
-	/**
-	 * Tests the size constructor to ensure the grammar is initialized
-	 * correctly.
-	 */
+	
 	@Test
-	public void testSizeConstructor() {
+	public void testName() {
+		Assert.assertNull(new Grammar(5).getName());
+		Assert.assertEquals("foo", new Grammar("foo", 5).getName());
+	}
+
+	@Test
+	public void testConstructor() {
 		Grammar grammar = new Grammar(5);
 		Assert.assertEquals(5, grammar.size());
 	}
 
-	/**
-	 * Tests the array constructor to ensure the grammar contains an independent
-	 * copy of the array.
-	 */
-	@Test
-	public void testArrayConstructor() {
-		int[] array = new int[] { 0, 1, 2, 3 };
-		Grammar grammar = new Grammar(array);
-
-		Assert.assertEquals(4, grammar.size());
-
-		for (int i = 0; i < grammar.size(); i++) {
-			Assert.assertEquals(array[i], grammar.get(i));
-		}
-
-		// ensure stored array is independent from argument
-		array[1] = 0;
-		Assert.assertEquals(1, grammar.get(1));
-	}
-
-	/**
-	 * Tests if the correct size is returned.
-	 */
 	@Test
 	public void testSize() {
 		Assert.assertEquals(5, grammar.size());
 	}
 
-	/**
-	 * Tests if the {@link Grammar#equals} method works correctly.
-	 */
 	@Test
 	public void testEquals() {
 		Assert.assertFalse(grammar.equals(null));
 		Assert.assertTrue(grammar.equals(grammar));
-		Assert.assertTrue(grammar.equals(new Grammar(
-				new int[] { 0, 1, 2, 3, 4 })));
+		Assert.assertTrue(grammar.equals(grammar.copy()));
 		Assert.assertFalse(grammar.equals(new Grammar(0)));
-		Assert.assertFalse(grammar
-				.equals(new Grammar(new int[] { 0, 1, 2, 3 })));
-		Assert.assertFalse(grammar.equals(new Grammar(new int[] { 0, 1, 2, 3,
-				4, 5 })));
-		Assert.assertFalse(grammar.equals(new Grammar(
-				new int[] { 0, 2, 1, 3, 4 })));
+		Assert.assertFalse(grammar.equals(new Grammar(4)));
+		Assert.assertFalse(grammar.equals(new Grammar(6)));
+		
+		Grammar other = new Grammar(5);
+		other.fromArray(new int[] { 0, 2, 1, 3, 4 });
+		Assert.assertFalse(grammar.equals(other));
 	}
 	
-	/**
-	 * Tests if the {@link Grammar#hashCode()} method works correctly.
-	 */
 	@Test
 	public void testHashCode() {
 		Assert.assertEquals(grammar.hashCode(), grammar.hashCode());
-		Assert.assertEquals(grammar.hashCode(), new Grammar(
-				new int[] { 0, 1, 2, 3, 4 }).hashCode());
+		Assert.assertEquals(grammar.hashCode(), grammar.copy().hashCode());
 	}
 
-	/**
-	 * Tests if the {@link Grammar#get} method returns the correct value.
-	 */
 	@Test
 	public void testGet() {
 		for (int i = 0; i < grammar.size(); i++) {
@@ -124,9 +87,6 @@ public class GrammarTest {
 		}
 	}
 
-	/**
-	 * Tests if the {@link Grammar#set} method works correctly.
-	 */
 	@Test
 	public void testSet() {
 		for (int i = 0; i < grammar.size(); i++) {
@@ -135,42 +95,27 @@ public class GrammarTest {
 		}
 	}
 
-	/**
-	 * Tests if the {@link Grammar#set} method correctly throws an exception if
-	 * {@code value >= getMaximumValue()}.
-	 */
 	@Test(expected = IllegalArgumentException.class)
-	public void testSetInvalidValue1() {
+	public void testSetLargeValue() {
 		grammar.set(1, grammar.getMaximumValue());
 	}
 
-	/**
-	 * Tests if the {@link Grammar#set} method correctly throws an exception if
-	 * {@code value < 0}.
-	 */
 	@Test(expected = IllegalArgumentException.class)
-	public void testSetInvalidValue2() {
+	public void testSetNegativeValue() {
 		grammar.set(1, -1);
 	}
 
-	/**
-	 * Tests if the {@link Grammar#copy} method produces a copy equal to but
-	 * independent from the original.
-	 */
 	@Test
 	public void testCopy() {
 		Grammar copy = grammar.copy();
-		Assert.assertTrue(copy.equals(grammar));
+		Assert.assertNotSame(grammar, copy);
+		Assert.assertEquals(grammar, copy);
 
 		copy.set(1, 0);
 		Assert.assertFalse(copy.equals(grammar));
-		Assert.assertFalse(grammar.equals(copy));
+		Assert.assertNotEquals(grammar, copy);
 	}
 
-	/**
-	 * Ensures the {@link Grammar#toArray} method returns a correct and and
-	 * independent copy of the integer codon representation.
-	 */
 	@Test
 	public void testToArray() {
 		int[] array = grammar.toArray();
@@ -184,10 +129,6 @@ public class GrammarTest {
 		Assert.assertEquals(1, grammar.get(1));
 	}
 
-	/**
-	 * Ensures the {@link Grammar#fromArray} method correctly sets the internal
-	 * integer codon representation and the copy is independent from the array.
-	 */
 	@Test
 	public void testFromArray() {
 		int[] array = new int[] { 2, 1, 0 };
@@ -202,147 +143,131 @@ public class GrammarTest {
 		Assert.assertEquals(1, grammar.get(1));
 	}
 
-	/**
-	 * Tests if the {@link Grammar#fromArray} method correctly throws an
-	 * exception when a value in the array is {@code >= getMaximumValue()}.
-	 */
 	@Test(expected = IllegalArgumentException.class)
 	public void testFromArrayInvalidValue1() {
 		grammar.fromArray(new int[] { 0, 1, grammar.getMaximumValue() });
 	}
 
-	/**
-	 * Tests if the {@link Grammar#fromArray} method correctly throws an
-	 * exception when a value in the array is {@code < 0}.
-	 */
 	@Test(expected = IllegalArgumentException.class)
 	public void testFromArrayInvalidValue2() {
 		grammar.fromArray(new int[] { 0, 1, -1 });
 	}
 
-	/**
-	 * Tests the {@link Grammar#cut} method for the case when the entire array
-	 * is cut. This should never occur in practice, but helps ensure the code
-	 * works as expected.
-	 */
 	@Test
-	public void testCut1() {
+	public void testCutAll() {
 		int[] removed = grammar.cut(0, 4);
 
 		Assert.assertArrayEquals(new int[] {}, grammar.toArray());
 		Assert.assertArrayEquals(new int[] { 0, 1, 2, 3, 4 }, removed);
 	}
 
-	/**
-	 * Tests the {@link Grammar#cut} method for the case when the tail is cut.
-	 */
 	@Test
-	public void testCut2() {
+	public void testCutHead() {
 		int[] removed = grammar.cut(2, 4);
 
 		Assert.assertArrayEquals(new int[] { 0, 1 }, grammar.toArray());
 		Assert.assertArrayEquals(new int[] { 2, 3, 4 }, removed);
 	}
 
-	/**
-	 * Tests the {@link Grammar#cut} method for the case when the head is cut.
-	 */
 	@Test
-	public void testCut3() {
+	public void testCutTail() {
 		int[] removed = grammar.cut(0, 2);
 
 		Assert.assertArrayEquals(new int[] { 3, 4 }, grammar.toArray());
 		Assert.assertArrayEquals(new int[] { 0, 1, 2 }, removed);
 	}
 
-	/**
-	 * Tests the {@link Grammar#insert} method for the case when the array is
-	 * inserted at the head.
-	 */
 	@Test
-	public void testInsert1() {
+	public void testInsertHead() {
 		grammar.insert(0, new int[] { 5, 6 });
 
-		Assert.assertArrayEquals(new int[] { 5, 6, 0, 1, 2, 3, 4 }, grammar
-				.toArray());
+		Assert.assertArrayEquals(new int[] { 5, 6, 0, 1, 2, 3, 4 }, grammar.toArray());
 	}
 
-	/**
-	 * Tests the {@link Grammar#insert} method for the case when the array is
-	 * inserted at the tail.
-	 */
 	@Test
-	public void testInsert2() {
+	public void testInsertTail() {
 		grammar.insert(5, new int[] { 5, 6 });
 
-		Assert.assertArrayEquals(new int[] { 0, 1, 2, 3, 4, 5, 6 }, grammar
-				.toArray());
+		Assert.assertArrayEquals(new int[] { 0, 1, 2, 3, 4, 5, 6 }, grammar.toArray());
 	}
 
-	/**
-	 * Tests the {@link Grammar#insert} method for the case when the array is
-	 * inserted in the middle.
-	 */
 	@Test
-	public void testInsert3() {
+	public void testInsertMiddle() {
 		grammar.insert(2, new int[] { 5, 6 });
 
-		Assert.assertArrayEquals(new int[] { 0, 1, 5, 6, 2, 3, 4 }, grammar
-				.toArray());
+		Assert.assertArrayEquals(new int[] { 0, 1, 5, 6, 2, 3, 4 }, grammar.toArray());
 	}
 
-	/**
-	 * Tests the {@link Grammar#cut} method to ensure an exception is thrown
-	 * when the end exceeds the array bounds.
-	 */
 	@Test(expected = IndexOutOfBoundsException.class)
-	public void testCutException1() {
+	public void testCutOutOfBounds1() {
 		grammar.cut(3, 5);
 	}
 
-	/**
-	 * Tests the {@link Grammar#cut} method to ensure an exception is thrown
-	 * when the start exceeds the array bounds.
-	 */
 	@Test(expected = IndexOutOfBoundsException.class)
-	public void testCutException2() {
+	public void testCutOutOfBounds2() {
 		grammar.cut(-1, 2);
 	}
 
-	/**
-	 * Tests the {@link Grammar#cut} method to ensure an exception is thrown
-	 * when the cut is invalid.
-	 */
 	@Test(expected = NegativeArraySizeException.class)
-	public void testCutExceptione() {
+	public void testCutExceedsSize() {
 		grammar.cut(0, 5);
 	}
 
-	/**
-	 * Tests the {@link Grammar#cut} method to ensure an exception is thrown
-	 * when {@code end <= start}.
-	 */
 	@Test(expected = IllegalArgumentException.class)
-	public void testCutException3() {
+	public void testCutEndLessThanStart() {
 		grammar.cut(4, 2);
 	}
 
-	/**
-	 * Tests the {@link Grammar#insert} method to ensure an exception is thrown
-	 * when the insert index is {@code > size()}.
-	 */
 	@Test(expected = IndexOutOfBoundsException.class)
-	public void testInsertException1() {
+	public void testInsertOutOfBounds1() {
 		grammar.insert(6, new int[] { 0, 1 });
 	}
 
-	/**
-	 * Tests the {@link Grammar#insert} method to ensure an exception is thrown
-	 * when the insert index is {@code < 0}.
-	 */
 	@Test(expected = IndexOutOfBoundsException.class)
-	public void testInsertException2() {
+	public void testInsertOutOfBounds2() {
 		grammar.insert(-1, new int[] { 0, 1 });
+	}
+	
+	@Test
+	public void testToString() {
+		grammar.fromArray(new int[] { 50, 10, 5, 0, 100 });
+		Assert.assertEquals("Grammar(50,10,5,0,100)", grammar.toString());
+	}
+	
+	@Test
+	public void testEncodeDecode() {
+		Grammar newVariable = new Grammar(5);
+		newVariable.decode(grammar.encode());
+		Assert.assertArrayEquals(grammar.toArray(), newVariable.toArray());
+	}
+	
+	@Test
+	@Retryable
+	public void testRandomize() {
+		grammar.setMaximumValue(5);
+		DescriptiveStatistics[] valueStats = new DescriptiveStatistics[grammar.size()];
+		
+		for (int j = 0; j < grammar.size(); j++) {
+			valueStats[j] = new DescriptiveStatistics();
+		}
+		
+		for (int i = 0; i < TestEnvironment.SAMPLES; i++) {
+			grammar.randomize();
+			
+			for (int j = 0; j < grammar.size(); j++) {
+				valueStats[j].addValue(grammar.get(j));
+			}
+		}
+		
+		for (int j = 0; j < grammar.size(); j++) {
+			Assert.assertUniformDistribution(0, grammar.getMaximumValue()-1, valueStats[j]);
+		}
+	}
+	
+	@Test
+	public void testDefinition() {
+		Assert.assertEquals("Grammar(5)", new Grammar(5).getDefinition());
+		Assert.assertEquals("Grammar(\"foo\",5)", new Grammar("foo", 5).getDefinition());
 	}
 
 }

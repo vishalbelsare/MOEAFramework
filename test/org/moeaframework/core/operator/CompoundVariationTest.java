@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,117 +17,91 @@
  */
 package org.moeaframework.core.operator;
 
-import java.util.Arrays;
-
-import org.junit.Assert;
 import org.junit.Test;
-import org.moeaframework.TestThresholds;
-import org.moeaframework.TestUtils;
+import org.moeaframework.Assert;
+import org.moeaframework.CallCounter;
 import org.moeaframework.core.FrameworkException;
 import org.moeaframework.core.Solution;
-import org.moeaframework.core.Variation;
+import org.moeaframework.mock.MockSolution;
+import org.moeaframework.mock.MockVariation;
 
-/**
- * Tests the {@link CompoundVariation} class.
- */
 public class CompoundVariationTest {
-	
-	private static class VariationStub implements Variation {
-		
-		private final int arity;
-		
-		private final int numberOfOffspring;
-		
-		private int count;
-		
-		public VariationStub(int arity, int numberOfOffspring) {
-			super();
-			this.arity = arity;
-			this.numberOfOffspring = numberOfOffspring;
-		}
 
-		@Override
-		public int getArity() {
-			return arity;
-		}
-
-		@Override
-		public Solution[] evolve(Solution[] parents) {
-			count++;
-			Assert.assertEquals(arity, parents.length);
-			return Arrays.copyOf(parents, numberOfOffspring);
-		}
-		
-	}
-	
 	@Test
 	public void testMutationOnly() {
-		VariationStub vs1 = new VariationStub(1, 1);
-		CompoundVariation variation = new CompoundVariation(vs1);
+		CallCounter<Variation> v1 = CallCounter.of(new MockVariation(1, 1));
+		CompoundVariation variation = new CompoundVariation(v1.getProxy());
 		
-		Assert.assertEquals("VariationStub", variation.getName());
+		Assert.assertEquals("mock", variation.getName());
 		Assert.assertEquals(1, variation.getArity());
 		
-		for (int i=0; i<TestThresholds.SAMPLES; i++) {
-			Solution[] parents = new Solution[] { TestUtils.newSolution() };
-			Assert.assertEquals(1, variation.evolve(parents).length);
-		}
-		
-		Assert.assertEquals(TestThresholds.SAMPLES, vs1.count);
+		Solution[] parents = MockSolution.of().buildArray(1);
+		Assert.assertEquals(1, variation.evolve(parents).length);
+		Assert.assertEquals(1, v1.getTotalCallCount("evolve"));
 	}
 	
 	@Test
 	public void testGA() {
-		VariationStub vs1 = new VariationStub(2, 2);
-		VariationStub vs2 = new VariationStub(1, 1);
-		CompoundVariation variation = new CompoundVariation(vs1, vs2);
+		CallCounter<Variation> v1 = CallCounter.of(new MockVariation(2, 2));
+		CallCounter<Variation> v2 = CallCounter.of(new MockVariation(1, 1));
+		CompoundVariation variation = new CompoundVariation(v1.getProxy(), v2.getProxy());
 		
-		Assert.assertEquals("VariationStub+VariationStub", variation.getName());
+		Assert.assertEquals("mock+mock", variation.getName());
 		Assert.assertEquals(2, variation.getArity());
 		
-		for (int i=0; i<TestThresholds.SAMPLES; i++) {
-			Solution[] parents = new Solution[] { TestUtils.newSolution(),
-				TestUtils.newSolution() };
-			Assert.assertEquals(2, variation.evolve(parents).length);
-		}
+		Solution[] parents = MockSolution.of().buildArray(2);
+		Assert.assertEquals(2, variation.evolve(parents).length);
 		
-		Assert.assertEquals(TestThresholds.SAMPLES, vs1.count);
-		Assert.assertEquals(2*TestThresholds.SAMPLES, vs2.count);
+		Assert.assertEquals(1, v1.getTotalCallCount("evolve"));
+		Assert.assertEquals(2, v2.getTotalCallCount("evolve"));
 	}
 	
 	@Test
-	public void testComplex() {
-		VariationStub vs1 = new VariationStub(3, 2);
-		VariationStub vs2 = new VariationStub(2, 2);
-		VariationStub vs3 = new VariationStub(1, 1);
-		CompoundVariation variation = new CompoundVariation(vs1, vs2, vs3);
-		variation.setName("Complex");
+	public void testMultipleCrossover() {
+		CallCounter<Variation> v1 = CallCounter.of(new MockVariation(3, 2));
+		CallCounter<Variation> v2 = CallCounter.of(new MockVariation(2, 2));
+		CallCounter<Variation> v3 = CallCounter.of(new MockVariation(1, 1));
+		CompoundVariation variation = new CompoundVariation(v1.getProxy(), v2.getProxy(), v3.getProxy());
+		variation.setName("complex");
 		
-		Assert.assertEquals("Complex", variation.getName());
+		Assert.assertEquals("complex", variation.getName());
 		Assert.assertEquals(3, variation.getArity());
 		
-		for (int i=0; i<TestThresholds.SAMPLES; i++) {
-			Solution[] parents = new Solution[] { TestUtils.newSolution(),
-				TestUtils.newSolution(), TestUtils.newSolution() };
-			Assert.assertEquals(2, variation.evolve(parents).length);
-		}
+		Solution[] parents = MockSolution.of().buildArray(3);
+		Assert.assertEquals(2, variation.evolve(parents).length);
 		
-		Assert.assertEquals(TestThresholds.SAMPLES, vs1.count);
-		Assert.assertEquals(TestThresholds.SAMPLES, vs2.count);
-		Assert.assertEquals(2*TestThresholds.SAMPLES, vs3.count);
+		Assert.assertEquals(1, v1.getTotalCallCount("evolve"));
+		Assert.assertEquals(1, v2.getTotalCallCount("evolve"));
+		Assert.assertEquals(2, v3.getTotalCallCount("evolve"));
+	}
+	
+	@Test
+	public void testMultipleOfParents() {
+		CallCounter<Variation> v1 = CallCounter.of(new MockVariation(4, 4));
+		CallCounter<Variation> v2 = CallCounter.of(new MockVariation(2, 2));
+		CallCounter<Variation> v3 = CallCounter.of(new MockVariation(1, 1));
+		CompoundVariation variation = new CompoundVariation(v1.getProxy(), v2.getProxy(), v3.getProxy());
+		
+		Assert.assertEquals(4, variation.getArity());
+		
+		Solution[] parents = MockSolution.of().buildArray(4);
+		variation.evolve(parents);
+		
+		Assert.assertEquals(1, v1.getTotalCallCount("evolve"));
+		Assert.assertEquals(2, v2.getTotalCallCount("evolve"));
+		Assert.assertEquals(4, v3.getTotalCallCount("evolve"));
 	}
 	
 	@Test(expected = FrameworkException.class)
 	public void testException() {
-		VariationStub vs1 = new VariationStub(3, 2);
-		VariationStub vs2 = new VariationStub(3, 2);
-		VariationStub vs3 = new VariationStub(1, 1);
+		MockVariation vs1 = new MockVariation(3, 2);
+		MockVariation vs2 = new MockVariation(3, 2);
+		MockVariation vs3 = new MockVariation(1, 1);
 		CompoundVariation variation = new CompoundVariation(vs1, vs2, vs3);
 		
 		Assert.assertEquals(3, variation.getArity());
 		
-		Solution[] parents = new Solution[] { TestUtils.newSolution(),
-			TestUtils.newSolution(), TestUtils.newSolution() };
+		Solution[] parents = MockSolution.of().buildArray(3);
 		variation.evolve(parents);
 	}
 

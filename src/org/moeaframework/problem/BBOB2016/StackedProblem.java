@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -18,13 +18,12 @@
 package org.moeaframework.problem.BBOB2016;
 
 import org.moeaframework.core.Solution;
-import org.moeaframework.core.variable.EncodingUtils;
+import org.moeaframework.core.variable.RealVariable;
 import org.moeaframework.problem.AbstractProblem;
 
 /**
- * Combines two or more single-objective {@link BBOBFunction}s into a
- * multiobjective problem.  The single-objective functions should all have the
- * same number of decision variables.
+ * Combines two or more single-objective {@link BBOBFunction}s into a multiobjective problem.  The single-objective
+ * functions should all have the same number of decision variables.
  */
 public class StackedProblem extends AbstractProblem {
 
@@ -34,8 +33,7 @@ public class StackedProblem extends AbstractProblem {
 	private final BBOBFunction[] functions;
 	
 	/**
-	 * Constructs a new multiobjective problem from two or more single-objective
-	 * functions.
+	 * Constructs a new multiobjective problem from two or more single-objective functions.
 	 * 
 	 * @param functions the single-objective functions
 	 */
@@ -46,11 +44,11 @@ public class StackedProblem extends AbstractProblem {
 
 	@Override
 	public void evaluate(Solution solution) {
-		double[] x = EncodingUtils.getReal(solution);
+		double[] x = RealVariable.getReal(solution);
 		
 		for (int i = 0; i < functions.length; i++) {
 			Solution instanceSolution = functions[i].newSolution();
-			EncodingUtils.setReal(instanceSolution, x);
+			RealVariable.setReal(instanceSolution, x);
 			
 			functions[i].evaluate(instanceSolution);
 			
@@ -63,7 +61,7 @@ public class StackedProblem extends AbstractProblem {
 		Solution solution = new Solution(numberOfVariables, numberOfObjectives);
 		
 		for (int i = 0; i < numberOfVariables; i++) {
-			solution.setVariable(i, EncodingUtils.newReal(-5.0, 5.0));
+			solution.setVariable(i, new RealVariable(-5.0, 5.0));
 		}
 		
 		return solution;

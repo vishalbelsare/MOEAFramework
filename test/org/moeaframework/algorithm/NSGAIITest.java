@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,76 +17,50 @@
  */
 package org.moeaframework.algorithm;
 
-import java.io.IOException;
-
-import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.moeaframework.Retryable;
+import org.moeaframework.Assert;
 import org.moeaframework.CIRunner;
-import org.moeaframework.core.NondominatedSortingPopulation;
-import org.moeaframework.core.Problem;
+import org.moeaframework.Retryable;
 import org.moeaframework.core.Solution;
-import org.moeaframework.core.Variation;
-import org.moeaframework.core.operator.RandomInitialization;
+import org.moeaframework.core.TypedProperties;
+import org.moeaframework.core.initialization.RandomInitialization;
+import org.moeaframework.core.operator.Variation;
 import org.moeaframework.core.operator.real.SBX;
+import org.moeaframework.core.population.NondominatedSortingPopulation;
 import org.moeaframework.core.spi.AlgorithmFactory;
 import org.moeaframework.core.spi.ProblemFactory;
-import org.moeaframework.util.TypedProperties;
+import org.moeaframework.mock.MockRealProblem;
+import org.moeaframework.problem.Problem;
 
-/**
- * Tests the {@link NSGAII} class.
- */
 @RunWith(CIRunner.class)
 @Retryable
-public class NSGAIITest extends AlgorithmTest {
+public class NSGAIITest extends JMetalAlgorithmTest {
 	
-	@Test
-	public void testDTLZ1() throws IOException {
-		test("DTLZ1_2", "NSGAII", "NSGAII-JMetal");
+	public NSGAIITest() {
+		super("NSGAII");
+	}
+	
+	// Use symmetric SBX to match JMetal's implementation.
+	@Override
+	public void test(String problem, String algorithm1, String algorithm2, boolean allowBetterPerformance) {
+		test(problem, algorithm1, TypedProperties.of("sbx.symmetric", true), algorithm2,
+				new TypedProperties(), allowBetterPerformance, AlgorithmFactory.getInstance());
 	}
 	
 	@Test
-	public void testDTLZ2() throws IOException {
-		test("DTLZ2_2", "NSGAII", "NSGAII-JMetal");
-	}
-	
-	@Test
-	public void testDTLZ7() throws IOException {
-		test("DTLZ7_2", "NSGAII", "NSGAII-JMetal");
-	}
-	
-	@Test
-	public void testUF1() throws IOException {
-		test("UF1", "NSGAII", "NSGAII-JMetal");
-	}
-	
-	/**
-	 * Selection with and without replacement should produce statistically
-	 * similar results.  Differences may appear throughout search due to better
-	 * diversity when using without replacement, but end-of-run indicators
-	 * should be identical on simple problems.
-	 */
-	@Test
-	public void testSelection() {
+	public void testSelectionWithAndWithoutReplacementEquivalent() {
 		test("UF1",
 				"NSGAII",
-				TypedProperties.withProperty("withReplacement", "false")
-							   .getProperties(),
+				TypedProperties.of("withReplacement", false),
 				"NSGAII",
-				TypedProperties.withProperty("withReplacement", "true")
-							   .getProperties(),
+				TypedProperties.of("withReplacement", true),
 				false,
 				AlgorithmFactory.getInstance());
 	}
 	
-	/**
-	 * When using selection without replacement, the same parent should never
-	 * be selected twice.  This only hold true if the population size is
-	 * a multiple of {@code 2*variation.getArity()}.
-	 */
 	@Test
-	public void testSelectionIsUnique() {
+	public void testSelectionWithoutReplacementIsUnique() {
 		Problem problem = ProblemFactory.getInstance().getProblem("UF1");
 
 		Variation variation = new SBX(1.0, 20.0) {
@@ -99,12 +73,26 @@ public class NSGAIITest extends AlgorithmTest {
 			
 		};
 
-		NSGAII nsgaii = new NSGAII(problem, new NondominatedSortingPopulation(),
-				null, null, variation, new RandomInitialization(problem, 100));
+		NSGAII nsgaii = new NSGAII(problem, 100, new NondominatedSortingPopulation(), null, null, variation,
+				new RandomInitialization(problem));
 		
 		while (nsgaii.getNumberOfEvaluations() < 100000) {
 			nsgaii.step();
 		}
+	}
+	
+	@Test
+	public void testConfiguration() {
+		NSGAII algorithm = new NSGAII(new MockRealProblem(2));
+		
+		TypedProperties properties = algorithm.getConfiguration();
+		Assert.assertTrue(properties.getBoolean("withReplacement", true));
+		
+		properties.setBoolean("withReplacement", false);
+		algorithm.applyConfiguration(properties);
+		
+		properties = algorithm.getConfiguration();
+		Assert.assertFalse(properties.getBoolean("withReplacement"));
 	}
 
 }

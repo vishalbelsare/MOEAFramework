@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -29,8 +29,7 @@ public class GrammarException extends FrameworkException {
 	private static final long serialVersionUID = 4573222148419061915L;
 	
 	/**
-	 * Constructs an exception indicating an error while parsing or processing 
-	 * grammars.
+	 * Constructs an exception indicating an error while parsing or processing grammars.
 	 * 
 	 * @param message the error message
 	 */
@@ -39,14 +38,23 @@ public class GrammarException extends FrameworkException {
 	}
 
 	/**
-	 * Constructs an exception indicating an error while parsing or processing 
-	 * grammars.
+	 * Constructs an exception indicating an error while parsing or processing grammars.
 	 * 
 	 * @param message the error message
 	 * @param line the line number on which the error occurred
 	 */
 	public GrammarException(String message, int line) {
 		super(MessageFormat.format("{0} (line {1})", message, line));
+	}
+	
+	/**
+	 * Constructs an exception indicating an error while parsing or processing grammars.
+	 * 
+	 * @param message the error message
+	 * @param cause the underlying cause
+	 */
+	public GrammarException(String message, Throwable cause) {
+		super(message, cause);
 	}
 
 }

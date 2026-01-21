@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -19,7 +19,9 @@ package org.moeaframework.problem.misc;
 
 import org.moeaframework.core.PRNG;
 import org.moeaframework.core.Solution;
-import org.moeaframework.core.variable.EncodingUtils;
+import org.moeaframework.core.constraint.LessThanOrEqual;
+import org.moeaframework.core.objective.Maximize;
+import org.moeaframework.core.variable.RealVariable;
 import org.moeaframework.problem.AbstractProblem;
 import org.moeaframework.problem.AnalyticalProblem;
 
@@ -31,18 +33,16 @@ import org.moeaframework.problem.AnalyticalProblem;
  *   <li>Connected and symmetric Pareto set
  *   <li>Convex Pareto front
  *   <li>Constrained
- *   <li>Maximization (objectives are negated)
+ *   <li>Maximized
  * </ul>
  * <p>
  * References:
  * <ol>
- *   <li>Obayashi, S. (1998).  "Pareto Genetic Algorithm for Aerodynamic
- *       Design using the Navier-Stokes Equations."  Genetic Algorithms and
- *       Evolution Strategies in Engineering and Computer Science: Recent
- *       Advances and Industrial Applications, pp. 245-266.
- *   <li>Van Veldhuizen, D. A (1999).  "Multiobjective Evolutionary Algorithms: 
- *       Classifications, Analyses, and New Innovations."  Air Force Institute
- *       of Technology, Ph.D. Thesis, Appendix B.
+ *   <li>Obayashi, S. (1998).  "Pareto Genetic Algorithm for Aerodynamic Design using the Navier-Stokes Equations."
+ *       Genetic Algorithms and Evolution Strategies in Engineering and Computer Science: Recent Advances and
+ *       Industrial Applications, pp. 245-266.
+ *   <li>Van Veldhuizen, D. A (1999).  "Multiobjective Evolutionary Algorithms: Classifications, Analyses, and New
+ *       Innovations."  Air Force Institute of Technology, Ph.D. Thesis, Appendix B.
  * </ol>
  */
 public class Obayashi extends AbstractProblem implements AnalyticalProblem {
@@ -56,21 +56,26 @@ public class Obayashi extends AbstractProblem implements AnalyticalProblem {
 
 	@Override
 	public void evaluate(Solution solution) {
-		double x = EncodingUtils.getReal(solution.getVariable(0));
-		double y = EncodingUtils.getReal(solution.getVariable(1));
-		double c = Math.pow(x, 2.0) + Math.pow(y, 2.0) - 1.0;
+		double x = RealVariable.getReal(solution.getVariable(0));
+		double y = RealVariable.getReal(solution.getVariable(1));
+		double c = Math.pow(x, 2.0) + Math.pow(y, 2.0);
 		
-		solution.setObjective(0, -x);
-		solution.setObjective(1, -y);
-		solution.setConstraint(0, c <= 0.0 ? 0.0 : c);
+		solution.setObjectiveValue(0, x);
+		solution.setObjectiveValue(1, y);
+		solution.setConstraintValue(0, c);
 	}
 
 	@Override
 	public Solution newSolution() {
 		Solution solution = new Solution(2, 2, 1);
 		
-		solution.setVariable(0, EncodingUtils.newReal(0.0, 1.0));
-		solution.setVariable(1, EncodingUtils.newReal(0.0, 1.0));
+		solution.setVariable(0, new RealVariable(0.0, 1.0));
+		solution.setVariable(1, new RealVariable(0.0, 1.0));
+		
+		solution.setObjective(0, new Maximize());
+		solution.setObjective(1, new Maximize());
+		
+		solution.setConstraint(0, LessThanOrEqual.to(1.0));
 		
 		return solution;
 	}
@@ -81,8 +86,8 @@ public class Obayashi extends AbstractProblem implements AnalyticalProblem {
 		double x = PRNG.nextDouble(0, 1);
 		double y = Math.sqrt(1.0 - Math.pow(x, 2.0));
 		
-		EncodingUtils.setReal(solution.getVariable(0), x);
-		EncodingUtils.setReal(solution.getVariable(1), y);
+		RealVariable.setReal(solution.getVariable(0), x);
+		RealVariable.setReal(solution.getVariable(1), y);
 		
 		evaluate(solution);
 		return solution;

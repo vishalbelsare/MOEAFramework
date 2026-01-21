@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -19,37 +19,75 @@ package org.moeaframework.algorithm;
 
 import java.io.IOException;
 
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.moeaframework.IgnoreOnCI;
+import org.moeaframework.Assert;
 import org.moeaframework.CIRunner;
+import org.moeaframework.Slow;
+import org.moeaframework.core.TypedProperties;
+import org.moeaframework.core.configuration.ConfigurationException;
+import org.moeaframework.core.fitness.AdditiveEpsilonIndicatorFitnessEvaluator;
+import org.moeaframework.core.fitness.HypervolumeContributionFitnessEvaluator;
+import org.moeaframework.core.fitness.HypervolumeFitnessEvaluator;
+import org.moeaframework.mock.MockRealProblem;
+import org.moeaframework.problem.Problem;
 
-/**
- * Tests the {@link SMSEMOA} class.
- */
 @RunWith(CIRunner.class)
-@IgnoreOnCI("exceeds 10 minute timeout")
 public class SMSEMOATest extends AlgorithmTest {
 	
 	@Test
+	@Slow
 	public void testDTLZ1() throws IOException {
 		test("DTLZ1_2", "SMSEMOA", "SMSEMOA-JMetal");
 	}
 	
 	@Test
+	@Slow
 	public void testDTLZ2() throws IOException {
 		test("DTLZ2_2", "SMSEMOA", "SMSEMOA-JMetal");
 	}
 	
 	@Test
+	@Slow
 	public void testDTLZ7() throws IOException {
 		test("DTLZ7_2", "SMSEMOA", "SMSEMOA-JMetal");
 	}
 	
 	@Test
+	@Slow
 	public void testUF1() throws IOException {
 		test("UF1", "SMSEMOA", "SMSEMOA-JMetal");
+	}
+	
+	@Test
+	public void testConfiguration() {
+		Problem problem = new MockRealProblem();
+		SMSEMOA algorithm = new SMSEMOA(problem);
+		
+		Assert.assertEquals("hypervolumeContribution", algorithm.getConfiguration().getString("indicator"));
+		
+		algorithm.applyConfiguration(TypedProperties.of("indicator", "epsilon"));
+		Assert.assertInstanceOf(AdditiveEpsilonIndicatorFitnessEvaluator.class, algorithm.getFitnessEvaluator());
+		Assert.assertEquals("epsilon", algorithm.getConfiguration().getString("indicator"));
+		
+		algorithm.applyConfiguration(TypedProperties.of("indicator", "hypervolume"));
+		Assert.assertInstanceOf(HypervolumeFitnessEvaluator.class, algorithm.getFitnessEvaluator());
+		Assert.assertEquals("hypervolume", algorithm.getConfiguration().getString("indicator"));
+		
+		algorithm.applyConfiguration(TypedProperties.of("indicator", "crowding"));
+		Assert.assertNull(algorithm.getFitnessEvaluator());
+		Assert.assertEquals("crowding", algorithm.getConfiguration().getString("indicator"));
+		
+		algorithm.applyConfiguration(TypedProperties.of("indicator", "hypervolumeContribution"));
+		Assert.assertInstanceOf(HypervolumeContributionFitnessEvaluator.class, algorithm.getFitnessEvaluator());
+	}
+	
+	@Test(expected = ConfigurationException.class)
+	public void testConfigurationInvalidIndicator() {
+		Problem problem = new MockRealProblem();
+		SMSEMOA algorithm = new SMSEMOA(problem);
+		
+		algorithm.applyConfiguration(TypedProperties.of("indicator", "foo"));
 	}
 
 }

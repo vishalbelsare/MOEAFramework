@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,8 +17,11 @@
  */
 package org.moeaframework.core.termination;
 
-import org.moeaframework.core.Algorithm;
-import org.moeaframework.core.TerminationCondition;
+import java.time.Duration;
+
+import org.apache.commons.lang3.time.StopWatch;
+import org.moeaframework.algorithm.Algorithm;
+import org.moeaframework.util.DurationUtils;
 
 /**
  * Terminates a run when the maximum elapsed time is exceeded.
@@ -26,33 +29,39 @@ import org.moeaframework.core.TerminationCondition;
 public class MaxElapsedTime implements TerminationCondition {
 	
 	/**
-	 * The maximum elapsed time in milliseconds.
+	 * The maximum elapsed time.
 	 */
-	private final long maxTime;
+	private final Duration maxTime;
 	
 	/**
-	 * The starting time in milliseconds.
+	 * The timer measuring the elapsed time.
 	 */
-	private long startTime;
+	private final StopWatch timer;
 	
 	/**
 	 * Constructs a new termination condition based on the maximum elapsed time.
 	 * 
-	 * @param maxTime the maximum elapsed time in milliseconds
+	 * @param maxTime the maximum elapsed time
 	 */
-	public MaxElapsedTime(long maxTime) {
+	public MaxElapsedTime(Duration maxTime) {
 		super();
 		this.maxTime = maxTime;
+		this.timer = new StopWatch();
 	}
 
 	@Override
 	public void initialize(Algorithm algorithm) {
-		startTime = System.currentTimeMillis();
+		timer.start();
 	}
 
 	@Override
 	public boolean shouldTerminate(Algorithm algorithm) {
-		return (System.currentTimeMillis() - startTime) >= maxTime;
+		return DurationUtils.isGreaterThanOrEqual(timer.getDuration(), maxTime);
+	}
+	
+	@Override
+	public double getPercentComplete(Algorithm algorithm) {
+		return DurationUtils.toPercentage(timer.getDuration(), maxTime);
 	}
 
 }

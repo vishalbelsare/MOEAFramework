@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,17 +17,15 @@
  */
 
 /**
- * Set of unconstrained and constrained numeric multiobjective test problems
- * aggregated by Van Veldhuizen [1].  Coello Coello et al. [2] also refer to 
- * this list of test problems.
+ * Collection of unconstrained and constrained numeric multiobjective test problems aggregated by Van Veldhuizen [1].
+ * Coello Coello et al. [2] also refer to this list of test problems.
  * <p>
  * References:
  * <ol>
- *   <li>Van Veldhuizen, D. A (1999).  "Multiobjective Evolutionary Algorithms: 
- *       Classifications, Analyses, and New Innovations."  Air Force Institute
- *       of Technology, Ph.D. Thesis, Appendix B.
- *   <li>Coello Coello, C.A. et al.  "Evolutionary Algorithms for Solving 
- *       Multi-Objective Problems."  2nd Edition, Springer, 2007.
+ *   <li>Van Veldhuizen, D. A (1999).  "Multiobjective Evolutionary Algorithms: Classifications, Analyses, and New
+ *       Innovations."  Air Force Institute of Technology, Ph.D. Thesis, Appendix B.
+ *   <li>Coello Coello, C.A. et al.  "Evolutionary Algorithms for Solving Multi-Objective Problems."  2nd Edition,
+ *       Springer, 2007.
  * </ol>
  */
 package org.moeaframework.problem.misc;

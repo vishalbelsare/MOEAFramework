@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -18,7 +18,6 @@
 package org.moeaframework.problem.ZDT;
 
 import org.moeaframework.core.Solution;
-import org.moeaframework.core.variable.EncodingUtils;
 import org.moeaframework.core.variable.RealVariable;
 
 /**
@@ -30,12 +29,11 @@ public class ZDT4 extends ZDT {
 	 * Constructs a ZDT4 test problem with 10 decision variables.
 	 */
 	public ZDT4() {
-		super(10);
+		this(10);
 	}
 
 	/**
-	 * Constructs a ZDT4 test problem with the specified number of decision
-	 * variables.
+	 * Constructs a ZDT4 test problem with the specified number of decision variables.
 	 * 
 	 * @param numberOfVariables the number of decision variables
 	 */
@@ -45,7 +43,7 @@ public class ZDT4 extends ZDT {
 
 	@Override
 	public void evaluate(Solution solution) {
-		double[] x = EncodingUtils.getReal(solution);
+		double[] x = RealVariable.getReal(solution);
 
 		double g = 0.0;
 		for (int i = 1; i < numberOfVariables; i++) {
@@ -55,8 +53,8 @@ public class ZDT4 extends ZDT {
 
 		double h = 1.0 - Math.sqrt(x[0] / g);
 
-		solution.setObjective(0, x[0]);
-		solution.setObjective(1, g * h);
+		solution.setObjectiveValue(0, x[0]);
+		solution.setObjectiveValue(1, g * h);
 	}
 	
 	@Override

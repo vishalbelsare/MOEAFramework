@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,14 +17,17 @@
  */
 package org.moeaframework.core.variable;
 
+import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.moeaframework.Assert;
+import org.moeaframework.CIRunner;
+import org.moeaframework.Retryable;
+import org.moeaframework.TestEnvironment;
 
-/**
- * Tests the {@link Permutation} class.
- */
+@RunWith(CIRunner.class)
 public class PermutationTest {
 
 	private Permutation permutation;
@@ -38,23 +41,29 @@ public class PermutationTest {
 	public void tearDown() {
 		permutation = null;
 	}
-
-	/**
-	 * Tests the constructor to ensure a valid permutation is created.
-	 */
-	@Test
-	public void testConstructor() {
-		Assert.assertTrue(Permutation.isPermutation(permutation.toArray()));
+	
+	
+	@Test(expected = IllegalArgumentException.class)
+	public void testEmptySize() {
+		new Permutation(0);
 	}
 
-	/**
-	 * Tests the array constructor to ensure the array forms a valid permutation
-	 * and is an independent copy of the array.
-	 */
 	@Test
-	public void testArrayConstructor() {
+	public void testDefaultValue() {
+		Assert.assertTrue(Permutation.isPermutation(permutation.toArray()));
+	}
+	
+	@Test
+	public void testName() {
+		Assert.assertNull(new Permutation(5).getName());
+		Assert.assertEquals("foo", new Permutation("foo", 5).getName());
+	}
+
+	@Test
+	public void testFromArray() {
 		int[] array = new int[] { 3, 1, 2, 0 };
-		Permutation permutation = new Permutation(array);
+		Permutation permutation = new Permutation(array.length);
+		permutation.fromArray(array);
 
 		Assert.assertTrue(Permutation.isPermutation(permutation.toArray()));
 		Assert.assertEquals(4, permutation.size());
@@ -68,60 +77,48 @@ public class PermutationTest {
 		Assert.assertEquals(3, permutation.get(0));
 	}
 	
-	/**
-	 * Tests the array constructor, and consequently the {@code fromArray}
-	 * method, for detecting when the permutation is missing an element.
-	 */
 	@Test(expected = IllegalArgumentException.class)
-	public void testArrayConstructorInvalidPermutation1() {
-		new Permutation(new int[] { 0, 3, 2 });
+	public void testFromArrayEmpty() {
+		Permutation permutation = new Permutation(1);
+		permutation.fromArray(new int[] { });
 	}
 	
-	/**
-	 * Tests if the array constructor, and consequently the {@code fromArray}
-	 * method, for detecting when the permutation contains duplicate elements.
-	 */
 	@Test(expected = IllegalArgumentException.class)
-	public void testArrayConstructorInvalidPermutation2() {
-		new Permutation(new int[] { 0, 1, 2, 1 });
+	public void testFromArrayInvalidValue() {
+		Permutation permutation = new Permutation(3);
+		permutation.fromArray(new int[] { 0, 3, 2 });
+	}
+	
+	@Test(expected = IllegalArgumentException.class)
+	public void testFromArrayDuplicateValue() {
+		Permutation permutation = new Permutation(3);
+		permutation.fromArray(new int[] { 0, 1, 1 });
 	}
 
-	/**
-	 * Tests if the correct size is returned.
-	 */
 	@Test
 	public void testSize() {
 		Assert.assertEquals(5, permutation.size());
 	}
 
-	/**
-	 * Tests if the {@link Permutation#equals} method works correctly.
-	 */
 	@Test
 	public void testEquals() {
 		Assert.assertFalse(permutation.equals(null));
 		Assert.assertTrue(permutation.equals(permutation));
-		Assert.assertTrue(permutation.equals(new Permutation(5)));
+		Assert.assertTrue(permutation.equals(permutation.copy()));
 		Assert.assertFalse(permutation.equals(new Permutation(6)));
 		Assert.assertFalse(permutation.equals(new Permutation(4)));
-		Assert.assertFalse(permutation.equals(new Permutation(new int[] { 0, 2,
-				1, 3, 4 })));
+		
+		Permutation other = new Permutation(5);
+		other.fromArray(new int[] { 0, 2, 1, 3, 4 });
+		Assert.assertFalse(permutation.equals(other));
 	}
 	
-	/**
-	 * Tests to ensure the {@link Permutation#hashCode()} general contract is
-	 * upheld.
-	 */
 	@Test
 	public void testHashCode() {
 		Assert.assertEquals(permutation.hashCode(), permutation.hashCode());
-		Assert.assertEquals(permutation.hashCode(),
-				new Permutation(5).hashCode());
+		Assert.assertEquals(permutation.hashCode(), permutation.copy().hashCode());
 	}
 
-	/**
-	 * Tests if the {@link Permutation#get} method returns the correct value.
-	 */
 	@Test
 	public void testGet() {
 		for (int i = 0; i < permutation.size(); i++) {
@@ -129,62 +126,40 @@ public class PermutationTest {
 		}
 	}
 
-	/**
-	 * Tests if the {@link Permutation#copy} method produces a copy equal to but
-	 * independent from the original.
-	 */
 	@Test
 	public void testCopy() {
 		Permutation copy = permutation.copy();
-		Assert.assertTrue(copy.equals(permutation));
+		Assert.assertNotSame(permutation, copy);
+		Assert.assertEquals(permutation, copy);
 
 		copy.swap(2, 3);
-		Assert.assertFalse(copy.equals(permutation));
-		Assert.assertFalse(permutation.equals(copy));
+		Assert.assertNotEquals(permutation, copy);
 	}
 
-	/**
-	 * Tests if the {@link Permutation#swap} method correctly swaps the two
-	 * indices.
-	 */
 	@Test
 	public void testSwap() {
 		permutation.swap(2, 3);
-		Assert.assertTrue(Permutation.isPermutation(permutation.toArray()));
-		Assert.assertEquals(2, permutation.get(3));
-		Assert.assertEquals(3, permutation.get(2));
+		Assert.assertArrayEquals(new int[] { 0, 1, 3, 2, 4 }, permutation.toArray());
 
 		permutation.swap(4, 4);
-		Assert.assertTrue(Permutation.isPermutation(permutation.toArray()));
+		Assert.assertArrayEquals(new int[] { 0, 1, 3, 2, 4 }, permutation.toArray());
 	}
 
-	/**
-	 * Tests if the {@link Permutation#insert} method correctly inserts the
-	 * value into the permutation.
-	 */
 	@Test
 	public void testInsert() {
 		permutation.insert(4, 0);
-		Assert.assertTrue(permutation.equals(new Permutation(new int[] { 4, 0,
-				1, 2, 3 })));
+		Assert.assertArrayEquals(new int[] { 4, 0, 1, 2, 3 }, permutation.toArray());
 
 		permutation.insert(0, 4);
-		Assert.assertTrue(permutation.equals(new Permutation(new int[] { 0, 1,
-				2, 3, 4 })));
+		Assert.assertArrayEquals(new int[] { 0, 1, 2, 3, 4 }, permutation.toArray());
 
 		permutation.insert(2, 2);
-		Assert.assertTrue(permutation.equals(new Permutation(new int[] { 0, 1,
-				2, 3, 4 })));
+		Assert.assertArrayEquals(new int[] { 0, 1, 2, 3, 4 }, permutation.toArray());
 
 		permutation.insert(2, 3);
-		Assert.assertTrue(permutation.equals(new Permutation(new int[] { 0, 1,
-				3, 2, 4 })));
+		Assert.assertArrayEquals(new int[] { 0, 1, 3, 2, 4 }, permutation.toArray());
 	}
 
-	/**
-	 * Tests if the {@link Permutation#isPermutation} method correctly detects
-	 * valid and invalid permutations.
-	 */
 	@Test
 	public void testIsPermutation() {
 		Assert.assertTrue(Permutation.isPermutation(new int[0]));
@@ -194,32 +169,91 @@ public class PermutationTest {
 		Assert.assertTrue(Permutation.isPermutation(new int[] { 2, 1, 0 }));
 	}
 
-	/**
-	 * Tests if the {@link Permutation#swap(int, int)} method correctly throws
-	 * an {@code IndexOutOfBoundsException}.
-	 */
 	@Test(expected = IndexOutOfBoundsException.class)
-	public void testSwapException() {
+	public void testSwapOutOfBounds() {
 		permutation.swap(7, 2);
 	}
 
-	/**
-	 * Tests if the {@link Permutation#insert(int, int)} method correctly throws
-	 * an {@code IndexOutOfBoundsException}.
-	 */
 	@Test(expected = IndexOutOfBoundsException.class)
-	public void testInsertException() {
+	public void testInsertOutOfBounds() {
 		permutation.insert(2, 7);
 	}
 
-	/**
-	 * Tests if the {@link Permutation#get(int)} method correctly throws an
-	 * {@code IndexOutOfBoundsException}.
-	 */
 	@Test(expected = IndexOutOfBoundsException.class)
-	public void testGetException() {
+	public void testGetOutOfBounds() {
 		permutation.get(7);
 	}
+	
+	@Test
+	public void testToString() {
+		permutation.fromArray(new int[] { 2, 0, 1, 3, 4 });
+		Assert.assertEquals("[2,0,1,3,4]", permutation.toString());
+	}
 
+	@Test
+	public void testEncodeDecode() {
+		Permutation newVariable = new Permutation(5);
+		newVariable.decode(permutation.encode());
+		Assert.assertArrayEquals(permutation.toArray(), newVariable.toArray());
+	}
+	
+	@Test
+	public void testDecodeWithoutBrackets() {
+		Permutation p = new Permutation(3);
+		p.decode("2,0,1");
+		Assert.assertArrayEquals(new int[] { 2, 0, 1 }, p.toArray());
+	}
+	
+	@Test(expected = IllegalArgumentException.class)
+	public void testDecodeInvalidLength() {
+		Permutation p = new Permutation(5);
+		p.decode("[2,0,1]");
+	}
+	
+	@Test(expected = IllegalArgumentException.class)
+	public void testDecodeInvalidValue() {
+		Permutation p = new Permutation(5);
+		p.decode("[2,0,1,5,3]");
+	}
+	
+	@Test
+	@Retryable
+	public void testRandomize() {
+		DescriptiveStatistics[] positionStats = new DescriptiveStatistics[permutation.size()];
+		
+		for (int j = 0; j < permutation.size(); j++) {
+			positionStats[j] = new DescriptiveStatistics();
+		}
+		
+		for (int i = 0; i < TestEnvironment.SAMPLES; i++) {
+			permutation.randomize();
+			
+			Assert.assertTrue(Permutation.isPermutation(permutation.toArray()));
+			
+			for (int j = 0; j < permutation.size(); j++) {
+				positionStats[j].addValue(permutation.get(j));
+			}
+		}
+		
+		for (int j = 0; j < permutation.size(); j++) {
+			Assert.assertUniformDistribution(0, permutation.size()-1, positionStats[j]);
+		}
+	}
+	
+	@Test(expected = IllegalArgumentException.class)
+	public void testSetInvalidType() {
+		Permutation.setPermutation(new BinaryVariable(3), new int[] { 0, 2, 1 });
+	}
+	
+	@Test(expected = IllegalArgumentException.class)
+	public void testGetInvalidType() {
+		Permutation.getPermutation(new BinaryVariable(3));
+	}
+	
+	@Test
+	public void testDefinition() {
+		Assert.assertEquals("Permutation(5)", new Permutation(5).getDefinition());
+		Assert.assertEquals("Permutation(\"foo\",5)", new Permutation("foo", 5).getDefinition());
+	}
 
 }

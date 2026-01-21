@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -20,21 +20,18 @@ package org.moeaframework.util.weights;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.commons.math3.util.CombinatoricsUtils;
+import org.moeaframework.util.validate.Validate;
 
 /**
- * Generates weights using the Normal Boundary Intersection (NBI) method.
- * For {@code d} divisions and {@code M} objectives, this class will generate
- * {@code M+d-1 choose d} weights.
+ * Generates weights using the Normal Boundary Intersection (NBI) method.  For {@code d} divisions and {@code M}
+ * objectives, this class will generate {@code M+d-1 choose d} weights.
  * <p>
  * References:
  * <ol>
- *   <li>Das, I. and J. Dennis (1998).  "Normal-boundary intersection: A new
- *       method for generating the Pareto surface in nonlinear multicriteria
- *       optimization problems."  SIAM J. Optimization, 8(3):631-657.
- *   <li>Deb, K. and H. Jain (2014).  "An Evolutionary Many-Objective
- *       Optimization Algorithm Using Reference-Point-Based Nondominated
- *       Sorting Approach, Part I: Solving Problems With Box Constraints."
+ *   <li>Das, I. and J. Dennis (1998).  "Normal-boundary intersection: A new method for generating the Pareto
+ *       surface in nonlinear multicriteria optimization problems."  SIAM J. Optimization, 8(3):631-657.
+ *   <li>Deb, K. and H. Jain (2014).  "An Evolutionary Many-Objective Optimization Algorithm Using
+ *       Reference-Point-Based Nondominated Sorting Approach, Part I: Solving Problems With Box Constraints."
  *       IEEE Transactions on Evolutionary Computation, 18(4):577-601.
  * </ol>
  */
@@ -46,71 +43,45 @@ public class NormalBoundaryIntersectionGenerator implements WeightGenerator {
 	private final int numberOfObjectives;
 	
 	/**
-	 * The number of outer divisions.
+	 * The number of divisions.
 	 */
-	private final int divisionsOuter;
+	private final NormalBoundaryDivisions divisions;
 	
 	/**
-	 * The number of inner divisions, or {@code 0} if no inner divisions should
-	 * be used.
-	 */
-	private final int divisionsInner;
-	
-	/**
-	 * Constructs a new normal-boundary intersection weight generator.
+	 * Constructs a new normal-boundary intersection weight generator.  If divisions specifies both an
+	 * inner and outer division, the two-layer approach of Deb and Jain (2014) is used.
 	 * 
 	 * @param numberOfObjectives the number of objectives
 	 * @param divisions the number of divisions
 	 */
-	public NormalBoundaryIntersectionGenerator(int numberOfObjectives, int divisions) {
-		this(numberOfObjectives, divisions, 0);
-	}
-	
-	/**
-	 * Constructs a new normal-boundary intersection weight generator using the
-	 * two-layer approach of Deb and Jain (2014).
-	 * 
-	 * @param numberOfObjectives the number of objectives
-	 * @param divisionsOuter the number of outer divisions
-	 * @param divisionsInner the number of inner divisions
-	 */
-	public NormalBoundaryIntersectionGenerator(int numberOfObjectives, int divisionsOuter, int divisionsInner) {
+	public NormalBoundaryIntersectionGenerator(int numberOfObjectives, NormalBoundaryDivisions divisions) {
 		super();
 		this.numberOfObjectives = numberOfObjectives;
-		this.divisionsOuter = divisionsOuter;
-		this.divisionsInner = divisionsInner;
+		this.divisions = divisions;
+		
+		Validate.that("numberOfObjectives", numberOfObjectives).isGreaterThanOrEqualTo(1);
+		Validate.that("divisions", divisions).isNotNull();
 	}
 
 	@Override
 	public int size() {
-		long size = 0;
-		
-		size += CombinatoricsUtils.binomialCoefficient(
-				numberOfObjectives + divisionsOuter - 1,
-				divisionsOuter);
-		
-		if (divisionsInner > 0) {
-			size += CombinatoricsUtils.binomialCoefficient(
-					numberOfObjectives + divisionsInner - 1,
-					divisionsInner);
-		}
-		
-		return (int)size;
+		return divisions.getNumberOfReferencePoints(numberOfObjectives);
 	}
 
 	@Override
 	public List<double[]> generate() {
 		List<double[]> weights = null;
 		
-		if (divisionsInner > 0) {
-			if (divisionsOuter >= numberOfObjectives) {
-				System.err.println("The specified number of outer divisions produces intermediate reference points, recommend setting divisionsOuter < numberOfObjectives.");
+		if (divisions.getInnerDivisions() > 0) {
+			if (divisions.getOuterDivisions() >= numberOfObjectives) {
+				System.err.println("WARNING: The specified number of outer divisions produces intermediate " +
+						"reference points, recommend setting divisionsOuter < numberOfObjectives.");
 			}
 
-			weights = generateWeights(divisionsOuter);
+			weights = generateWeights(divisions.getOuterDivisions());
 
 			// offset the inner weights
-			List<double[]> inner = generateWeights(divisionsInner);
+			List<double[]> inner = generateWeights(divisions.getInnerDivisions());
 
 			for (int i = 0; i < inner.size(); i++) {
 				double[] weight = inner.get(i);
@@ -122,25 +93,25 @@ public class NormalBoundaryIntersectionGenerator implements WeightGenerator {
 
 			weights.addAll(inner);
 		} else {
-			if (divisionsOuter < numberOfObjectives) {
-				System.err.println("No intermediate reference points will be generated for the specified number of divisions, recommend increasing divisions");
+			if (divisions.getOuterDivisions() < numberOfObjectives) {
+				System.err.println("WARNING: No intermediate reference points will be generated for the specified " +
+						"number of divisions, recommend increasing divisions");
 			}
 
-			weights = generateWeights(divisionsOuter);
+			weights = generateWeights(divisions.getOuterDivisions());
 		}
 		
 		return weights;
 	}
 	
 	/**
-	 * Generates the reference points (weights) for the given number of
-	 * divisions.
+	 * Generates the reference points (weights) for the given number of divisions.
 	 * 
 	 * @param divisions the number of divisions
 	 * @return the list of reference points
 	 */
 	private List<double[]> generateWeights(int divisions) {
-		List<double[]> result = new ArrayList<double[]>();
+		List<double[]> result = new ArrayList<>();
 		double[] weight = new double[numberOfObjectives];
 		
 		generateRecursive(result, weight, numberOfObjectives, divisions, divisions, 0);

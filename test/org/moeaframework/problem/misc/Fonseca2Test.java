@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,60 +17,57 @@
  */
 package org.moeaframework.problem.misc;
 
-import org.junit.Assert;
 import org.junit.Test;
-import org.moeaframework.TestUtils;
-import org.moeaframework.core.Problem;
+import org.moeaframework.Assert;
+import org.moeaframework.problem.Problem;
 import org.moeaframework.problem.ProblemTest;
 
 public class Fonseca2Test extends ProblemTest {
 
 	@Test
-	public void testJMetal() throws Exception {
-		test(new org.uma.jmetal.problem.multiobjective.Fonseca(), new Fonseca2(3));
+	public void testJMetal() {
+		testAgainstJMetal("Fonseca2");
 	}
 	
 	@Test
-	public void test2() {
+	public void test2D() {
 		Problem problem = new Fonseca2(2);
 		
-		Assert.assertArrayEquals(new double[] { 0.63212, 0.63212 }, // 1 - 1/e 
-				TestUtils.evaluateAt(problem, 0.0, 0.0).getObjectives(),
+		Assert.assertArrayEquals(new double[] { 0.63212, 0.63212 }, // 1 - 1/e
+				evaluateAt(problem, 0.0, 0.0).getObjectiveValues(),
 				0.00001);
 		
-		Assert.assertArrayEquals(new double[] { 1.0, 1.0 }, 
-				TestUtils.evaluateAt(problem, -4.0, -4.0).getObjectives(),
+		Assert.assertArrayEquals(new double[] { 1.0, 1.0 },
+				evaluateAt(problem, -4.0, -4.0).getObjectiveValues(),
 				0.00001);
 		
-		Assert.assertArrayEquals(new double[] { 1.0, 1.0 }, 
-				TestUtils.evaluateAt(problem, 4.0, 4.0).getObjectives(),
+		Assert.assertArrayEquals(new double[] { 1.0, 1.0 },
+				evaluateAt(problem, 4.0, 4.0).getObjectiveValues(),
 				0.00001);
 		
-		Assert.assertArrayEquals(new double[] { 0.0, 0.98168 }, 
-				TestUtils.evaluateAt(problem,
-						1.0 / Math.sqrt(2.0), 1.0 / Math.sqrt(2.0)).getObjectives(),
+		Assert.assertArrayEquals(new double[] { 0.0, 0.98168 },
+				evaluateAt(problem, 1.0 / Math.sqrt(2.0), 1.0 / Math.sqrt(2.0)).getObjectiveValues(),
 				0.00001);
 	}
 	
 	@Test
-	public void test3() {
+	public void test3D() {
 		Problem problem = new Fonseca2(3);
 		
-		Assert.assertArrayEquals(new double[] { 0.63212, 0.63212 }, 
-				TestUtils.evaluateAt(problem, 0.0, 0.0, 0.0).getObjectives(),
+		Assert.assertArrayEquals(new double[] { 0.63212, 0.63212 },
+				evaluateAt(problem, 0.0, 0.0, 0.0).getObjectiveValues(),
 				0.00001);
 		
-		Assert.assertArrayEquals(new double[] { 1.0, 1.0 }, 
-				TestUtils.evaluateAt(problem, -4.0, -4.0, -4.0).getObjectives(),
+		Assert.assertArrayEquals(new double[] { 1.0, 1.0 },
+				evaluateAt(problem, -4.0, -4.0, -4.0).getObjectiveValues(),
 				0.00001);
 		
-		Assert.assertArrayEquals(new double[] { 1.0, 1.0 }, 
-				TestUtils.evaluateAt(problem, 4.0, 4.0, 4.0).getObjectives(),
+		Assert.assertArrayEquals(new double[] { 1.0, 1.0 },
+				evaluateAt(problem, 4.0, 4.0, 4.0).getObjectiveValues(),
 				0.00001);
 		
-		Assert.assertArrayEquals(new double[] { 0.0, 0.98168 }, 
-				TestUtils.evaluateAt(problem,
-						1.0 / Math.sqrt(3.0), 1.0 / Math.sqrt(3.0), 1.0 / Math.sqrt(3.0)).getObjectives(),
+		Assert.assertArrayEquals(new double[] { 0.0, 0.98168 },
+				evaluateAt(problem, 1.0 / Math.sqrt(3.0), 1.0 / Math.sqrt(3.0), 1.0 / Math.sqrt(3.0)).getObjectiveValues(),
 				0.00001);
 	}
 

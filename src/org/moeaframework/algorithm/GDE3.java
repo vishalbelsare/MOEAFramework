@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,29 +17,33 @@
  */
 package org.moeaframework.algorithm;
 
-import org.moeaframework.core.Initialization;
-import org.moeaframework.core.NondominatedSortingPopulation;
-import org.moeaframework.core.Population;
-import org.moeaframework.core.Problem;
+import org.moeaframework.core.Settings;
 import org.moeaframework.core.Solution;
 import org.moeaframework.core.comparator.DominanceComparator;
+import org.moeaframework.core.configuration.Property;
+import org.moeaframework.core.initialization.Initialization;
+import org.moeaframework.core.initialization.RandomInitialization;
 import org.moeaframework.core.operator.real.DifferentialEvolutionVariation;
-import org.moeaframework.core.operator.real.DifferentialEvolutionSelection;
+import org.moeaframework.core.population.NondominatedSortingPopulation;
+import org.moeaframework.core.population.Population;
+import org.moeaframework.core.selection.DifferentialEvolutionSelection;
+import org.moeaframework.core.variable.RealVariable;
+import org.moeaframework.problem.Problem;
+import org.moeaframework.util.validate.Validate;
 
 /**
  * Implementation of the Generalized Differential Evolution (GDE3) algorithm.
  * <p>
  * References:
  * <ol>
- * <li>Kukkonen and Lampinen (2005). "GDE3: The Third Evolution Step of
- * Generalized Differential Evolution." KanGAL Report Number 2005013.
+ *   <li>Kukkonen and Lampinen (2005). "GDE3: The Third Evolution Step of Generalized Differential Evolution."
+ *       KanGAL Report Number 2005013.
  * </ol>
  */
 public class GDE3 extends AbstractEvolutionaryAlgorithm {
 
 	/**
-	 * The dominance comparator used to determine if offspring survive until
-	 * the non-dominated sorting step.
+	 * The dominance comparator used to determine if offspring survive until the non-dominated sorting step.
 	 */
 	private final DominanceComparator comparator;
 
@@ -47,36 +51,72 @@ public class GDE3 extends AbstractEvolutionaryAlgorithm {
 	 * The selection operator.
 	 */
 	private final DifferentialEvolutionSelection selection;
-
+	
 	/**
-	 * The variation operator.
+	 * Constructs the GDE3 algorithm with default settings.
+	 * 
+	 * @param problem the problem being solved
 	 */
-	private final DifferentialEvolutionVariation variation;
+	public GDE3(Problem problem) {
+		this(problem,
+				Settings.DEFAULT_POPULATION_SIZE,
+				new NondominatedSortingPopulation(),
+				new DifferentialEvolutionSelection(),
+				new DifferentialEvolutionVariation(),
+				new RandomInitialization(problem));
+	}
+	
+	/**
+	 * Constructs the GDE3 algorithm with the specified components.
+	 * 
+	 * @param problem the problem being solved
+	 * @param initialPopulationSize the initial population size
+	 * @param population the population used to store solutions
+	 * @param selection the selection operator
+	 * @param variation the variation operator
+	 * @param initialization the initialization method
+	 */
+	public GDE3(Problem problem, int initialPopulationSize, NondominatedSortingPopulation population,
+			DifferentialEvolutionSelection selection, DifferentialEvolutionVariation variation,
+			Initialization initialization) {
+		this(problem, initialPopulationSize, population, population.getComparator(), selection, variation,
+				initialization);
+	}
 
 	/**
 	 * Constructs the GDE3 algorithm with the specified components.
 	 * 
 	 * @param problem the problem being solved
+	 * @param initialPopulationSize the initial population size
 	 * @param population the population used to store solutions
-	 * @param comparator the dominance comparator used to determine if offspring
-	 *        survive until the non-dominated sorting step
+	 * @param comparator the dominance comparator used to determine if offspring survive until the non-dominated
+	 *        sorting step
 	 * @param selection the selection operator
 	 * @param variation the variation operator
 	 * @param initialization the initialization method
 	 */
-	public GDE3(Problem problem, NondominatedSortingPopulation population,
-			DominanceComparator comparator,
-			DifferentialEvolutionSelection selection,
+	public GDE3(Problem problem, int initialPopulationSize, NondominatedSortingPopulation population,
+			DominanceComparator comparator, DifferentialEvolutionSelection selection,
 			DifferentialEvolutionVariation variation, Initialization initialization) {
-		super(problem, population, null, initialization);
+		super(problem, initialPopulationSize, population, null, initialization, variation);
+		
+		Validate.that("problem", problem).isType(RealVariable.class);
+		Validate.that("comparator", comparator).isNotNull();
+		Validate.that("selection", selection).isNotNull();
+		
 		this.comparator = comparator;
 		this.selection = selection;
-		this.variation = variation;
+	}
+	
+	@Override
+	public String getName() {
+		return "GDE3";
 	}
 
 	@Override
 	public void iterate() {
 		NondominatedSortingPopulation population = getPopulation();
+		DifferentialEvolutionVariation variation = getVariation();
 		Population children = new Population();
 		int populationSize = population.size();
 
@@ -84,8 +124,7 @@ public class GDE3 extends AbstractEvolutionaryAlgorithm {
 		for (int i = 0; i < populationSize; i++) {
 			selection.setCurrentIndex(i);
 
-			Solution[] parents = selection.select(variation.getArity(),
-					population);
+			Solution[] parents = selection.select(variation.getArity(), population);
 			children.add(variation.evolve(parents)[0]);
 		}
 		
@@ -116,6 +155,27 @@ public class GDE3 extends AbstractEvolutionaryAlgorithm {
 	@Override
 	public NondominatedSortingPopulation getPopulation() {
 		return (NondominatedSortingPopulation)super.getPopulation();
+	}
+	
+	@Override
+	public DifferentialEvolutionVariation getVariation() {
+		return (DifferentialEvolutionVariation)super.getVariation();
+	}
+	
+	/**
+	 * Replaces the differential evolution variation operator to be used by this algorithm.
+	 * 
+	 * @param variation the differential evolution variation operator
+	 */
+	@Property("operator")
+	public void setVariation(DifferentialEvolutionVariation variation) {
+		super.setVariation(variation);
+	}
+	
+	@Override
+	@Property("populationSize")
+	public void setInitialPopulationSize(int initialPopulationSize) {
+		super.setInitialPopulationSize(initialPopulationSize);
 	}
 
 }

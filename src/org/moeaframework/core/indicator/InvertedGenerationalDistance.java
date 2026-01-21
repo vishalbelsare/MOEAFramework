@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,78 +17,79 @@
  */
 package org.moeaframework.core.indicator;
 
-import org.moeaframework.core.NondominatedPopulation;
-import org.moeaframework.core.Problem;
 import org.moeaframework.core.Settings;
+import org.moeaframework.core.population.NondominatedPopulation;
+import org.moeaframework.problem.Problem;
 
 /**
- * Inverted generational distance indicator. Represents average distance from
- * solutions in the reference set to the nearest solution in an approximation
- * set.
+ * Inverted generational distance (IGD) indicator.  Represents average distance from solutions in the reference set to
+ * the nearest solution in an approximation set.
  */
 public class InvertedGenerationalDistance extends NormalizedIndicator {
 	
 	/**
-	 * Set to {@code 1.0} to replicate inverted generational distance as seen
-	 * in the literature; or any power.
+	 * Set to {@code 1.0} to replicate inverted generational distance as seen in the literature; or any power.
 	 */
 	private final double d;
 
 	/**
-	 * Constructs an inverted generational distance evaluator for the specified
-	 * problem and corresponding reference set.
+	 * Constructs an inverted generational distance evaluator for the specified problem and corresponding reference set.
+	 * The default normalization procedure, as specified by {@link DefaultNormalizer}, is used.
 	 * 
 	 * @param problem the problem
 	 * @param referenceSet the reference set for the problem
 	 */
-	public InvertedGenerationalDistance(Problem problem,
-			NondominatedPopulation referenceSet) {
+	public InvertedGenerationalDistance(Problem problem, NondominatedPopulation referenceSet) {
 		this(problem, referenceSet, Settings.getIGDPower());
 	}
 	
 	/**
-	 * Constructs an inverted generational distance evaluator for the specified
-	 * problem and corresponding reference set.
+	 * Constructs an inverted generational distance evaluator for the specified problem and corresponding reference set.
 	 * 
 	 * @param problem the problem
 	 * @param referenceSet the reference set for the problem
 	 * @param d the power, typically {@code 1.0}
 	 */
-	public InvertedGenerationalDistance(Problem problem,
-			NondominatedPopulation referenceSet,
+	public InvertedGenerationalDistance(Problem problem, NondominatedPopulation referenceSet, double d) {
+		this(problem, referenceSet, null, d);
+	}
+	
+	/**
+	 * Constructs an inverted generational distance evaluator for the specified problem and corresponding reference set.
+	 * 
+	 * @param problem the problem
+	 * @param referenceSet the reference set for the problem
+	 * @param normalizer the user-provided normalizer, or {@code null} if the default is used
+	 * @param d the power, typically {@code 1.0}
+	 */
+	public InvertedGenerationalDistance(Problem problem, NondominatedPopulation referenceSet, Normalizer normalizer,
 			double d) {
-		super(problem, referenceSet);
+		super(problem, referenceSet, normalizer);
 		this.d = d;
 	}
 
 	@Override
 	public double evaluate(NondominatedPopulation approximationSet) {
-		return evaluate(problem, normalize(approximationSet), 
-				getNormalizedReferenceSet(), d);
+		return evaluate(problem, normalize(approximationSet), getNormalizedReferenceSet(), d);
 	}
 
 	/**
-	 * Computes the inverted generational distance for the specified problem
-	 * given an approximation set and reference set. While not necessary, the
-	 * approximation and reference sets should be normalized. Returns
+	 * Computes the inverted generational distance for the specified problem given an approximation set and reference
+	 * set.  While not necessary, the approximation and reference sets should be normalized.  Returns
 	 * {@code Double.POSITIVE_INFINITY} if the approximation set is empty.
 	 * 
 	 * @param problem the problem
 	 * @param approximationSet an approximation set for the problem
 	 * @param referenceSet the reference set for the problem
 	 * @param d the power, typically {@code 1.0}
-	 * @return the inverted generational distance for the specified problem 
-	 *         given an approximation set and reference set
+	 * @return the inverted generational distance for the specified problem given an approximation set and reference set
 	 */
-	static double evaluate(Problem problem,
-			NondominatedPopulation approximationSet,
-			NondominatedPopulation referenceSet,
-			double d) {
+	static double evaluate(Problem problem, NondominatedPopulation approximationSet,
+			NondominatedPopulation referenceSet, double d) {
 		double sum = 0.0;
 
 		for (int i = 0; i < referenceSet.size(); i++) {
-			sum += Math.pow(IndicatorUtils.distanceToNearestSolution(problem,
-					referenceSet.get(i), approximationSet), d);
+			sum += Math.pow(referenceSet.get(i).distanceToNearestSolution(approximationSet), d);
 		}
 
 		return Math.pow(sum, 1.0 / d) / referenceSet.size();

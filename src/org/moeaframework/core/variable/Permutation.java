@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,15 +17,18 @@
  */
 package org.moeaframework.core.variable;
 
+import java.util.BitSet;
+
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.moeaframework.core.Defined;
 import org.moeaframework.core.PRNG;
-import org.moeaframework.core.Variable;
+import org.moeaframework.util.validate.Validate;
 
 /**
  * Decision variable for permutations.
  */
-public class Permutation implements Variable {
+public class Permutation extends AbstractVariable {
 
 	private static final long serialVersionUID = 5690584295426235286L;
 
@@ -33,15 +36,25 @@ public class Permutation implements Variable {
 	 * The permutation array.
 	 */
 	private int[] permutation;
-
+	
 	/**
-	 * Constructs a permutation variable with the specified number of
-	 * elements.
+	 * Constructs a permutation variable with the specified number of elements.
 	 * 
 	 * @param size the number of elements in the permutation
 	 */
 	public Permutation(int size) {
-		super();
+		this(null, size);
+	}
+
+	/**
+	 * Constructs a permutation variable with the specified number of elements.
+	 * 
+	 * @param name the name of this decision variable
+	 * @param size the number of elements in the permutation
+	 */
+	public Permutation(String name, int size) {
+		super(name);
+		Validate.that("size", size).isGreaterThan(0);
 
 		permutation = new int[size];
 
@@ -50,25 +63,11 @@ public class Permutation implements Variable {
 		}
 	}
 
-	/**
-	 * Constructs a permutation variable using the specified permutation
-	 * array.
-	 * 
-	 * @param permutation the permutation array
-	 * @throws IllegalArgumentException if the permutation array is not a valid
-	 *         permutation
-	 */
-	public Permutation(int[] permutation) {
-		super();
-		this.permutation = permutation;
-
-		//this call is necessary to ensure the invariants hold
-		fromArray(permutation);
-	}
-
 	@Override
 	public Permutation copy() {
-		return new Permutation(permutation);
+		Permutation copy = new Permutation(name, permutation.length);
+		copy.fromArray(permutation);
+		return copy;
 	}
 
 	/**
@@ -85,20 +84,18 @@ public class Permutation implements Variable {
 	 * 
 	 * @param index the index of the permutation value to be returned
 	 * @return the permutation element at the specified index
-	 * @throws ArrayOutOfBoundsException if the index is out of range {@code [0,
-	 *         size()-1]}
+	 * @throws ArrayIndexOutOfBoundsException if the index is out of range {@code [0, size()-1]}
 	 */
 	public int get(int index) {
 		return permutation[index];
 	}
 
 	/**
-	 * Swaps the {@code i}th and {@code j}th elements in this permutation.
+	 * Swaps the {@code i}-th and {@code j}-th elements in this permutation.
 	 * 
 	 * @param i the first index
 	 * @param j the second index
-	 * @throws ArrayIndexOutOfBoundsException if {@code i} or {@code j} is out
-	 *         or range @{code [0, size()-1]}
+	 * @throws ArrayIndexOutOfBoundsException if {@code i} or {@code j} is out or range @{code [0, size()-1]}
 	 */
 	public void swap(int i, int j) {
 		int temp = permutation[i];
@@ -107,13 +104,11 @@ public class Permutation implements Variable {
 	}
 
 	/**
-	 * Removes the {@code i}th element and inserts it at the {@code j}th
-	 * position.
+	 * Removes the {@code i}-th element and inserts it at the {@code j}-th position.
 	 * 
 	 * @param i the first index
 	 * @param j the second index
-	 * @throws ArrayIndexOutOfBoundsException if {@code i} or {@code j} is out
-	 *         or range @{code [0, size()-1]}
+	 * @throws ArrayIndexOutOfBoundsException if {@code i} or {@code j} is out or range @{code [0, size()-1]}
 	 */
 	public void insert(int i, int j) {
 		int temp = permutation[i];
@@ -145,50 +140,63 @@ public class Permutation implements Variable {
 	 * Sets the permutation array.
 	 * 
 	 * @param permutation the permutation array
-	 * @throws IllegalArgumentException if the permutation array is not a valid
-	 *         permutation
+	 * @throws IllegalArgumentException if the permutation array is not a valid permutation
 	 */
 	public void fromArray(int[] permutation) {
-		if (!isPermutation(permutation)) {
-			throw new IllegalArgumentException("invalid permutation");
+		if (this.permutation != null) {
+			Validate.that("permutation.length", permutation.length).isEqualTo(this.permutation.length);
 		}
 		
-		if (this.permutation.length != permutation.length) {
-			throw new IllegalArgumentException("invalid permutation length");
-		}
-
+		validatePermutation(permutation);
+		
 		this.permutation = permutation.clone();
+	}
+	
+	/**
+	 * Validate the given array is a permutation.
+	 * 
+	 * @param permutation the permutation array
+	 * @throws IllegalArgumentException if the permutation array is not a valid permutation
+	 */
+	protected static void validatePermutation(int[] permutation) {
+		BitSet bits = new BitSet(permutation.length);
+		
+		for (int i = 0; i < permutation.length; i++) {
+			Validate.that("permutation[i]", permutation[i]).isBetween(0, permutation.length - 1);
+			
+			if (bits.get(permutation[i])) {
+				Validate.that("permutation", permutation).fails("Duplicate value " + permutation[i] + " at index " + i);
+			}
+			
+			bits.set(permutation[i]);
+		}
+		
+		if (bits.cardinality() != permutation.length) {
+			Validate.that("permutation", permutation).fails("Missing value " + bits.nextClearBit(0));
+		}
 	}
 
 	/**
-	 * Returns {@code true} if the specified permutation is valid; {@code false}
-	 * otherwise.
+	 * Returns {@code true} if the specified permutation is valid; {@code false} otherwise.
 	 * 
 	 * @param permutation the permutation array
-	 * @return {@code true} if the specified permutation is valid; {@code false}
-	 *         otherwise
+	 * @return {@code true} if the specified permutation is valid; {@code false} otherwise
 	 */
 	public static boolean isPermutation(int[] permutation) {
-		for (int i = 0; i < permutation.length; i++) {
-			boolean contains = false;
-			for (int j = 0; j < permutation.length; j++) {
-				if (permutation[j] == i) {
-					contains = true;
-					break;
-				}
-			}
-
-			if (!contains) {
-				return false;
-			}
+		try {
+			validatePermutation(permutation);
+			return true;
+		} catch (IllegalArgumentException e) {
+			return false;
 		}
-
-		return true;
 	}
 	
 	@Override
 	public int hashCode() {
-		return new HashCodeBuilder().append(permutation).toHashCode();
+		return new HashCodeBuilder()
+				.appendSuper(super.hashCode())
+				.append(permutation)
+				.toHashCode();
 	}
 
 	@Override
@@ -200,7 +208,9 @@ public class Permutation implements Variable {
 		} else {
 			Permutation rhs = (Permutation)obj;
 			
-			return new EqualsBuilder().append(permutation, rhs.permutation)
+			return new EqualsBuilder()
+					.appendSuper(super.equals(obj))
+					.append(permutation, rhs.permutation)
 					.isEquals();
 		}
 	}
@@ -208,6 +218,80 @@ public class Permutation implements Variable {
 	@Override
 	public void randomize() {
 		PRNG.shuffle(permutation);
+	}
+	
+	@Override
+	public String getDefinition() {
+		if (name == null) {
+			return Defined.createDefinition(Variable.class, Permutation.class, size());
+		} else {
+			return Defined.createDefinition(Variable.class, Permutation.class, name, size());
+		}
+	}
+	
+	@Override
+	public String toString() {
+		return encode();
+	}
+	
+	@Override
+	public String encode() {
+		StringBuilder sb = new StringBuilder();
+		int[] array = toArray();
+
+		sb.append('[');
+		
+		for (int i=0; i<array.length; i++) {
+			if (i > 0) {
+				sb.append(',');
+			}
+			
+			sb.append(array[i]);
+		}
+		
+		sb.append(']');
+		return sb.toString();
+	}
+	
+	@Override
+	public void decode(String value) {
+		if (value.startsWith("[") && value.endsWith("]")) {
+			value = value.substring(1, value.length()-1);
+		}
+		
+		String[] tokens = value.split(",");
+		int[] array = new int[tokens.length];
+		
+		for (int i=0; i<tokens.length; i++) {
+			array[i] = Integer.parseInt(tokens[i]);
+		}
+		
+		fromArray(array);
+	}
+	
+	/**
+	 * Returns the value stored in a permutation decision variable.
+	 * 
+	 * @param variable the decision variable
+	 * @return the value stored in a permutation decision variable
+	 * @throws IllegalArgumentException if the decision variable is not of type {@link Permutation}
+	 */
+	public static int[] getPermutation(Variable variable) {
+		Permutation permutation = Validate.that("variable", variable).isA(Permutation.class);
+		return permutation.toArray();
+	}
+	
+	/**
+	 * Sets the value of a permutation decision variable.
+	 * 
+	 * @param variable the decision variable
+	 * @param values the permutation to assign the permutation decision variable
+	 * @throws IllegalArgumentException if the decision variable is not of type {@link Permutation}
+	 * @throws IllegalArgumentException if {@code values} is not a valid permutation
+	 */
+	public static void setPermutation(Variable variable, int[] values) {
+		Permutation permutation = Validate.that("variable", variable).isA(Permutation.class);
+		permutation.fromArray(values);
 	}
 
 }

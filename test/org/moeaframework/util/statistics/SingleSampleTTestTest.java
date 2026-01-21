@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -18,12 +18,9 @@
 package org.moeaframework.util.statistics;
 
 import org.apache.commons.math3.stat.inference.TestUtils;
-import org.junit.Assert;
 import org.junit.Test;
+import org.moeaframework.Assert;
 
-/**
- * Tests the {@link SingleSampleTTest} class.
- */
 public class SingleSampleTTestTest {
 
 	/**
@@ -32,35 +29,16 @@ public class SingleSampleTTestTest {
 	@Test
 	public void testExample() {
 		SingleSampleTTest test = new SingleSampleTTest(5.0);
-		test.add(9);
-		test.add(10);
-		test.add(8);
-		test.add(4);
-		test.add(8);
-		test.add(3);
-		test.add(0);
-		test.add(10);
-		test.add(15);
-		test.add(9);
+		test.addAll(new double[] { 9, 10, 8, 4, 8, 3, 0, 10, 15, 9 });
 
-		Assert.assertEquals(1.94, TestUtils.t(test.getMean(), test.categorize()
-				.get(0)), 0.01);
+		Assert.assertEquals(1.94, TestUtils.t(test.getMean(), test.categorize().get(0)), 0.01);
 		Assert.assertFalse(test.test(0.05));
 	}
 	
 	@Test
 	public void testAllEqual() {
 		SingleSampleTTest test = new SingleSampleTTest(10.0);
-		test.add(10);
-		test.add(10);
-		test.add(10);
-		test.add(10);
-		test.add(10);
-		test.add(10);
-		test.add(10);
-		test.add(10);
-		test.add(10);
-		test.add(10);
+		test.addAll(new double[] { 10, 10, 10, 10, 10, 10, 10, 10, 10, 10 });
 
 		Assert.assertFalse(test.test(0.05));
 		Assert.assertFalse(test.test(0.01));

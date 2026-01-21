@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -18,13 +18,12 @@
 package org.moeaframework.core.indicator;
 
 import org.apache.commons.math3.stat.StatUtils;
-import org.moeaframework.core.Indicator;
-import org.moeaframework.core.NondominatedPopulation;
-import org.moeaframework.core.Problem;
 import org.moeaframework.core.Solution;
+import org.moeaframework.core.population.NondominatedPopulation;
+import org.moeaframework.problem.Problem;
 
 /**
- * Spacing metric. Represents the spread of the Pareto front.
+ * Spacing metric.  Represents the spread of the Pareto front.
  */
 public class Spacing implements Indicator {
 
@@ -48,16 +47,13 @@ public class Spacing implements Indicator {
 	}
 
 	/**
-	 * Computes the spread metric for the specified problem given an
-	 * approximation set.
+	 * Computes the spread metric for the specified problem given an approximation set.
 	 * 
 	 * @param problem the problem
 	 * @param approximationSet an approximation set for the problem
-	 * @return the spread metric for the specified problem given an
-	 *         approximation set
+	 * @return the spread metric for the specified problem given an approximation set
 	 */
-	static double evaluate(Problem problem,
-			NondominatedPopulation approximationSet) {
+	static double evaluate(Problem problem, NondominatedPopulation approximationSet) {
 		if (approximationSet.size() < 2) {
 			return 0.0;
 		}
@@ -81,8 +77,7 @@ public class Spacing implements Indicator {
 						continue;
 					}
 					
-					min = Math.min(min, IndicatorUtils.manhattanDistance(
-							problem, solutionI, solutionJ));
+					min = Math.min(min, solutionI.manhattanDistance(solutionJ));
 				}
 			}
 

@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,32 +17,28 @@
  */
 package org.moeaframework.core.spi;
 
-import org.moeaframework.core.NondominatedPopulation;
-import org.moeaframework.core.Problem;
+import java.util.HashSet;
+import java.util.Set;
+
+import org.moeaframework.core.Epsilons;
+import org.moeaframework.core.population.NondominatedPopulation;
+import org.moeaframework.problem.Problem;
 
 /**
- * Defines an SPI for instantiation optimization problems. Problems are
- * identified by a unique name. The methods of the provider must return {@code
- * null} if the problem is not supported by the provider.
+ * Defines a SPI for creating named optimization problems.
  * <p>
- * If the provider can supply the problem but an error occurred during
- * instantiation, the provider may throw a {@link ProviderNotFoundException}
- * along with the details causing the exception.
+ * To create a custom {@code ProblemProvider}:
+ * <ol>
+ *   <li>Extend this class and implement the abstract methods.
+ *   <li>Create the file {@code META-INF/services/org.moeaframework.core.spi.ProblemProvider} with a line identifying
+ *       the fully-qualified class name of the custom provider.
+ *   <li>Compile and bundle the {@code .class} file(s) along with the {@code META-INF} folder into a JAR.
+ *   <li>Include this JAR on the classpath.
+ * </ol>
+ * Providers can also be registered directly with {@link ProblemFactory}.
  * <p>
- * To provide a custom {@code ProblemProvider}, first extend this class and
- * implement the two abstract methods. Next, build a JAR file containing the
- * custom provider. Within the JAR file, create the file
- * {@code META-INF/services/org.moeaframework.core.spi.ProblemProvider}
- * containing on a single line the class name of the custom provider. Lastly,
- * add this JAR file to the classpath. Once these steps are completed, the
- * problem(s) are now accessible via the
- * {@link ProblemFactory#getProblem(String)} and
- * {@link ProblemFactory#getReferenceSet(String)} methods.
- * <p>
- * As problems names are often used in file names, it is best to avoid
- * characters which are not compatible with the file system.  It is suggested
- * that names match the following regular expression:  
- * {@code ^[a-zA-Z0-9()\-,]+$}.
+ * As problems names are often used in file names, it is best to avoid characters which are not compatible with the
+ * file system.  It is suggested that names match the following regular expression: {@code ^[a-zA-Z0-9()\-,]+$}.
  */
 public abstract class ProblemProvider {
 
@@ -52,27 +48,44 @@ public abstract class ProblemProvider {
 	public ProblemProvider() {
 		super();
 	}
+	
+	/**
+	 * Returns the problem names to appear in the diagnostic tool.  For best results, only include problems with two
+	 * objectives and have a defined reference set.
+	 * 
+	 * @return the problem names to appear in the diagnostic tool
+	 */
+	public Set<String> getDiagnosticToolProblems() {
+		return new HashSet<>();
+	}
 
 	/**
-	 * Returns the problem with the specified name, or {@code null} if this
-	 * provider does not support the problem.
+	 * Returns the problem with the specified name, or {@code null} if this provider does not support the problem.
 	 * 
 	 * @param name the problem name
-	 * @return the problem with the specified name, or {@code null} if this
-	 *         provider does not support the problem
+	 * @return the problem instance or {@code null}
+	 * @throws ProviderException if the creation of the problem failed for any reason
 	 */
 	public abstract Problem getProblem(String name);
 
 	/**
-	 * Returns the reference set for the specified problem, or {@code null} if
-	 * this provider does not support the problem or no reference set is
-	 * available.
+	 * Returns the reference set for the specified problem, or {@code null} if this provider does not support the
+	 * problem or no reference set is available.
 	 * 
 	 * @param name the problem name
-	 * @return the reference set for the specified problem, or {@code null} if
-	 *         this provider does not support the problem or no reference set
-	 *         is available
+	 * @return the reference set or {@code null}
 	 */
 	public abstract NondominatedPopulation getReferenceSet(String name);
+	
+	/**
+	 * Returns the recommended or default &epsilon; values for the specified problem, or {@code null} if this provider
+	 * does not support the problem or no defaults are provided.
+	 * 
+	 * @param name the problem name
+	 * @return the &epsilon; values for the specified problem or {@code null}
+	 */
+	public Epsilons getEpsilons(String name) {
+		return null;
+	}
 
 }

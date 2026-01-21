@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,239 +17,145 @@
  */
 package org.moeaframework.core.operator;
 
+import java.util.List;
+
 import org.apache.commons.math3.util.ArithmeticUtils;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.moeaframework.TestThresholds;
-import org.moeaframework.core.Population;
-import org.moeaframework.core.Settings;
+import org.moeaframework.Assert;
+import org.moeaframework.CallCounter;
+import org.moeaframework.Counter;
+import org.moeaframework.TestEnvironment;
 import org.moeaframework.core.Solution;
-import org.moeaframework.core.Variation;
+import org.moeaframework.core.attribute.OperatorIndex;
+import org.moeaframework.core.population.Population;
+import org.moeaframework.core.selection.UniformSelection;
+import org.moeaframework.mock.MockSolution;
+import org.moeaframework.mock.MockVariation;
 
-/**
- * Tests the {@link AdaptiveMultimethodVariation} class.
- */
 public class AdaptiveMultimethodVariationTest {
 	
-	/**
-	 * The shared population used for testing.
-	 */
 	private Population population;
-	
-	/**
-	 * The shared adaptive multhmethod variation operator used for testing.
-	 */
 	private AdaptiveMultimethodVariation variation;
+	private List<CallCounter<Variation>> counters;
 	
-	/**
-	 * A dummy variation operator that counts the number of invocations of
-	 * {@code evolve}.
-	 */
-	private static class DummyVariation implements Variation {
-
-		/**
-		 * The arity of this operator.
-		 */
-		private final int arity;
-		
-		/**
-		 * The number of invocations of the {@code evolve} method.
-		 */
-		private int count = 0;
-		
-		/**
-		 * Constructs a dummy variation operator with the specified arity.
-		 * 
-		 * @param arity the arity of this operator
-		 */
-		public DummyVariation(int arity) {
-			super();
-			this.arity = arity;
-		}
-		
-		@Override
-		public int getArity() {
-			return arity;
-		}
-
-		@Override
-		public Solution[] evolve(Solution[] parents) {
-			count++;
-			Assert.assertEquals(arity, parents.length);
-			return new Solution[0];
-		}
-		
-	}
-	
-	/**
-	 * Creates the shared objects used by these tests.
-	 */
 	@Before
 	public void setUp() {
-		population = new Population();
+		Solution s1 = MockSolution.of();
+		Solution s2 = MockSolution.of();
+		Solution s3 = MockSolution.of();
 		
-		Solution s1 = new Solution(0, 0);
-		Solution s2 = new Solution(0, 0);
-		Solution s3 = new Solution(0, 0);
+		OperatorIndex.setAttribute(s1, 0);
+		OperatorIndex.setAttribute(s2, 1);
+		OperatorIndex.setAttribute(s3, 0);
 		
-		s1.setAttribute(AdaptiveMultimethodVariation.OPERATOR_ATTRIBUTE, 0);
-		s2.setAttribute(AdaptiveMultimethodVariation.OPERATOR_ATTRIBUTE, 1);
-		s3.setAttribute(AdaptiveMultimethodVariation.OPERATOR_ATTRIBUTE, 0);
+		population = new Population(List.of(s1, s2, s3));
 		
-		population.add(s1);
-		population.add(s2);
-		population.add(s3);
+		counters = List.of(
+				CallCounter.of(new MockVariation(1)),
+				CallCounter.of(new MockVariation(3)));
 		
 		variation = new AdaptiveMultimethodVariation(population);
+		
+		for (CallCounter<Variation> counter : counters) {
+			variation.addOperator(counter.getProxy());
+		}
 	}
 	
-	/**
-	 * Removes references to shared objects so they can be garbage collected.
-	 */
 	@After
 	public void tearDown() {
 		population = null;
 		variation = null;
 	}
 	
-	/**
-	 * Tests if an exception is thrown when calling the {@code getArity()}
-	 * method with no operators.
-	 */
-	@Test(expected = Exception.class)
+	@Test(expected = IllegalStateException.class)
 	public void testGetArityNoOperators() {
+		variation = new AdaptiveMultimethodVariation(population);
 		variation.getArity();
 	}
 
-	/**
-	 * Tests if an exception is thrown when calling the {@code evolve()} method
-	 * with no operators.
-	 */
-	@Test(expected = Exception.class)
+	@Test(expected = IllegalStateException.class)
 	public void testEvolveNoOperators() {
+		variation = new AdaptiveMultimethodVariation(population);
 		variation.evolve(null);
 	}
 	
-	/**
-	 * Tests if the probabilities used are correct.
-	 */
+	@Test
+	public void testArity() {
+		Assert.assertEquals(3, variation.getArity());
+	}
+	
 	@Test
 	public void testProbabilities() {
-		variation.addOperator(new DummyVariation(1));
-		variation.addOperator(new DummyVariation(3));
-		
-		Assert.assertEquals(3, variation.getArity());
-		
-		Assert.assertEquals(3.0/5.0, variation.getOperatorProbability(0), 
-				Settings.EPS);
-		Assert.assertEquals(2.0/5.0, variation.getOperatorProbability(1),
-				Settings.EPS);
+		Assert.assertEquals(3.0/5.0, variation.getOperatorProbability(0), TestEnvironment.HIGH_PRECISION);
+		Assert.assertEquals(2.0/5.0, variation.getOperatorProbability(1), TestEnvironment.HIGH_PRECISION);
 		
 		assertActualSelectionProbabilities(variation, 3.0/5.0, 2.0/5.0);
 	}
 	
-	/**
-	 * Tests if the probabilities used are correct for an initial population.
-	 */
 	@Test
 	public void testProbabilitiesInitialPopulation() {
-		variation.addOperator(new DummyVariation(2));
-		variation.addOperator(new DummyVariation(2));
-		
-		Assert.assertEquals(2, variation.getArity());
-		
 		for (Solution solution : population) {
-			solution.removeAttribute(
-					AdaptiveMultimethodVariation.OPERATOR_ATTRIBUTE);
+			OperatorIndex.removeAttribute(solution);
 		}
 		
-		Assert.assertEquals(0.5, variation.getOperatorProbability(0), 
-				Settings.EPS);
-		Assert.assertEquals(0.5, variation.getOperatorProbability(1),
-				Settings.EPS);
+		Assert.assertEquals(0.5, variation.getOperatorProbability(0), TestEnvironment.HIGH_PRECISION);
+		Assert.assertEquals(0.5, variation.getOperatorProbability(1), TestEnvironment.HIGH_PRECISION);
 		
 		assertActualSelectionProbabilities(variation, 0.5, 0.5);
 	}
 	
 	/**
-	 * Tests if the actual selection probabilities are equal to the expected
-	 * selection probabilities.
+	 * Tests if the actual selection probabilities are equal to the expected selection probabilities.
 	 * 
 	 * @param variation the variation operator
 	 * @param probabilities the expected selection probabilities
 	 */
-	private void assertActualSelectionProbabilities(
-			AdaptiveMultimethodVariation variation, double... probabilities) {
+	private void assertActualSelectionProbabilities(AdaptiveMultimethodVariation variation, double... probabilities) {
 		UniformSelection selection = new UniformSelection();
 		
-		for (int i=0; i<TestThresholds.SAMPLES; i++) {
-			variation.evolve(selection.select(variation.getArity(), 
-					population));
+		for (int i=0; i<TestEnvironment.SAMPLES; i++) {
+			variation.evolve(selection.select(variation.getArity(), population));
 		}
 		
-		Assert.assertEquals(variation.getNumberOfOperators(), 
-				probabilities.length);
+		Assert.assertEquals(variation.getNumberOfOperators(), probabilities.length);
 		
 		for (int i=0; i<variation.getNumberOfOperators(); i++) {
-			int count = ((DummyVariation)variation.getOperator(i)).count;
+			int count = counters.get(i).getTotalCallCount("evolve");
 			
-			Assert.assertEquals(probabilities[i], 
-					count / (double)TestThresholds.SAMPLES,
-					TestThresholds.STATISTICS_EPS);
+			Assert.assertEquals(probabilities[i], count / (double)TestEnvironment.SAMPLES,
+					TestEnvironment.LOW_PRECISION);
 		}
 	}
 	
-	/**
-	 * Extends {@link AdaptiveMultimethodVariation} to count the number of
-	 * invocations to {@link #getOperatorProbabilities()}.
-	 */
-	private class AdaptiveMultimethodVariationCounter extends
-	AdaptiveMultimethodVariation {
-		
-		private int count = 0;
-
-		public AdaptiveMultimethodVariationCounter(Population archive) {
-			super(archive);
-		}
-
-		@Override
-		protected double[] getOperatorProbabilities() {
-			count++;
-			return super.getOperatorProbabilities();
-		}
-		
-		public int getCount() {
-			return count;
-		}
-		
-	}
-	
-	/**
-	 * Tests if the number of invocations between probability updates matches
-	 * the UPDATE_WINDOW.
-	 */
 	@Test
 	public void testProbabilityUpdateInvocationCount() {
-		AdaptiveMultimethodVariationCounter variation = 
-				new AdaptiveMultimethodVariationCounter(population);
-		variation.addOperator(new DummyVariation(2));
-		variation.addOperator(new DummyVariation(2));
+		Counter<AdaptiveMultimethodVariation> counter = new Counter<>();
+		
+		AdaptiveMultimethodVariation variation = new AdaptiveMultimethodVariation(population) {
+			
+			@Override
+			protected double[] getOperatorProbabilities() {
+				counter.incrementAndGet(this);
+				return super.getOperatorProbabilities();
+			}
+			
+		};
+		
+		variation.addOperator(new MockVariation(2));
+		variation.addOperator(new MockVariation(2));
 		
 		UniformSelection selection = new UniformSelection();
 		
 		//ensure sufficient number of samples to trigger off-by-one error
-		int numberOfSamples = ArithmeticUtils.pow(variation.getUpdateWindow(),
-				3);
+		int numberOfSamples = ArithmeticUtils.pow(variation.getUpdateWindow(), 3);
 		
 		for (int i=0; i<numberOfSamples; i++) {
-			variation.evolve(selection.select(variation.getArity(), 
-					population));
+			variation.evolve(selection.select(variation.getArity(), population));
 		}
 		
-		Assert.assertEquals(numberOfSamples / variation.getUpdateWindow(), 
-				variation.getCount());
+		Assert.assertEquals(numberOfSamples / variation.getUpdateWindow(), counter.get(variation));
 	}
 	
 }

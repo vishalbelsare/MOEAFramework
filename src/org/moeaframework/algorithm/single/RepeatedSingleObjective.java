@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,78 +17,96 @@
  */
 package org.moeaframework.algorithm.single;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Properties;
+import java.util.function.BiFunction;
 
 import org.moeaframework.algorithm.AbstractAlgorithm;
-import org.moeaframework.core.Algorithm;
-import org.moeaframework.core.NondominatedPopulation;
-import org.moeaframework.core.Problem;
+import org.moeaframework.algorithm.Algorithm;
+import org.moeaframework.core.TypedProperties;
+import org.moeaframework.core.population.NondominatedPopulation;
 import org.moeaframework.core.spi.AlgorithmFactory;
-import org.moeaframework.util.TypedProperties;
+import org.moeaframework.problem.Problem;
 import org.moeaframework.util.weights.RandomGenerator;
+import org.moeaframework.util.weights.WeightGenerator;
 
 /**
- * Instantiates and runs several instances of a single objective algorithm.
- * This is intended to be used with single-objective optimizers that use
- * weighted aggregation of the objectives.  This is based on the Repeated Single
- * Objective (RSO) algorithm by E. J. Hughes [1], where he investigates running
- * many single-objective optimizers (one many) compared to running a single
- * many-objective optimizer (many once).
+ * Instantiates and runs several instances of a single objective algorithm.  This is intended to be used with
+ * single-objective optimizers that use weighted aggregation of the objectives.  This is based on the Repeated Single
+ * Objective (RSO) algorithm by E. J. Hughes [1], where they investigate running many single-objective optimizers
+ * (one many) compared to running a single many-objective optimizer (many once).
  * <p>
- * Be mindful of how running multiple instances affects the {@link #step()}.
- * Each step performs one iteration of each instance.  Thus, given 50 instances
- * of an algorithm with a population size of 100, then 5000 evaluations will
- * occur each step.  In [1], they decrease the population size for the single
- * objective optimizers.
+ * Be mindful of how running multiple instances affects the {@link #step()}.  Each step performs one iteration of each
+ * instance.  Thus, given 50 instances of an algorithm with a population size of 100, then 5000 evaluations will occur
+ * each step.  In [1], they decrease the population size for the single objective optimizers.
  * <p>
  * References:
  * <ol>
- *   <li>E. J. Hughes.  "Evolutionary many-objective optimization: many once or
- *       one many."  2005 IEEE Congress on Evolutionary Computation,
- *       pp. 222-227.
+ *   <li>E. J. Hughes.  "Evolutionary many-objective optimization: many once or one many."  2005 IEEE Congress on
+ *       Evolutionary Computation, pp. 222-227.
  * </ol>
  */
 public class RepeatedSingleObjective extends AbstractAlgorithm {
 	
 	/**
-	 * The name of the algorithm.
-	 */
-	private final String algorithmName;
-	
-	/**
-	 * Any additional algorithm properties.
-	 */
-	private final Properties properties;
-	
-	/**
 	 * A list of the instantiated algorithms.
 	 */
 	private final List<Algorithm> algorithms;
-
+	
 	/**
-	 * Constructs a new instance of the Many-Once algorithm, which runs many
-	 * instances of a single-objective optimizer with varying weights.
+	 * Constructs a new instance of the RSO algorithm using the given single-objective algorithm.  The properties
+	 * are passed to each individual algorithm with the addition of a {@code "weights"} parameter, which is
+	 * randomly-generated for each instance.
 	 * 
-	 * @param problem the problem
+	 * @param problem the problem to solve
 	 * @param algorithmName the algorithm name
 	 * @param properties the algorithm properties
 	 * @param instances the number of instances
 	 */
-	public RepeatedSingleObjective(Problem problem, String algorithmName, Properties properties, int instances) {
+	public RepeatedSingleObjective(Problem problem, int instances, String algorithmName, TypedProperties properties) {
+		this(problem, instances, (p, w) -> {
+			TypedProperties localProperties = properties.copy();
+			localProperties.setDoubleArray("weights", w);
+			
+			return AlgorithmFactory.getInstance().getAlgorithm(algorithmName, localProperties, p);
+		});
+	}
+
+	
+	/**
+	 * Constructs a new instance of the RSO algorithm using randomly-generated weights.
+	 * 
+	 * @param problem the problem to solve
+	 * @param instances the number of single-objective algorithm instances to create using random weights
+	 * @param creator function that creates a single-objective algorithm for the given weight vector
+	 */
+	public RepeatedSingleObjective(Problem problem, int instances, BiFunction<Problem, double[], Algorithm> creator) {
+		this(problem, new RandomGenerator(problem.getNumberOfObjectives(), instances), creator);
+	}
+	
+	/**
+	 * Constructs a new instance of the RSO algorithm.  The weight generator defines the number of instances.
+	 * 
+	 * @param problem the problem to solve
+	 * @param weightGenerator generates the weight vectors used to configure each single-objective algorithm
+	 * @param creator function that creates a single-objective algorithm for the given weight vector
+	 */
+	public RepeatedSingleObjective(Problem problem, WeightGenerator weightGenerator,
+			BiFunction<Problem, double[], Algorithm> creator) {
 		super(problem);
-		this.algorithmName = algorithmName;
-		this.properties = properties;
+		algorithms = new ArrayList<>();
 		
-		// setup the algorithm instances		
-		List<double[]> weights = new RandomGenerator(
-				problem.getNumberOfObjectives(), instances).generate();
-		algorithms = new ArrayList<Algorithm>();
-		
-		for (double[] weight : weights) {
-			algorithms.add(createInstance(weight));
+		for (double[] weight : weightGenerator.generate()) {
+			algorithms.add(creator.apply(problem, weight));
 		}
+	}
+	
+	@Override
+	public String getName() {
+		return "RSO";
 	}
 
 	@Override
@@ -114,7 +132,7 @@ public class RepeatedSingleObjective extends AbstractAlgorithm {
 	}
 	
 	@Override
-	protected void initialize() {
+	public void initialize() {
 		super.initialize();
 		
 		// call iterate to force each algorithm to initialize
@@ -128,21 +146,28 @@ public class RepeatedSingleObjective extends AbstractAlgorithm {
 		}
 	}
 	
-	/**
-	 * Constructs a new instance of the algorithm using the given weights.
-	 * This assumes the weights are passed using the {@code "weights"} property.
-	 * 
-	 * @param weights the weights
-	 * @return the new algorithm instance
-	 */
-	protected Algorithm createInstance(double[] weights) {
-		TypedProperties typedProperties = new TypedProperties(
-				new Properties(properties));
+	@Override
+	public void saveState(ObjectOutputStream stream) throws IOException {
+		super.saveState(stream);
+		stream.writeInt(algorithms.size());
 		
-		typedProperties.setDoubleArray("weights", weights);
+		for (Algorithm algorithm : algorithms) {
+			algorithm.saveState(stream);
+		}
+	}
+
+	@Override
+	public void loadState(ObjectInputStream stream) throws IOException, ClassNotFoundException {
+		super.loadState(stream);
+		int expectedSize = stream.readInt();
 		
-		return AlgorithmFactory.getInstance().getAlgorithm(
-				algorithmName, typedProperties.getProperties(), problem);
+		if (algorithms.size() != expectedSize) {
+			throw new IOException("The number of instances used by RSO differs from the loaded state");
+		}
+		
+		for (Algorithm algorithm : algorithms) {
+			algorithm.loadState(stream);
+		}
 	}
 
 }

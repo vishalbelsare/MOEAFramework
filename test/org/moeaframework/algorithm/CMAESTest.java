@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -18,64 +18,87 @@
 package org.moeaframework.algorithm;
 
 import org.junit.Test;
-import org.moeaframework.TestUtils;
-import org.moeaframework.core.Problem;
+import org.junit.runner.RunWith;
+import org.moeaframework.Assert;
+import org.moeaframework.CIRunner;
+import org.moeaframework.Slow;
 import org.moeaframework.core.Solution;
+import org.moeaframework.core.TypedProperties;
+import org.moeaframework.core.configuration.ConfigurationException;
+import org.moeaframework.core.fitness.AdditiveEpsilonIndicatorFitnessEvaluator;
+import org.moeaframework.core.fitness.HypervolumeFitnessEvaluator;
+import org.moeaframework.core.spi.AlgorithmFactory;
 import org.moeaframework.core.spi.ProblemFactory;
-import org.moeaframework.core.variable.EncodingUtils;
-import org.moeaframework.problem.AbstractProblem;
+import org.moeaframework.core.variable.RealVariable;
+import org.moeaframework.mock.MockRealProblem;
+import org.moeaframework.problem.Problem;
+import org.moeaframework.problem.single.Rosenbrock;
 
-/**
- * Tests the {@link CMAES} class.
- */
-public class CMAESTest {
-	
-	// TODO: extend with better tests
+@RunWith(CIRunner.class)
+public class CMAESTest extends AlgorithmTest {
 	
 	@Test
 	public void testSingleObjective() {
-		// the rosenbrock problem
-		AbstractProblem problem = new AbstractProblem(2, 1, 0) {
-
-			@Override
-			public void evaluate(Solution solution) {
-				double result = 0.0;
-				double[] x = EncodingUtils.getReal(solution);
-
-				for (int i = 0; i < x.length-1; i++) {
-					result += 100 * (x[i]*x[i] - x[i+1])*(x[i]*x[i] - x[i+1]) + (x[i] - 1)*(x[i] - 1);
-				}
-
-				solution.setObjective(0, result);
-			}
-
-			@Override
-			public Solution newSolution() {
-				Solution solution = new Solution(2, 1, 0);
-				solution.setVariable(0, EncodingUtils.newReal(-10, 10));
-				solution.setVariable(1, EncodingUtils.newReal(-10, 10));
-				return solution;
-			}
-
-		};
-
-		CMAES cmaes = new CMAES(problem, 100);
+		Rosenbrock problem = new Rosenbrock();
+		CMAES algorithm = new CMAES(problem);
 
 		for (int i = 0; i < 100; i++) {
-			cmaes.step();
+			algorithm.step();
 		}
 		
-		TestUtils.assertEquals(0.0, cmaes.getResult().get(0).getObjective(0));
+		Assert.assertEquals(1, algorithm.getResult().size());
+		
+		Solution solution = algorithm.getResult().get(0);
+		
+		Assert.assertArrayEquals(new double[] { 1.0, 1.0 }, RealVariable.getReal(solution), 0.001);
+		Assert.assertArrayEquals(new double[] { 0.0 }, solution.getObjectiveValues(), 0.001);
 	}
 
 	@Test
 	public void testMultiObjective() {
 		Problem problem = ProblemFactory.getInstance().getProblem("DTLZ2_2");
-		CMAES cmaes = new CMAES(problem, 100);
+		CMAES algorithm = new CMAES(problem);
 
 		for (int i = 0; i < 100; i++) {
-			cmaes.step();
+			algorithm.step();
 		}
+	}
+	
+	@Test
+	@Slow
+	public void testCheckConsistency() {
+		test("DTLZ2_2",
+				"CMA-ES", new TypedProperties(),
+				"CMA-ES", TypedProperties.of("checkConsistency", true),
+				false,
+				AlgorithmFactory.getInstance());
+	}
+	
+	@Test
+	public void testConfiguration() {
+		Problem problem = new MockRealProblem();
+		CMAES algorithm = new CMAES(problem);
+		
+		Assert.assertEquals("crowding", algorithm.getConfiguration().getString("indicator"));
+		
+		algorithm.applyConfiguration(TypedProperties.of("indicator", "epsilon"));
+		Assert.assertInstanceOf(AdditiveEpsilonIndicatorFitnessEvaluator.class, algorithm.getFitnessEvaluator());
+		Assert.assertEquals("epsilon", algorithm.getConfiguration().getString("indicator"));
+		
+		algorithm.applyConfiguration(TypedProperties.of("indicator", "hypervolume"));
+		Assert.assertInstanceOf(HypervolumeFitnessEvaluator.class, algorithm.getFitnessEvaluator());
+		Assert.assertEquals("hypervolume", algorithm.getConfiguration().getString("indicator"));
+		
+		algorithm.applyConfiguration(TypedProperties.of("indicator", "crowding"));
+		Assert.assertNull(algorithm.getFitnessEvaluator());
+	}
+	
+	@Test(expected = ConfigurationException.class)
+	public void testConfigurationInvalidIndicator() {
+		Problem problem = new MockRealProblem();
+		CMAES algorithm = new CMAES(problem);
+		
+		algorithm.applyConfiguration(TypedProperties.of("indicator", "foo"));
 	}
 	
 }

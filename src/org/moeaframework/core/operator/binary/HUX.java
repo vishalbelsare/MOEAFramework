@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,52 +17,41 @@
  */
 package org.moeaframework.core.operator.binary;
 
-import org.moeaframework.core.FrameworkException;
 import org.moeaframework.core.PRNG;
-import org.moeaframework.core.Solution;
-import org.moeaframework.core.Variable;
-import org.moeaframework.core.Variation;
+import org.moeaframework.core.TypeMismatchException;
+import org.moeaframework.core.configuration.Prefix;
+import org.moeaframework.core.operator.TypeSafe;
+import org.moeaframework.core.operator.TypeSafeCrossover;
 import org.moeaframework.core.variable.BinaryVariable;
 
 /**
- * Half-uniform crossover (HUX) operator. Half of the non-matching bits are
- * swapped between the two parents.
+ * Half-uniform crossover (HUX) operator.  Half of the non-matching bits are swapped between the two parents.
  * <p>
  * This variation operator is type-safe.
  */
-public class HUX implements Variation {
+@TypeSafe
+@Prefix("hux")
+public class HUX extends TypeSafeCrossover<BinaryVariable> {
 
 	/**
-	 * The probability of applying this operator.
+	 * Constructs a HUX operator with a 100% chance of applying this operator to each solution.
 	 */
-	private final double probability;
+	public HUX() {
+		this(1.0);
+	}
 
 	/**
 	 * Constructs a HUX operator.
 	 * 
-	 * @param probability the probability of applying this operator
+	 * @param probability the probability of applying this operator to each solution
 	 */
 	public HUX(double probability) {
-		super();
-		this.probability = probability;
+		super(BinaryVariable.class, probability);
 	}
-
+	
 	@Override
-	public Solution[] evolve(Solution[] parents) {
-		Solution result1 = parents[0].copy();
-		Solution result2 = parents[1].copy();
-
-		for (int i = 0; i < result1.getNumberOfVariables(); i++) {
-			Variable variable1 = result1.getVariable(i);
-			Variable variable2 = result2.getVariable(i);
-
-			if ((PRNG.nextDouble() <= probability)
-					&& (variable1 instanceof BinaryVariable)
-					&& (variable2 instanceof BinaryVariable)) {
-				evolve((BinaryVariable)variable1, (BinaryVariable)variable2);
-			}
-		}
-		return new Solution[] { result1, result2 };
+	public String getName() {
+		return "hux";
 	}
 
 	/**
@@ -70,10 +59,12 @@ public class HUX implements Variation {
 	 * 
 	 * @param v1 the first variable
 	 * @param v2 the second variable
+	 * @throws TypeMismatchException if the variables have different lengths
 	 */
-	public static void evolve(BinaryVariable v1, BinaryVariable v2) {
+	@Override
+	public void evolve(BinaryVariable v1, BinaryVariable v2) {
 		if (v1.getNumberOfBits() != v2.getNumberOfBits()) {
-			throw new FrameworkException("binary variables not same length");
+			throw new TypeMismatchException("Binary variables not same length");
 		}
 
 		for (int i = 0; i < v1.getNumberOfBits(); i++) {
@@ -84,11 +75,6 @@ public class HUX implements Variation {
 				v2.set(i, value);
 			}
 		}
-	}
-
-	@Override
-	public int getArity() {
-		return 2;
 	}
 
 }

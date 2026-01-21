@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -19,16 +19,13 @@ package org.moeaframework.util.tree;
 
 import java.util.List;
 
-import org.junit.Assert;
 import org.junit.Test;
+import org.moeaframework.Assert;
 import org.moeaframework.core.PRNG;
 
-/**
- * Tests the {@link Rules} class.
- */
 public class RulesTest {
 	
-	private int SAMPLES = 100;
+	private static final int SAMPLES = 100;
 	
 	@Test(expected = NoValidNodeException.class)
 	public void testFullWithMissingNode1() {
@@ -139,14 +136,11 @@ public class RulesTest {
 			Node node = PRNG.nextItem(rules.getAvailableNodes());
 	
 			for (Node mutation : rules.listAvailableMutations(node)) {
-				Assert.assertTrue(node.getReturnType().isAssignableFrom(
-						mutation.getReturnType()));
-				Assert.assertEquals(node.getNumberOfArguments(),
-						mutation.getNumberOfArguments());
+				Assert.assertTrue(node.getReturnType().isAssignableFrom(mutation.getReturnType()));
+				Assert.assertEquals(node.getNumberOfArguments(), mutation.getNumberOfArguments());
 				
 				for (int j = 0; j < node.getNumberOfArguments(); j++) {
-					Assert.assertTrue(node.getArgumentType(j).isAssignableFrom(
-							mutation.getArgumentType(j)));
+					Assert.assertTrue(node.getArgumentType(j).isAssignableFrom(mutation.getArgumentType(j)));
 				}
 			}
 		}
@@ -157,8 +151,7 @@ public class RulesTest {
 		Rules rules = new Rules();
 		rules.populateWithDefaults();
 		
-		Class<?>[] types = new Class<?>[] { Number.class, Boolean.class,
-				Object.class, Void.class };
+		Class<?>[] types = new Class<?>[] { Number.class, Boolean.class, Object.class, Void.class };
 		
 		for (int i = 0; i < SAMPLES; i++) {
 			Class<?> type = types[PRNG.nextInt(types.length)];
@@ -166,8 +159,7 @@ public class RulesTest {
 			List<Node> nodes = rules.listAvailableCrossoverNodes(tree, type);
 			
 			for (Node crossover : nodes) {
-				Assert.assertTrue(type.isAssignableFrom(
-						crossover.getReturnType()));
+				Assert.assertTrue(type.isAssignableFrom(crossover.getReturnType()));
 			}
 		}
 	}

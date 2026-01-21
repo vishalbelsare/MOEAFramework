@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -18,12 +18,9 @@
 package org.moeaframework.util.statistics;
 
 import org.apache.commons.math3.stat.inference.TestUtils;
-import org.junit.Assert;
 import org.junit.Test;
+import org.moeaframework.Assert;
 
-/**
- * Tests the {@link TwoSampleTTest} class.
- */
 public class TwoSampleTTestTest {
 
 	/**
@@ -32,19 +29,10 @@ public class TwoSampleTTestTest {
 	@Test
 	public void testIndependentExample() {
 		TwoSampleTTest test = new TwoSampleTTest(true);
-		test.add(11, 0);
-		test.add(1, 0);
-		test.add(0, 0);
-		test.add(2, 0);
-		test.add(0, 0);
-		test.add(11, 1);
-		test.add(11, 1);
-		test.add(5, 1);
-		test.add(8, 1);
-		test.add(4, 1);
+		test.addAll(new double[] { 11, 1, 0, 2, 0 }, 0);
+		test.addAll(new double[] { 11, 11, 5, 8, 4 }, 1);
 
-		Assert.assertEquals(-1.96, TestUtils.t(test.categorize().get(0), test
-				.categorize().get(1)), 0.01);
+		Assert.assertEquals(-1.96, TestUtils.t(test.categorize().get(0), test.categorize().get(1)), 0.01);
 		Assert.assertFalse(test.test(0.05));
 	}
 
@@ -54,29 +42,10 @@ public class TwoSampleTTestTest {
 	@Test
 	public void testDependentExample() {
 		TwoSampleTTest test = new TwoSampleTTest(false);
-		test.add(9, 0);
-		test.add(2, 0);
-		test.add(1, 0);
-		test.add(4, 0);
-		test.add(6, 0);
-		test.add(4, 0);
-		test.add(7, 0);
-		test.add(8, 0);
-		test.add(5, 0);
-		test.add(1, 0);
-		test.add(8, 1);
-		test.add(2, 1);
-		test.add(3, 1);
-		test.add(2, 1);
-		test.add(3, 1);
-		test.add(0, 1);
-		test.add(4, 1);
-		test.add(5, 1);
-		test.add(4, 1);
-		test.add(0, 1);
+		test.addAll(new double[] { 9, 2, 1, 4, 6, 4, 7, 8, 5, 1 }, 0);
+		test.addAll(new double[] { 8, 2, 3, 2, 3, 0, 4, 5, 4, 0 }, 1);
 
-		Assert.assertEquals(2.86, TestUtils.pairedT(test.categorize().get(0),
-				test.categorize().get(1)), 0.02);
+		Assert.assertEquals(2.86, TestUtils.pairedT(test.categorize().get(0), test.categorize().get(1)), 0.02);
 		Assert.assertTrue(test.test(0.05));
 		Assert.assertFalse(test.test(0.01));
 	}
@@ -84,16 +53,8 @@ public class TwoSampleTTestTest {
 	@Test
 	public void testAllEqual() {
 		TwoSampleTTest test = new TwoSampleTTest(true);
-		test.add(10, 0);
-		test.add(10, 0);
-		test.add(10, 0);
-		test.add(10, 0);
-		test.add(10, 0);
-		test.add(10, 1);
-		test.add(10, 1);
-		test.add(10, 1);
-		test.add(10, 1);
-		test.add(10, 1);
+		test.addAll(new double[] { 10, 10, 10, 10, 10 }, 0);
+		test.addAll(new double[] { 10, 10, 10, 10, 10 }, 1);
 
 		Assert.assertFalse(test.test(0.05));
 		Assert.assertFalse(test.test(0.01));

@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -21,19 +21,25 @@ import java.util.List;
 
 import org.moeaframework.core.PRNG;
 import org.moeaframework.core.Solution;
-import org.moeaframework.core.Variable;
-import org.moeaframework.core.Variation;
+import org.moeaframework.core.configuration.Prefix;
+import org.moeaframework.core.configuration.Property;
+import org.moeaframework.core.operator.Mutation;
+import org.moeaframework.core.operator.TypeSafe;
 import org.moeaframework.core.variable.Program;
+import org.moeaframework.core.variable.Variable;
 import org.moeaframework.util.tree.Node;
 import org.moeaframework.util.tree.Rules;
+import org.moeaframework.util.validate.Validate;
 
 /**
- * Mutates a program by randomly selecting nodes in the expression tree and
- * replacing the node with a new, compatible, randomly-selected node.
+ * Mutates a program by randomly selecting nodes in the expression tree and replacing the node with a new, compatible,
+ * randomly-selected node.
  * <p>
  * This operator is type-safe.
  */
-public class PointMutation implements Variation {
+@TypeSafe
+@Prefix("ptm")
+public class PointMutation implements Mutation {
 	
 	/**
 	 * The probability of mutating a node in the tree.
@@ -41,34 +47,60 @@ public class PointMutation implements Variation {
 	private double probability;
 	
 	/**
-	 * Constructs a new point mutation instance.
+	 * Constructs a new point mutation operator with the default settings.
+	 */
+	public PointMutation() {
+		this(0.01);
+	}
+	
+	/**
+	 * Constructs a new point mutation operator.
 	 * 
 	 * @param probability the probability of mutating a node in the tree
 	 */
 	public PointMutation(double probability) {
 		super();
+		setProbability(probability);
+	}
+	
+	@Override
+	public String getName() {
+		return "ptm";
+	}
+
+	/**
+	 * Gets the probability of mutating a node in the tree.
+	 * 
+	 * @return the probability
+	 */
+	public double getProbability() {
+		return probability;
+	}
+
+	/**
+	 * Sets the probability of mutating a node in the tree.
+	 * 
+	 * @param probability the probability (0.0 - 1.0)
+	 */
+	@Property("rate")
+	public void setProbability(double probability) {
+		Validate.that("probability", probability).isProbability();
 		this.probability = probability;
 	}
 
 	@Override
-	public int getArity() {
-		return 1;
-	}
-
-	@Override
-	public Solution[] evolve(Solution[] parents) {
-		Solution result = parents[0].copy();
+	public Solution mutate(Solution parent) {
+		Solution result = parent.copy();
 		
 		for (int i = 0; i < result.getNumberOfVariables(); i++) {
 			Variable variable = result.getVariable(i);
 			
-			if (variable instanceof Program) {
-				Program program = (Program)variable;
-				mutate(program.getArgument(0), program.getRules());
+			if (variable instanceof Program program) {
+				mutate(program.getBody(), program.getRules());
 			}
 		}
 		
-		return new Solution[] { result };
+		return result;
 	}
 	
 	/**

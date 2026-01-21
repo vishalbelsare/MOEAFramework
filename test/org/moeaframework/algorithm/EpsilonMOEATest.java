@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -21,21 +21,21 @@ import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.moeaframework.TestThresholds;
-import org.moeaframework.TestUtils;
-import org.moeaframework.core.EpsilonBoxDominanceArchive;
+import org.moeaframework.Assert;
+import org.moeaframework.TestEnvironment;
 import org.moeaframework.core.PRNG;
-import org.moeaframework.core.Population;
-import org.moeaframework.core.Problem;
 import org.moeaframework.core.Solution;
+import org.moeaframework.core.TypedProperties;
+import org.moeaframework.core.initialization.RandomInitialization;
 import org.moeaframework.core.operator.CompoundVariation;
-import org.moeaframework.core.operator.RandomInitialization;
-import org.moeaframework.core.operator.TournamentSelection;
+import org.moeaframework.core.population.EpsilonBoxDominanceArchive;
+import org.moeaframework.core.population.Population;
+import org.moeaframework.core.selection.TournamentSelection;
 import org.moeaframework.core.spi.ProblemFactory;
+import org.moeaframework.mock.MockRealProblem;
+import org.moeaframework.mock.MockSolution;
+import org.moeaframework.problem.Problem;
 
-/**
- * Tests the {@link EpsilonMOEA} class.
- */
 public class EpsilonMOEATest {
 	
 	private Problem problem;
@@ -72,10 +72,10 @@ public class EpsilonMOEATest {
 		
 		population = new TestPopulation();
 		
-		algorithm = new EpsilonMOEA(problem, population, 
+		algorithm = new EpsilonMOEA(problem, 100, population,
 				new EpsilonBoxDominanceArchive(0.01),
 				new TournamentSelection(2), new CompoundVariation(),
-				new RandomInitialization(problem, 0));
+				new RandomInitialization(problem));
 	}
 	
 	@After
@@ -86,14 +86,9 @@ public class EpsilonMOEATest {
 	
 	@Test
 	public void testAddToPopulationDominated() {
-		Solution solutionA = problem.newSolution();
-		solutionA.setObjectives(new double[] { 0.0, 0.0 });
-		
-		Solution solutionB = problem.newSolution();
-		solutionB.setObjectives(new double[] { 1.0, 1.0 });
-		
-		Solution solutionC = problem.newSolution();
-		solutionC.setObjectives(new double[] { 0.5, 0.5 });
+		Solution solutionA = MockSolution.of(problem).withObjectives(0.0, 0.0);
+		Solution solutionB = MockSolution.of(problem).withObjectives(1.0, 1.0);
+		Solution solutionC = MockSolution.of(problem).withObjectives(0.5, 0.5);
 		
 		for (int i=0; i<10; i++) {
 			population.add(solutionA);
@@ -102,39 +97,61 @@ public class EpsilonMOEATest {
 
 		for (int i=0; i<10; i++) {
 			algorithm.addToPopulation(solutionC);
-			TestUtils.assertEquals(solutionB, population.lastRemovedSolution);
+			Assert.assertEquals(solutionB, population.lastRemovedSolution);
 		}
 		
 		population.lastRemovedIndex = -1;
 		
 		for (int i=0; i<10; i++) {
 			algorithm.addToPopulation(solutionC);
-			TestUtils.assertEquals(-1, population.lastRemovedIndex);
+			Assert.assertEquals(-1, population.lastRemovedIndex);
 		}
 	}
 	
 	@Test
 	public void testAddToPopulationNondominated() {
 		for (int i=0; i<10; i++) {
-			Solution solution = problem.newSolution();
 			double value = PRNG.nextDouble();
-			
-			solution.setObjectives(new double[] { value, 1.0-value });
-			population.add(solution);
+			population.add(MockSolution.of(problem).withObjectives(value, 1.0-value));
 		}
 		
 		DescriptiveStatistics statistics = new DescriptiveStatistics();
 
-		for (int i=0; i<TestThresholds.SAMPLES; i++) {
-			Solution solution = problem.newSolution();
+		for (int i=0; i<TestEnvironment.SAMPLES; i++) {
 			double value = PRNG.nextDouble();
-			
-			solution.setObjectives(new double[] { value, 1.0-value });
-			algorithm.addToPopulation(solution);
+			algorithm.addToPopulation(MockSolution.of(problem).withObjectives(value, 1.0-value));
 			statistics.addValue(population.lastRemovedIndex);
 		}
 		
-		TestUtils.assertUniformDistribution(0, population.size()-1, statistics);
+		Assert.assertUniformDistribution(0, population.size()-1, statistics);
+	}
+	
+	@Test
+	public void testConfiguration() {
+		Problem problem = new MockRealProblem(2);
+		EpsilonMOEA algorithm = new EpsilonMOEA(problem);
+		
+		Assert.assertArrayEquals(algorithm.getArchive().getComparator().getEpsilons().toArray(),
+				algorithm.getConfiguration().getDoubleArray("epsilon"),
+				TestEnvironment.HIGH_PRECISION);
+		
+		algorithm.applyConfiguration(TypedProperties.of("epsilon", 0.1));
+		Assert.assertArrayEquals(new double[] { 0.1 },
+				algorithm.getArchive().getComparator().getEpsilons().toArray(),
+				TestEnvironment.HIGH_PRECISION);
+		
+		Assert.assertArrayEquals(new double[] { 0.1 },
+				algorithm.getConfiguration().getDoubleArray("epsilon"),
+				TestEnvironment.HIGH_PRECISION);
+
+		algorithm.applyConfiguration(TypedProperties.of("epsilon", 0.1, 0.2));
+		Assert.assertArrayEquals(new double[] { 0.1, 0.2 },
+				algorithm.getArchive().getComparator().getEpsilons().toArray(),
+				TestEnvironment.HIGH_PRECISION);
+		
+		Assert.assertArrayEquals(new double[] { 0.1, 0.2 },
+				algorithm.getConfiguration().getDoubleArray("epsilon"),
+				TestEnvironment.HIGH_PRECISION);
 	}
 
 }

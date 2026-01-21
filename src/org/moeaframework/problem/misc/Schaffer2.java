@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -19,13 +19,13 @@ package org.moeaframework.problem.misc;
 
 import org.moeaframework.core.PRNG;
 import org.moeaframework.core.Solution;
-import org.moeaframework.core.variable.EncodingUtils;
+import org.moeaframework.core.variable.RealVariable;
 import org.moeaframework.problem.AbstractProblem;
 import org.moeaframework.problem.AnalyticalProblem;
 
 /**
- * The Schaffer (2) problem.  The Schaffer (2) problem is univariate, with the
- * optimum defined by {@code 1 <= x <= 2} and {@code 4 <= x <= 5}.
+ * The Schaffer (2) problem.  The Schaffer (2) problem is univariate, with the optimum defined by {@code 1 <= x <= 2}
+ * and {@code 4 <= x <= 5}.
  * <p>
  * Properties:
  * <ul>
@@ -35,16 +35,13 @@ import org.moeaframework.problem.AnalyticalProblem;
  * <p>
  * References:
  * <ol>
- *   <li>Schaffer, J. D. (1984).  "Some Experiments in Machine Learning using
- *       Vector Evaluated Genetic Algorithms."  Ph.D. Thesis, Vanderbilt
- *       University, Nashville, USA.
- *   <li>Schaffer, J. D. (1985).  "Multiple Objective Optimization with Vector
- *       Evaluated Genetic Algorithms."  Genetic Algorithms and Their
- *       Applications: Proceedings of the First International Conference on
- *       Genetic Algorithms, pp. 93-100.
- *   <li>Van Veldhuizen, D. A (1999).  "Multiobjective Evolutionary Algorithms: 
- *       Classifications, Analyses, and New Innovations."  Air Force Institute
- *       of Technology, Ph.D. Thesis, Appendix B.
+ *   <li>Schaffer, J. D. (1984).  "Some Experiments in Machine Learning using Vector Evaluated Genetic Algorithms."
+ *       Ph.D. Thesis, Vanderbilt University, Nashville, USA.
+ *   <li>Schaffer, J. D. (1985).  "Multiple Objective Optimization with Vector Evaluated Genetic Algorithms."  Genetic
+ *       Algorithms and Their Applications: Proceedings of the First International Conference on Genetic Algorithms,
+ *       pp. 93-100.
+ *   <li>Van Veldhuizen, D. A (1999).  "Multiobjective Evolutionary Algorithms: Classifications, Analyses, and New
+ *       Innovations."  Air Force Institute of Technology, Ph.D. Thesis, Appendix B.
  * </ol>
  */
 public class Schaffer2 extends AbstractProblem implements AnalyticalProblem {
@@ -58,25 +55,25 @@ public class Schaffer2 extends AbstractProblem implements AnalyticalProblem {
 
 	@Override
 	public void evaluate(Solution solution) {
-		double x = EncodingUtils.getReal(solution.getVariable(0));
+		double x = RealVariable.getReal(solution.getVariable(0));
 		
 		if (x <= 1.0) {
-			solution.setObjective(0, -x);
+			solution.setObjectiveValue(0, -x);
 		} else if (x <= 3.0) {
-			solution.setObjective(0, -2.0 + x);
+			solution.setObjectiveValue(0, -2.0 + x);
 		} else if (x <= 4.0) {
-			solution.setObjective(0, 4.0 - x);
+			solution.setObjectiveValue(0, 4.0 - x);
 		} else {
-			solution.setObjective(0, -4.0 + x);
+			solution.setObjectiveValue(0, -4.0 + x);
 		}
 		
-		solution.setObjective(1, Math.pow(x - 5.0, 2.0));
+		solution.setObjectiveValue(1, Math.pow(x - 5.0, 2.0));
 	}
 
 	@Override
 	public Solution newSolution() {
 		Solution solution = new Solution(1, 2);
-		solution.setVariable(0, EncodingUtils.newReal(-5.0, 10.0));
+		solution.setVariable(0, new RealVariable(-5.0, 10.0));
 		return solution;
 	}
 
@@ -85,9 +82,9 @@ public class Schaffer2 extends AbstractProblem implements AnalyticalProblem {
 		Solution solution = newSolution();
 		
 		if (PRNG.nextBoolean()) {
-			EncodingUtils.setReal(solution.getVariable(0), PRNG.nextDouble(1.0, 2.0));
+			RealVariable.setReal(solution.getVariable(0), PRNG.nextDouble(1.0, 2.0));
 		} else {
-			EncodingUtils.setReal(solution.getVariable(0), PRNG.nextDouble(4.0, 5.0));
+			RealVariable.setReal(solution.getVariable(0), PRNG.nextDouble(4.0, 5.0));
 		}
 		
 		evaluate(solution);

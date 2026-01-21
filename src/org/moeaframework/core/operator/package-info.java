@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,6 +17,6 @@
  */
 
 /**
- * Package of various selection, mutation, crossover, and hybrid operators.  
+ * Package of various mutation and crossover operators.
  */
 package org.moeaframework.core.operator;

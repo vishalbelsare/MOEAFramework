@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,27 +17,28 @@
  */
 package org.moeaframework.core.termination;
 
-import org.junit.Assert;
-import org.junit.Test;
+import java.time.Duration;
 
-/**
- * Tests the {@link MaxElapsedTime} class.
- */
+import org.junit.Test;
+import org.moeaframework.Assert;
+import org.moeaframework.Wait;
+import org.moeaframework.mock.MockAlgorithm;
+
 public class MaxElapsedTimeTest {
 
 	@Test
-	public void test() throws InterruptedException {
+	public void test() {
 		MockAlgorithm algorithm = new MockAlgorithm();
-		MaxElapsedTime termination = new MaxElapsedTime(1000);
+		MaxElapsedTime termination = new MaxElapsedTime(Duration.ofSeconds(1));
 		
 		termination.initialize(algorithm);
 		Assert.assertFalse(termination.shouldTerminate(algorithm));
 		
-		Thread.sleep(550);
+		Wait.spinFor(Duration.ofMillis(550));
 		algorithm.setNumberOfEvaluations(1000);
 		Assert.assertFalse(termination.shouldTerminate(algorithm));
 		
-		Thread.sleep(550);
+		Wait.spinFor(Duration.ofMillis(550));
 		algorithm.setNumberOfEvaluations(2000);
 		Assert.assertTrue(termination.shouldTerminate(algorithm));
 	}

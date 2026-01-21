@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -20,25 +20,23 @@ package org.moeaframework.core.indicator;
 import org.apache.commons.math3.util.ArithmeticUtils;
 import org.apache.commons.math3.util.CombinatoricsUtils;
 import org.moeaframework.core.FrameworkException;
-import org.moeaframework.core.NondominatedPopulation;
-import org.moeaframework.core.Problem;
 import org.moeaframework.core.Solution;
+import org.moeaframework.core.population.NondominatedPopulation;
+import org.moeaframework.problem.Problem;
 
 /**
  * Abstract class for implementing R indicator functions.
  * <p>
  * References:
  * <ol>
- *   <li>Hansen, M. P. and A. Jaszkiewicz (1998).  Evaluating the Quality of
- *       Approximations to the Non-dominated Set.  IMM Technical Report
- *       IMM-REP-1998-7.
+ *   <li>Hansen, M. P. and A. Jaszkiewicz (1998).  Evaluating the Quality of Approximations to the Non-dominated Set.
+ *       IMM Technical Report IMM-REP-1998-7.
  * </ol>
  */
 public abstract class RIndicator extends NormalizedIndicator {
 	
 	/**
-	 * Interface for defining utility functions.  These utility functions
-	 * assume the solutions have been normalized.
+	 * Interface for defining utility functions.  These utility functions assume the solutions have been normalized.
 	 */
 	public interface UtilityFunction {
 		
@@ -54,16 +52,23 @@ public abstract class RIndicator extends NormalizedIndicator {
 	}
 	
 	/**
-	 * Utility computed as the sum of the weighted objective values.
+	 * Linear-weighted sum utility function.
 	 */
 	public static class LinearWeightedSumUtility implements UtilityFunction {
+		
+		/**
+		 * Constructs an instance of the linear-weighted sum utility function.
+		 */
+		public LinearWeightedSumUtility() {
+			super();
+		}
 
 		@Override
 		public double computeUtility(Solution solution, double[] weights) {
 			double sum = 0.0;
 			
 			for (int i = 0; i < solution.getNumberOfObjectives(); i++) {
-				sum += weights[i] * solution.getObjective(i);
+				sum += solution.getObjective(i).applyWeight(weights[i]);
 			}
 			
 			return 1.0 - sum;
@@ -72,16 +77,23 @@ public abstract class RIndicator extends NormalizedIndicator {
 	}
 	
 	/**
-	 * Chebychev (also referred to as Tchebycheff) utility function.
+	 * Chebyshev (also referred to as Chebychev or Tchebycheff) utility function.
 	 */
-	public static class ChebychevUtility implements UtilityFunction {
+	public static class ChebyshevUtility implements UtilityFunction {
+		
+		/**
+		 * Constructs an instance of the Chebyshev utility function.
+		 */
+		public ChebyshevUtility() {
+			super();
+		}
 
 		@Override
 		public double computeUtility(Solution solution, double[] weights) {
 			double max = 0.0;
 			
 			for (int i = 0; i < solution.getNumberOfObjectives(); i++) {
-				max = Math.max(max, weights[i] * solution.getObjective(i));
+				max = Math.max(max, solution.getObjective(i).applyWeight(weights[i]));
 			}
 			
 			return 1.0 - max;
@@ -100,33 +112,20 @@ public abstract class RIndicator extends NormalizedIndicator {
 	protected double[][] weights;
 	
 	/**
-	 * Constructs a new R indicator using the Chebychev utility function.
-	 * 
-	 * @param problem the problem
-	 * @param subdivisions the number of subdivisions along each objective
-	 * @param referenceSet the reference set
-	 */
-	public RIndicator(Problem problem, int subdivisions,
-			NondominatedPopulation referenceSet) {
-		this(problem, subdivisions, referenceSet, new ChebychevUtility());
-	}
-	
-	/**
 	 * Constructs a new R indicator using the specified utility function.
 	 * 
 	 * @param problem the problem
 	 * @param subdivisions the number of subdivisions along each objective
 	 * @param referenceSet the reference set
+	 * @param normalizer the user-provided normalizer, or {@code null} if the default is used
 	 * @param utilityFunction the utility function
 	 */
-	public RIndicator(Problem problem, int subdivisions,
-			NondominatedPopulation referenceSet,
+	public RIndicator(Problem problem, int subdivisions, NondominatedPopulation referenceSet, Normalizer normalizer,
 			UtilityFunction utilityFunction) {
-		super(problem, referenceSet);
+		super(problem, referenceSet, normalizer);
 		this.utilityFunction = utilityFunction;
 		
-		weights = generateUniformWeights(subdivisions,
-				problem.getNumberOfObjectives());
+		weights = generateUniformWeights(subdivisions, problem.getNumberOfObjectives());
 	}
 	
 	/**
@@ -142,8 +141,7 @@ public abstract class RIndicator extends NormalizedIndicator {
 			double max = Double.NEGATIVE_INFINITY;
 			
 			for (Solution solution : population) {
-				max = Math.max(max, utilityFunction.computeUtility(solution,
-						weights[i]));
+				max = Math.max(max, utilityFunction.computeUtility(solution, weights[i]));
 			}
 			
 			sum += max;
@@ -163,8 +161,7 @@ public abstract class RIndicator extends NormalizedIndicator {
 		int counter = 0;
 		int N = ArithmeticUtils.pow(s+1, k);
 		
-		double[][] weights = new double[
-				(int)CombinatoricsUtils.binomialCoefficient(s+k-1, k-1)][k];
+		double[][] weights = new double[(int)CombinatoricsUtils.binomialCoefficient(s+k-1, k-1)][k];
 		
 		for (int i = 0; i < N; i++) {
 			int sum = 0;
@@ -200,8 +197,7 @@ public abstract class RIndicator extends NormalizedIndicator {
 		int i = 0;
 		
 		if (number >= ArithmeticUtils.pow(k, length)) {
-			throw new FrameworkException("number can not be represented in " +
-					"base-k with specified number of digits");
+			throw new FrameworkException("Number can not be represented in base-k with specified number of digits");
 		}
 		
 		while (number != 0) {
@@ -218,8 +214,7 @@ public abstract class RIndicator extends NormalizedIndicator {
 	}
 	
 	/**
-	 * Returns the default number of subdivisions for a given problem. The
-	 * defaults, for an M objective problem, are:
+	 * Returns the default number of subdivisions for a given problem.  The defaults, for an M objective problem, are:
 	 * <ul>
 	 *   <li>if M=2, then 500
 	 *   <li>if M=3, then 30
@@ -232,18 +227,13 @@ public abstract class RIndicator extends NormalizedIndicator {
 	 * @return the default number of subdivisions for a given problem
 	 */
 	public static int getDefaultSubdivisions(Problem problem) {
-		switch (problem.getNumberOfObjectives()) {
-		case 2:
-			return 500;
-		case 3:
-			return 30;
-		case 4:
-			return 12;
-		case 5:
-			return 8;
-		default:
-			return 3;
-		}
+		return switch (problem.getNumberOfObjectives()) {
+			case 2 -> 500;
+			case 3 -> 30;
+			case 4 -> 12;
+			case 5 -> 8;
+			default -> 3;
+		};
 	}
 
 

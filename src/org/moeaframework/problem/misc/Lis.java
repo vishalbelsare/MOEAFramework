@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -32,12 +32,10 @@ import org.moeaframework.problem.AbstractProblem;
  * <p>
  * References:
  * <ol>
- *   <li>Lis, J. and Eiben, A. E. (1996).  "A Multi-Sexual Genetic Algorithm for
- *       Multiobjective Optimization."  Proceedings of the IEEE International
- *       Conference on Evolutionary Computation, 59-64.
- *   <li>Van Veldhuizen, D. A (1999).  "Multiobjective Evolutionary Algorithms: 
- *       Classifications, Analyses, and New Innovations."  Air Force Institute
- *       of Technology, Ph.D. Thesis, Appendix B.
+ *   <li>Lis, J. and Eiben, A. E. (1996).  "A Multi-Sexual Genetic Algorithm for Multiobjective Optimization."
+ *       Proceedings of the IEEE International Conference on Evolutionary Computation, 59-64.
+ *   <li>Van Veldhuizen, D. A (1999).  "Multiobjective Evolutionary Algorithms: Classifications, Analyses, and New
+ *       Innovations."  Air Force Institute of Technology, Ph.D. Thesis, Appendix B.
  * </ol>
  */
 public class Lis extends AbstractProblem {
@@ -56,8 +54,8 @@ public class Lis extends AbstractProblem {
 		double f1 = Math.pow(Math.pow(x, 2.0) + Math.pow(y, 2.0), 1.0/8.0);
 		double f2 = Math.pow(Math.pow(x-0.5, 2.0) + Math.pow(y-0.5, 2.0), 1.0/4.0);
 		
-		solution.setObjective(0, f1);
-		solution.setObjective(1, f2);
+		solution.setObjectiveValue(0, f1);
+		solution.setObjectiveValue(1, f2);
 	}
 
 	@Override

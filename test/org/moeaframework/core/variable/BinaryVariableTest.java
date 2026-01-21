@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,135 +17,146 @@
  */
 package org.moeaframework.core.variable;
 
+import java.io.IOException;
 import java.util.BitSet;
 
+import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.moeaframework.Assert;
+import org.moeaframework.CIRunner;
+import org.moeaframework.Retryable;
+import org.moeaframework.TestEnvironment;
 
+@RunWith(CIRunner.class)
 public class BinaryVariableTest {
 
-	private BinaryVariable value;
+	private BinaryVariable variable;
 
 	@Before
 	public void setUp() {
-		value = new BinaryVariable(2);
-		value.set(1, true);
+		variable = new BinaryVariable(2);
+		variable.set(1, true);
 	}
 
-	/**
-	 * Removes references to shared objects so they can be garbage collected.
-	 */
 	@After
 	public void tearDown() {
-		value = null;
+		variable = null;
 	}
 	
 	@Test
 	public void testToString() {
-		Assert.assertEquals("01", value.toString());
+		Assert.assertEquals("01", variable.toString());
 	}
 
 	@Test
+	public void testName() {
+		Assert.assertNull(new BinaryVariable(5).getName());
+		Assert.assertEquals("foo", new BinaryVariable("foo", 5).getName());
+	}
+	
+	@Test
 	public void testGetValue() {
-		Assert.assertEquals(2, value.getNumberOfBits());
-		Assert.assertFalse(value.get(0));
-		Assert.assertTrue(value.get(1));
+		Assert.assertEquals(2, variable.getNumberOfBits());
+		Assert.assertFalse(variable.get(0));
+		Assert.assertTrue(variable.get(1));
 	}
 
 	@Test(expected = IndexOutOfBoundsException.class)
 	public void testGetValueBoundsCheckLower() {
-		value.get(-1);
+		variable.get(-1);
 	}
 
 	@Test(expected = IndexOutOfBoundsException.class)
 	public void testGetValueBoundsCheckUpper() {
-		value.get(3);
+		variable.get(3);
 	}
 
 	@Test
 	public void testSetValue() {
-		value.set(0, true);
-		value.set(1, false);
+		variable.set(0, true);
+		variable.set(1, false);
 
-		Assert.assertTrue(value.get(0));
-		Assert.assertFalse(value.get(1));
+		Assert.assertTrue(variable.get(0));
+		Assert.assertFalse(variable.get(1));
 	}
 
 	@Test(expected = IndexOutOfBoundsException.class)
 	public void testSetValueBoundsCheckLower() {
-		value.set(-1, false);
+		variable.set(-1, false);
 	}
 
 	@Test(expected = IndexOutOfBoundsException.class)
 	public void testSetValueBoundsCheckUpper() {
-		value.set(3, false);
+		variable.set(3, false);
 	}
 
 	@Test
 	public void testEquals() {
-		Assert.assertFalse(value.equals(null));
-		Assert.assertTrue(value.equals(value));
+		Assert.assertFalse(variable.equals(null));
+		Assert.assertTrue(variable.equals(variable));
 
 		BinaryVariable trueCase = new BinaryVariable(2);
 		trueCase.set(1, true);
-		Assert.assertTrue(value.equals(trueCase));
+		Assert.assertTrue(variable.equals(trueCase));
 
 		BinaryVariable falseCase1 = new BinaryVariable(2);
 		falseCase1.set(0, true);
-		Assert.assertFalse(value.equals(falseCase1));
+		Assert.assertFalse(variable.equals(falseCase1));
 
 		BinaryVariable falseCase2 = new BinaryVariable(3);
 		falseCase2.set(1, true);
-		Assert.assertFalse(value.equals(falseCase2));
+		Assert.assertFalse(variable.equals(falseCase2));
 	}
 	
 	@Test
 	public void testHashCode() {
-		Assert.assertEquals(value.hashCode(), value.hashCode());
+		Assert.assertEquals(variable.hashCode(), variable.hashCode());
 		
 		BinaryVariable bv = new BinaryVariable(2);
 		bv.set(1, true);
-		Assert.assertEquals(value.hashCode(), bv.hashCode());
+		Assert.assertEquals(variable.hashCode(), bv.hashCode());
 	}
 
 	@Test
 	public void testCopy() {
-		BinaryVariable copy = value.copy();
-		Assert.assertTrue(copy.equals(value));
+		BinaryVariable copy = variable.copy();
+		Assert.assertNotSame(variable, copy);
+		Assert.assertEquals(variable, copy);
 
 		copy.set(1, false);
-		Assert.assertTrue(value.get(1));
-		Assert.assertFalse(copy.equals(value));
+		Assert.assertTrue(variable.get(1));
+		Assert.assertNotEquals(variable, copy);
 	}
 
 	@Test
 	public void testClear() {
-		value.clear();
-		Assert.assertEquals(2, value.getNumberOfBits());
-		Assert.assertEquals(0, value.cardinality());
+		variable.clear();
+		Assert.assertEquals(2, variable.getNumberOfBits());
+		Assert.assertEquals(0, variable.cardinality());
 	}
 
 	@Test
 	public void testIsEmpty() {
-		Assert.assertFalse(value.isEmpty());
+		Assert.assertFalse(variable.isEmpty());
 
-		value.clear();
-		Assert.assertTrue(value.isEmpty());
+		variable.clear();
+		Assert.assertTrue(variable.isEmpty());
 	}
 
 	@Test
 	public void testCardinality() {
-		Assert.assertEquals(1, value.cardinality());
+		Assert.assertEquals(1, variable.cardinality());
 
-		value.clear();
-		Assert.assertEquals(0, value.cardinality());
+		variable.clear();
+		Assert.assertEquals(0, variable.cardinality());
 	}
 
 	@Test
 	public void testGetBitSet() {
-		BitSet bitSet = value.getBitSet();
+		BitSet bitSet = variable.getBitSet();
 
 		Assert.assertEquals(2, bitSet.length());
 		Assert.assertFalse(bitSet.get(0));
@@ -153,7 +164,7 @@ public class BinaryVariableTest {
 
 		// ensure the returned BitSet is independent of the BinaryVariable
 		bitSet.set(0);
-		Assert.assertFalse(value.get(0));
+		Assert.assertFalse(variable.get(0));
 	}
 	
 	@Test
@@ -178,5 +189,107 @@ public class BinaryVariableTest {
 		
 		b1.hammingDistance(b2);
 	}
+	
+	@Test
+	public void testEncodeDecode() {
+		BinaryVariable newVariable = new BinaryVariable(2);
+		newVariable.decode(variable.encode());
+		Assert.assertEquals(variable.getBitSet(), newVariable.getBitSet());
+	}
 
+	@Test(expected = IllegalArgumentException.class)
+	public void testDecodeIncorrectLength() throws IOException {
+		BinaryVariable bv = new BinaryVariable(5);
+		bv.decode("001");
+	}
+	
+	@Test(expected = IllegalArgumentException.class)
+	public void testDecodeInvalidBitString() throws IOException {
+		BinaryVariable bv = new BinaryVariable(5);
+		bv.decode("00200");
+	}
+	
+	@Test
+	@Retryable
+	public void testRandomize() {
+		DescriptiveStatistics[] bitStats = new DescriptiveStatistics[variable.getNumberOfBits()];
+		
+		for (int j = 0; j < variable.getNumberOfBits(); j++) {
+			bitStats[j] = new DescriptiveStatistics();
+		}
+		
+		for (int i = 0; i < TestEnvironment.SAMPLES; i++) {
+			variable.randomize();
+			
+			for (int j = 0; j < variable.getNumberOfBits(); j++) {
+				bitStats[j].addValue(variable.get(j) ? 1 : 0);
+			}
+		}
+				
+		for (int j = 0; j < variable.getNumberOfBits(); j++) {
+			Assert.assertUniformDistribution(0, 1, bitStats[j]);
+		}
+	}
+	
+	@Test
+	public void testStatic() {
+		Variable variable = new BinaryVariable(3);
+		
+		BinaryVariable.setBinary(variable, new boolean[] { false, false, true });
+		BitSet bitSet = BinaryVariable.getBitSet(variable);
+		
+		Assert.assertFalse(bitSet.get(0));
+		Assert.assertFalse(bitSet.get(1));
+		Assert.assertTrue(bitSet.get(2));
+		Assert.assertEquals(3, bitSet.length());
+		
+		bitSet.flip(0);
+		bitSet.flip(2);
+		BinaryVariable.setBitSet(variable, bitSet);
+		boolean[] binary = BinaryVariable.getBinary(variable);
+		
+		Assert.assertEquals(3, binary.length);
+		Assert.assertTrue(binary[0]);
+		Assert.assertFalse(binary[1]);
+		Assert.assertFalse(binary[2]);
+	}
+	
+	@Test(expected = IllegalArgumentException.class)
+	public void testSetInvalidType() {
+		BinaryVariable.setBinary(new RealVariable(0.0, 1.0), new boolean[] { false, false, true });
+	}
+	
+	@Test(expected = IllegalArgumentException.class)
+	public void testGetInvalidType() {
+		BinaryVariable.getBinary(new RealVariable(0.0, 1.0));
+	}
+	
+	@Test(expected = IllegalArgumentException.class)
+	public void testTooManyBits() {
+		Variable variable = new BinaryVariable(2);
+		BinaryVariable.setBinary(variable, new boolean[] { false, false, true });
+	}
+	
+	@Test(expected = IllegalArgumentException.class)
+	public void testTooFewBits() {
+		Variable variable = new BinaryVariable(2);
+		BinaryVariable.setBinary(variable, new boolean[] { false });
+	}
+	
+	@Test(expected = IllegalArgumentException.class)
+	public void testSetBitSetInvalidType() {
+		BinaryVariable.setBitSet(new RealVariable(0.0, 1.0), new BitSet(3));
+	}
+	
+	@Test(expected = IllegalArgumentException.class)
+	public void testGetBitSetInvalidType() {
+		BinaryVariable.getBitSet(new RealVariable(0.0, 1.0));
+	}
+	
+	@Test
+	public void testDefinition() {
+		Assert.assertEquals("BinaryVariable(5)", new BinaryVariable(5).getDefinition());
+		Assert.assertEquals("BinaryVariable(\"foo\",5)", new BinaryVariable("foo", 5).getDefinition());
+	}
+	
 }

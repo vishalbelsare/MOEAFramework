@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,65 +17,70 @@
  */
 package org.moeaframework.algorithm.single;
 
-import org.moeaframework.algorithm.AbstractEvolutionaryAlgorithm;
-import org.moeaframework.core.FrameworkException;
-import org.moeaframework.core.Initialization;
-import org.moeaframework.core.NondominatedPopulation;
-import org.moeaframework.core.Population;
-import org.moeaframework.core.Problem;
+import org.moeaframework.core.Settings;
 import org.moeaframework.core.Solution;
-import org.moeaframework.core.Variation;
+import org.moeaframework.core.comparator.AggregateObjectiveComparator;
+import org.moeaframework.core.comparator.LinearDominanceComparator;
+import org.moeaframework.core.configuration.Property;
+import org.moeaframework.core.initialization.Initialization;
+import org.moeaframework.core.initialization.RandomInitialization;
+import org.moeaframework.core.operator.real.SelfAdaptiveNormalVariation;
+import org.moeaframework.core.population.Population;
+import org.moeaframework.core.variable.RealVariable;
+import org.moeaframework.problem.Problem;
+import org.moeaframework.util.validate.Validate;
 
 /**
- * Single-objective (mu + lambda) evolution strategy (ES) algorithm.  In this
- * implementation, mu and lambda are both equal to the initial population size.
- * For example, with an initial population of size 1, this mimics the classic
- * (1 + 1)-ES algorithm.  Can only be used with mutation operators with a single
- * parent. 
+ * Single-objective {@code (mu + lambda)} evolution strategy (ES) algorithm.  In this implementation, {@code mu} and
+ * {@code lambda} are both equal to the initial population size.  For example, with an initial population of size 1,
+ * this mimics the classic (1 + 1)-ES algorithm.  Can only be used with mutation operators with a single parent.
  * <p>
  * References:
  * <ol>
- *   <li>Ingo Rechenberg.  "Evolutionsstrategie: Optimierung technischer
- *       Systeme nach Prinzipien der biologischen Evolution."  Ph.D. thesis,
- *       Fromman-Holzboog, 1971.
+ *   <li>Ingo Rechenberg.  "Evolutionsstrategie: Optimierung technischer Systeme nach Prinzipien der biologischen
+ *       Evolution."  Ph.D. thesis, Fromman-Holzboog, 1971.
  * </ol>
  */
-public class EvolutionStrategy extends AbstractEvolutionaryAlgorithm {
-	
-	/**
-	 * The aggregate objective comparator.
-	 */
-	private final AggregateObjectiveComparator comparator;
+public class EvolutionStrategy extends SingleObjectiveEvolutionaryAlgorithm {
 
 	/**
-	 * The variation operator.
+	 * Constructs a new instance of the evolution strategy (ES) algorithm with default settings.
+	 * 
+	 * @param problem the problem to solve
 	 */
-	private final Variation variation;
+	public EvolutionStrategy(Problem problem) {
+		this(problem,
+				Settings.DEFAULT_POPULATION_SIZE,
+				new LinearDominanceComparator(),
+				new RandomInitialization(problem),
+				new SelfAdaptiveNormalVariation());
+	}
 
 	/**
 	 * Constructs a new instance of the evolution strategy (ES) algorithm.
 	 * 
-	 * @param problem the problem
+	 * @param problem the problem to solve
+	 * @param initialPopulationSize the initial population size
 	 * @param comparator the aggregate objective comparator
 	 * @param initialization the initialization method
 	 * @param variation the variation operator
 	 */
-	public EvolutionStrategy(Problem problem,
-			AggregateObjectiveComparator comparator,
-			Initialization initialization,
-			Variation variation) {
-		super(problem, new Population(), null, initialization);
-		this.comparator = comparator;
-		this.variation = variation;
+	public EvolutionStrategy(Problem problem, int initialPopulationSize, AggregateObjectiveComparator comparator,
+			Initialization initialization, SelfAdaptiveNormalVariation variation) {
+		super(problem, initialPopulationSize, new Population(), null, comparator, initialization, variation);
 		
-		if (variation.getArity() != 1) {
-			throw new FrameworkException("only supports variation operators with 1 parent");
-		}
+		Validate.that("problem", problem).isType(RealVariable.class);
+	}
+	
+	@Override
+	public String getName() {
+		return "EvolutionStrategy";
 	}
 
 	@Override
 	public void iterate() {
 		Population population = getPopulation();
+		SelfAdaptiveNormalVariation variation = getVariation();
 		Population offspring = new Population();
 		int populationSize = population.size();
 		
@@ -93,10 +98,18 @@ public class EvolutionStrategy extends AbstractEvolutionaryAlgorithm {
 	}
 	
 	@Override
-	public NondominatedPopulation getResult() {
-		NondominatedPopulation result = new NondominatedPopulation(comparator);
-		result.addAll(getPopulation());
-		return result;
+	public SelfAdaptiveNormalVariation getVariation() {
+		return (SelfAdaptiveNormalVariation)super.getVariation();
+	}
+	
+	/**
+	 * Replaces the variation operator to be used by this algorithm.
+	 * 
+	 * @param variation the variation operator
+	 */
+	@Property("operator")
+	public void setVariation(SelfAdaptiveNormalVariation variation) {
+		super.setVariation(variation);
 	}
 
 }

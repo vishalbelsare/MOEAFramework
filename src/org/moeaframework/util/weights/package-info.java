@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,7 +17,6 @@
  */
 
 /**
- * Routines for generating weights for decomposition and reference point
- * methods.
+ * Routines for generating weights for decomposition and reference point methods.
  */
 package org.moeaframework.util.weights;

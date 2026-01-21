@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,32 +17,31 @@
  */
 package org.moeaframework.algorithm.single;
 
-import org.moeaframework.algorithm.AbstractEvolutionaryAlgorithm;
-import org.moeaframework.core.Initialization;
-import org.moeaframework.core.NondominatedPopulation;
-import org.moeaframework.core.Population;
-import org.moeaframework.core.Problem;
+import org.moeaframework.core.Settings;
 import org.moeaframework.core.Solution;
+import org.moeaframework.core.comparator.AggregateObjectiveComparator;
 import org.moeaframework.core.comparator.DominanceComparator;
-import org.moeaframework.core.operator.real.DifferentialEvolutionSelection;
+import org.moeaframework.core.comparator.LinearDominanceComparator;
+import org.moeaframework.core.initialization.Initialization;
+import org.moeaframework.core.initialization.RandomInitialization;
 import org.moeaframework.core.operator.real.DifferentialEvolutionVariation;
+import org.moeaframework.core.population.NondominatedPopulation;
+import org.moeaframework.core.population.Population;
+import org.moeaframework.core.selection.DifferentialEvolutionSelection;
+import org.moeaframework.core.variable.RealVariable;
+import org.moeaframework.problem.Problem;
+import org.moeaframework.util.validate.Validate;
 
 /**
  * Single-objective differential evolution (DE) algorithm.
  * <p>
  * References:
  * <ol>
- *   <li>Rainer Storn and Kenneth Price.  "Differential Evolution - A Simple and
- *       Efficient Heuristic for Global Optimization over Continuous Spaces."
- *       Journal of Global Optimization, 11(4):341-359, 1997.
+ *   <li>Rainer Storn and Kenneth Price.  "Differential Evolution - A Simple and Efficient Heuristic for Global
+ *       Optimization over Continuous Spaces."  Journal of Global Optimization, 11(4):341-359, 1997.
  * </ol>
  */
-public class DifferentialEvolution extends AbstractEvolutionaryAlgorithm {
-	
-	/**
-	 * The aggregate objective comparator.
-	 */
-	private final AggregateObjectiveComparator comparator;
+public class DifferentialEvolution extends SingleObjectiveEvolutionaryAlgorithm {
 	
 	/**
 	 * The differential evolution selection operator.
@@ -50,42 +49,56 @@ public class DifferentialEvolution extends AbstractEvolutionaryAlgorithm {
 	private final DifferentialEvolutionSelection selection;
 	
 	/**
-	 * The differential evolution variation operator.
-	 */
-	private final DifferentialEvolutionVariation variation;
-
-	/**
-	 * Constructs a new instance of the single-objective differential evolution
-	 * (DE) algorithm.
+	 * Constructs a new single-objective differential evolution algorithm with default settings.
 	 * 
 	 * @param problem the problem
+	 */
+	public DifferentialEvolution(Problem problem) {
+		this(problem,
+				Settings.DEFAULT_POPULATION_SIZE,
+				new LinearDominanceComparator(),
+				new RandomInitialization(problem),
+				new DifferentialEvolutionSelection(),
+				new DifferentialEvolutionVariation());
+	}
+
+	/**
+	 * Constructs a new instance of the single-objective differential evolution (DE) algorithm.
+	 * 
+	 * @param problem the problem
+	 * @param initialPopulationSize the initial population size
 	 * @param comparator the aggregate objective comparator
 	 * @param initialization the initialization method
 	 * @param selection the differential evolution selection operator
 	 * @param variation the differential evolution variation operator
 	 */
-	public DifferentialEvolution(Problem problem,
-			AggregateObjectiveComparator comparator,
-			Initialization initialization,
-			DifferentialEvolutionSelection selection,
+	public DifferentialEvolution(Problem problem, int initialPopulationSize, AggregateObjectiveComparator comparator,
+			Initialization initialization, DifferentialEvolutionSelection selection,
 			DifferentialEvolutionVariation variation) {
-		super(problem, new Population(), null, initialization);
-		this.comparator = comparator;
+		super(problem, initialPopulationSize, new Population(), null, comparator, initialization, variation);
+		
+		Validate.that("problem", problem).isType(RealVariable.class);
+		Validate.that("selection", selection).isNotNull();
+		
 		this.selection = selection;
-		this.variation = variation;
 	}
-
+	
+	@Override
+	public String getName() {
+		return "DifferentialEvolution";
+	}
+	
 	@Override
 	protected void iterate() {
 		Population population = getPopulation();
+		DifferentialEvolutionVariation variation = getVariation();
 		Population children = new Population();
 
 		//generate children
 		for (int i = 0; i < population.size(); i++) {
 			selection.setCurrentIndex(i);
 
-			Solution[] parents = selection.select(variation.getArity(),
-					population);
+			Solution[] parents = selection.select(variation.getArity(), population);
 			children.add(variation.evolve(parents)[0]);
 		}
 		
@@ -107,4 +120,17 @@ public class DifferentialEvolution extends AbstractEvolutionaryAlgorithm {
 		return result;
 	}
 	
+	@Override
+	public DifferentialEvolutionVariation getVariation() {
+		return (DifferentialEvolutionVariation)super.getVariation();
+	}
+	
+	/**
+	 * Replaces the variation operator to be used by this algorithm.
+	 * 
+	 * @param variation the variation operator
+	 */
+	public void setVariation(DifferentialEvolutionVariation variation) {
+		super.setVariation(variation);
+	}
 }

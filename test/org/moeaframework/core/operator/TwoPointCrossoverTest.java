@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,36 +17,11 @@
  */
 package org.moeaframework.core.operator;
 
-import org.junit.Test;
-
-public class TwoPointCrossoverTest extends PointCrossoverTest {
-
-	/**
-	 * Tests if the grammar crossover operator is type-safe.
-	 */
-	@Test
-	public void testTypeSafety() {
-		TypeSafetyTest.testTypeSafety(new TwoPointCrossover(1.0));
-	}
-
-	@Test
-	public void test() {
-		test(new TwoPointCrossover(1.0), 10);
-	}
+public class TwoPointCrossoverTest extends AbstractPointCrossoverTest<TwoPointCrossover> {
 	
-	@Test
-	public void testOneVariable() {
-		test(new TwoPointCrossover(1.0), 1);
-	}
-	
-	@Test
-	public void testNoVariables() {
-		test(new TwoPointCrossover(1.0), 0);
-	}
-
-	@Test
-	public void testParentImmutability() {
-		testParentImmutability(new TwoPointCrossover(1.0));
+	@Override
+	public TwoPointCrossover createInstance() {
+		return new TwoPointCrossover(1.0);
 	}
 
 }

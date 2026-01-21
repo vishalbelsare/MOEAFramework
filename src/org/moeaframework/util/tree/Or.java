@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -18,14 +18,14 @@
 package org.moeaframework.util.tree;
 
 /**
- * The node for calculating the logical OR of two boolean values.  The inputs
- * and outputs to this node are shown below:
+ * The node for calculating the logical OR of two boolean values.
  * 
- * <table border="1" cellpadding="3" cellspacing="0">
- *   <tr class="TableHeadingColor">
- *     <th width="25%" align="left">Name</th>
- *     <th width="25%" align="left">Type</th>
- *     <th width="50%" align="left">Description</th>
+ * <table style="margin-top: 1em; width: 100%">
+ *   <caption style="text-align: left">Node signature:</caption>
+ *   <tr>
+ *     <th style="width: 15%; text-align: left">Name</th>
+ *     <th style="width: 15%; text-align: left">Type</th>
+ *     <th style="width: 70%; text-align: left">Description</th>
  *   </tr>
  *   <tr>
  *     <td>Argument 1</td>
@@ -46,9 +46,10 @@ package org.moeaframework.util.tree;
  */
 public class Or extends Node {
 	
+	private static final long serialVersionUID = 326913488266699882L;
+
 	/**
-	 * Constructs a new node for calculating the logical OR of two boolean
-	 * values.
+	 * Constructs a new node for calculating the logical OR of two boolean values.
 	 */
 	public Or() {
 		super(Boolean.class, Boolean.class, Boolean.class);
@@ -61,8 +62,7 @@ public class Or extends Node {
 
 	@Override
 	public Boolean evaluate(Environment environment) {
-		return (Boolean)getArgument(0).evaluate(environment) ||
-				(Boolean)getArgument(1).evaluate(environment);
+		return (Boolean)getArgument(0).evaluate(environment) || (Boolean)getArgument(1).evaluate(environment);
 	}
 
 }

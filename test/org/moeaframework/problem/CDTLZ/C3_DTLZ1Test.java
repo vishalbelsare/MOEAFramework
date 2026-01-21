@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,43 +17,42 @@
  */
 package org.moeaframework.problem.CDTLZ;
 
-import org.junit.Ignore;
 import org.junit.Test;
-import org.moeaframework.Executor;
-import org.moeaframework.core.NondominatedPopulation;
-import org.moeaframework.core.Solution;
+import org.moeaframework.Assert;
+import org.moeaframework.problem.Problem;
+import org.moeaframework.problem.ProblemTest;
 
-/**
- * Tests the {@link C3_DTLZ1} class.
- */
-public class C3_DTLZ1Test {
+public class C3_DTLZ1Test extends ProblemTest {
 	
-	/**
-	 * Visual test of the Pareto front.  Copy the output and generate a plot,
-	 * such as with R, and compare against the figures in Jain and Deb (2014):
-	 * <pre>
-	 *     library(rgl)
-	 *     x = matrix(c(<paste text>), ncol=3, byrow=T)
-	 *     plot3d(x)
-	 * </pre>
-	 */
 	@Test
-	@Ignore("skip visual tests")
-	public void visualTest() {
-		NondominatedPopulation result = new Executor()
-				.withProblemClass(C3_DTLZ1.class, 3)
-				.withAlgorithm("NSGAIII")
-				.withMaxEvaluations(100000)
-				.run();
-
-		for (Solution solution : result) {
-			if (!solution.violatesConstraints()) {
-				System.out.format("%.4f, %.4f, %.4f,%n",
-						solution.getObjective(0),
-						solution.getObjective(1),
-						solution.getObjective(2));
-			}
-		}
+	public void testProvider() {
+		assertProblemDefined("C3_DTLZ1_2", 2, false);
+		assertProblemDefined("C3_DTLZ1_3", 3, false);
+	}
+	
+	@Test
+	public void test() {
+		Problem problem = new C3_DTLZ1(12, 3);
+		
+		Assert.assertArrayEquals(new double[] { 0.0, 0.0, 125.5 },
+				evaluateAtLowerBounds(problem).getObjectiveValues(),
+				0.000001);
+		
+		Assert.assertArrayEquals(new double[] { 250.0, 250.0, 124.5 },
+				evaluateAtLowerBounds(problem).getConstraintValues(),
+				0.000001);
+		
+		Assert.assertTrue(evaluateAtLowerBounds(problem).isFeasible());
+		
+		Assert.assertArrayEquals(new double[] { 125.5, 0.0, 0.0 },
+				evaluateAtUpperBounds(problem).getObjectiveValues(),
+				0.000001);
+		
+		Assert.assertArrayEquals(new double[] { 124.5, 250.0, 250.0 },
+				evaluateAtUpperBounds(problem).getConstraintValues(),
+				0.000001);
+		
+		Assert.assertTrue(evaluateAtUpperBounds(problem).isFeasible());
 	}
 
 }

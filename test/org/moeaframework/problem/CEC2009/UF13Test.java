@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,54 +17,50 @@
  */
 package org.moeaframework.problem.CEC2009;
 
-import org.junit.Assert;
 import org.junit.Test;
-import org.moeaframework.TestThresholds;
+import org.moeaframework.Assert;
+import org.moeaframework.TestEnvironment;
 import org.moeaframework.core.Solution;
-import org.moeaframework.core.operator.RandomInitialization;
-import org.moeaframework.core.variable.EncodingUtils;
+import org.moeaframework.core.initialization.RandomInitialization;
+import org.moeaframework.core.variable.RealVariable;
+import org.moeaframework.problem.ProblemTest;
 
-/**
- * Tests if the {@link UF13} class (which is now an alias to {@code WFG1})
- * matches the test function defined in the CEC2009 code.
- */
-public class UF13Test {
+public class UF13Test extends ProblemTest {
 	
 	@Test
 	public void test() {
-		UF13 uf13 = new UF13();
-		RandomInitialization initialization = new RandomInitialization(uf13, 
-				TestThresholds.SAMPLES);
+		UF13 problem = new UF13();
+		RandomInitialization initialization = new RandomInitialization(problem);
 		
-		for (Solution solution : initialization.initialize()) {
-			double[] x = EncodingUtils.getReal(solution);
-			double[] f = new double[uf13.getNumberOfObjectives()];
+		for (Solution solution : initialization.initialize(TestEnvironment.SAMPLES)) {
+			double[] x = RealVariable.getReal(solution);
+			double[] f = new double[problem.getNumberOfObjectives()];
 			
-			WFG1_M5(x, f, uf13.getNumberOfVariables(),
-					uf13.getNumberOfObjectives());
+			WFG1_M5(x, f, problem.getNumberOfVariables(), problem.getNumberOfObjectives());
 			
-			uf13.evaluate(solution);
+			problem.evaluate(solution);
 			
-			Assert.assertArrayEquals(f, solution.getObjectives(),
-					TestThresholds.SOLUTION_EPS);
+			Assert.assertArrayEquals(f, solution.getObjectiveValues(), TestEnvironment.LOW_PRECISION);
 		}
 	}
 	
-	/* 
-     * The following source code is modified from the CEC 2009 test problem
-     * suite available at {@link http://dces.essex.ac.uk/staff/qzhang/}.
-     * Permission to distribute these modified source codes under the GNU
-     * Lesser General Public License was obtained via e-mail correspondence
-     * with the original authors.
-     */
+	@Test
+	public void testProvider() {
+		assertProblemDefined("UF13", 5);
+	}
 	
+	/*
+	 * The following source code is modified from the CEC 2009 test problem suite available at
+	 * {@link http://dces.essex.ac.uk/staff/qzhang/}.  Permission to distribute these modified source codes under the
+	 * GNU Lesser General Public License was obtained via e-mail correspondence with the original authors.
+	 */
+
 	private static final double PI = 3.1415926535897932384626433832795;
 	
 	private static final double EPSILON = 1.0e-10;
 	
 	/**
-	 * Evaluates the UF13 problem.  This is the version of the code provided in
-	 * the CEC2009 test suite.
+	 * Evaluates the UF13 problem.  This is the version of the code provided in the CEC2009 test suite.
 	 * 
 	 * @param x the decision variables
 	 * @param f the objective function output
@@ -216,15 +212,13 @@ public class UF13Test {
 
 	private static double b_flat(double y, double A, double B, double C) {
 		double tmp1 = min_double(0.0, Math.floor(y - B)) * A * (B - y) / B;
-		double tmp2 = min_double(0.0, Math.floor(C - y)) * (1.0 - A) * (y - C)
-				/ (1.0 - C);
+		double tmp2 = min_double(0.0, Math.floor(C - y)) * (1.0 - A) * (y - C) / (1.0 - C);
 		
 		return correct_to_01(A + tmp1 - tmp2, EPSILON);
 	}
 
 	private static double s_linear(double y, double A) {
-		return correct_to_01(Math.abs(y - A) / Math.abs(Math.floor(A - y) + A),
-				EPSILON);
+		return correct_to_01(Math.abs(y - A) / Math.abs(Math.floor(A - y) + A), EPSILON);
 	}
 
 	private static double r_sum(double[] y, double[] w, int ny) {

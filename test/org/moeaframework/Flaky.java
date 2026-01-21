@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,18 +17,17 @@
  */
 package org.moeaframework;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
-import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /**
- * Annotation for identifying flaky unit tests on CI builds.  The test still runs
- * but failures only appear as warnings and do not cause the test to fail.  As a
- * result, use of this attribute should be audited periodically and problems
+ * Annotation for identifying flaky unit tests on CI builds.  The test still runs but failures only appear as warnings
+ * and do not cause the test to fail.  As a result, use of this attribute should be audited periodically and problems
  * addressed.
- * 
- * Test classes using this annotation must also specify \code{@RunWith(CIRunner.class)}.
+ * <p>
+ * Test classes using this annotation must also specify {@code @RunWith(CIRunner.class)}.
  */
 @Target({ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)

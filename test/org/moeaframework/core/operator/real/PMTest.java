@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -19,57 +19,39 @@ package org.moeaframework.core.operator.real;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.moeaframework.Retryable;
-import org.moeaframework.TestThresholds;
 import org.moeaframework.CIRunner;
+import org.moeaframework.Retryable;
+import org.moeaframework.TestEnvironment;
 import org.moeaframework.core.Solution;
 import org.moeaframework.core.operator.MeanCentricVariationTest;
-import org.moeaframework.core.operator.ParentImmutabilityTest;
-import org.moeaframework.core.operator.TypeSafetyTest;
 import org.moeaframework.core.variable.RealVariable;
 
 @RunWith(CIRunner.class)
-public class PMTest extends MeanCentricVariationTest {
-
-	/**
-	 * Tests if the grammar crossover operator is type-safe.
-	 */
-	@Test
-	public void testTypeSafety() {
-		TypeSafetyTest.testTypeSafety(new PM(1.0, 20.0));
+public class PMTest extends MeanCentricVariationTest<PM> {
+	
+	@Override
+	public PM createInstance() {
+		return new PM(1.0, 20.0);
 	}
 
 	@Test
 	@Retryable
 	public void testDistribution() {
-		PM pm = new PM(1.0, 20.0);
+		PM pm = createInstance();
 
 		Solution solution = new Solution(2, 0);
-		solution.setVariable(0, new RealVariable(1.0, -10.0, 10.0));
-		solution.setVariable(1, new RealVariable(-1.0, -10.0, 10.0));
+		solution.setVariable(0, new RealVariable(-10.0, 10.0).withValue(1.0));
+		solution.setVariable(1, new RealVariable(-10.0, 10.0).withValue(-1.0));
 
 		Solution[] parents = new Solution[] { solution };
 
-		Solution[] offspring = new Solution[TestThresholds.SAMPLES];
+		Solution[] offspring = new Solution[TestEnvironment.SAMPLES];
 
-		for (int i = 0; i < TestThresholds.SAMPLES; i++) {
+		for (int i = 0; i < TestEnvironment.SAMPLES; i++) {
 			offspring[i] = pm.evolve(parents)[0];
 		}
 
-		check(parents, offspring);
-	}
-
-	/**
-	 * Tests if the parents remain unchanged during variation.
-	 */
-	@Test
-	public void testParentImmutability() {
-		PM pm = new PM(1.0, 20.0);
-
-		Solution[] parents = new Solution[] { newSolution(0.0, 0.0),
-				newSolution(0.0, 1.0) };
-
-		ParentImmutabilityTest.test(parents, pm);
+		checkDistribution(parents, offspring);
 	}
 
 }

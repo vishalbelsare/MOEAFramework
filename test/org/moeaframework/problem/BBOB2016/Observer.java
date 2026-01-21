@@ -1,7 +1,8 @@
-/* The following source code is copied from the Coco Framework available at
- * <https://github.com/numbbo/coco> under the 3-clause BSD license. The
- * original code is copyright 2013 by the NumBBO/CoCO team.  See the AUTHORS
- * file located in the Coco Framework repository for more details.
+/* The following source code is copied from the Coco Framework available at <https://github.com/numbbo/coco>
+ * under the 3-clause BSD license.
+ * 
+ * The original code is copyright 2013 by the NumBBO/CoCO team.  See the AUTHORS file located in the Coco Framework
+ * repository for more details.
  */
 package org.moeaframework.problem.BBOB2016;
 
@@ -10,15 +11,11 @@ public class Observer {
 	private long pointer; // Pointer to the coco_observer_t object
 	private String name;
 
-	/** 
+	/**
 	 * Constructs the observer from observerName and observerOptions.
-	 * TODO: Copy explanation of options from the C code. 
-	 * @param observerName
-	 * @param observerOptions
-	 * @throws Exception
+	 * See http://numbbo.github.io/coco-doc/C/#observer-parameters for more information on valid observer parameters.
 	 */
 	public Observer(String observerName, String observerOptions) throws Exception {
-
 		super();
 		try {
 			this.pointer = CocoJNI.cocoGetObserver(observerName, observerOptions);
@@ -28,10 +25,6 @@ public class Observer {
 		}
 	}
 
-	/**
-	 * Finalizes the observer.
-	 * @throws Exception 
-	 */
 	public void finalizeObserver() throws Exception {
 		try {
 			CocoJNI.cocoFinalizeObserver(this.pointer);
@@ -48,7 +41,6 @@ public class Observer {
 		return this.name;
 	}
 
-	/* toString method */
 	@Override
 	public String toString() {
 		return getName();

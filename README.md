@@ -1,60 +1,54 @@
-﻿## MOEA Framework ##
+![Tests](https://github.com/MOEAFramework/MOEAFramework/actions/workflows/ci.yml/badge.svg)
+![Maven Central](https://img.shields.io/maven-central/v/org.moeaframework/moeaframework)
+![GitHub Downloads](https://img.shields.io/github/downloads/MOEAFramework/MOEAFramework/total?label=GitHub%20Downloads)
 
-**Visit our website at [http://moeaframework.org](http://moeaframework.org)
-for downloads, documentation, and examples.**
+The MOEA Framework is a free and open source Java library for developing and experimenting with multiobjective
+evolutionary algorithms (MOEAs) and other metaheuristics.
 
-﻿<a href="https://github.com/MOEAFramework/MOEAFramework"><img alt="GitHub Actions status" src="https://github.com/MOEAFramework/MOEAFramework/workflows/Tests/badge.svg?branch=master&event=push"></a>
-﻿[![Maven Central](https://img.shields.io/maven-central/v/org.moeaframework/moeaframework.svg)](http://mvnrepository.com/artifact/org.moeaframework/moeaframework/2.13)
 
-The MOEA Framework is a free and open source Java library for developing and
-experimenting with multiobjective evolutionary algorithms (MOEAs) and other
-general-purpose multiobjective optimization algorithms. The MOEA Framework
-supports genetic algorithms, differential evolution, particle swarm
-optimization, genetic programming, grammatical evolution, and more. A number of
-algorithms are provided out-of-the-box, including NSGA-II, NSGA-III, ε-MOEA,
-GDE3, PAES, PESA2, SPEA2, IBEA, SMS-EMOA, SMPSO, OMOPSO, CMA-ES, and MOEA/D.
-In addition, the MOEA Framework provides the tools necessary
-to rapidly design, develop, execute and statistically test optimization
-algorithms.
+### Features
 
-Its key features includes:
-  * Fast, reliable implementations of many state-of-the-art algorithms
-  * Extensible with custom algorithms, problems and operators
-  * Supports master-slave, island-model, and hybrid parallelization
-  * Tools for building and statistically testing new optimization algorithms
-  * [Professional support for businesses](http://moeaframework.org/support.html)
-  * Permissive open source license
-  * Fully documented and tested source code
+* Fast, reliable implementations of over 25 MOEAs, including NSGA-III and MOEA/D.
+* Suite of tools for comparing and statistically testing algorithms.
+* Master-slave, island-model, and hybrid parallelization.
+* Permissive open source license (LGPL)
 
-Since its initial release in 2011, the MOEA Framework has been downloaded over
-38,000 times, averaging over 900 downloads per month this past year.  Please 
-contact us if you are interested in contributing!
 
-### Download ###
+### Getting Started
 
-The latest release can be downloaded from our [website](http://moeaframework.org)
-or from the [releases page](https://github.com/MOEAFramework/MOEAFramework/releases).
-Maven users can add our dependency to their `pom.xml` file:
+Download the latest release from the [GitHub Releases](https://github.com/MOEAFramework/MOEAFramework/releases) page.  Maven users can add our
+dependency to their `pom.xml` file:
 
-    <dependency>
-        <groupId>org.moeaframework</groupId>
-        <artifactId>moeaframework</artifactId>
-        <version>2.13</version>
-    </dependency>
+```xml
+<dependency>
+    <groupId>org.moeaframework</groupId>
+    <artifactId>moeaframework</artifactId>
+    <version>5.1</version>
+</dependency>
+```
 
-### License ###
+Check out our [examples](https://github.com/MOEAFramework/MOEAFramework/tree/master/examples),
+[online documentation](https://github.com/MOEAFramework/MOEAFramework/blob/master/docs/README.md), and
+[API Specification (Javadoc)](https://moeaframework.org/javadoc/index.html) to get started.
 
-Copyright 2009-2020 David Hadka and other contributors.  All rights reserved.
 
-The MOEA Framework is free software: you can redistribute it and/or modify
-it under the terms of the GNU Lesser General Public License as published by
-the Free Software Foundation, either version 3 of the License, or (at your
-option) any later version.
+### Example
 
-The MOEA Framework is distributed in the hope that it will be useful, but
-WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
-or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
+Below we solve the 2-objective DTLZ2 problem using NSGA-II:
 
-You should have received a copy of the GNU Lesser General Public License
-along with the MOEA Framework.  If not, see <http://www.gnu.org/licenses/>.
+
+```java
+Problem problem = new DTLZ2(2);
+
+NSGAII algorithm = new NSGAII(problem);
+algorithm.run(10000);
+
+algorithm.getResult().display();
+```
+
+
+### Citation
+
+If you use this software in your work, please cite it as follows (APA style):
+
+> Hadka, D. (2025). MOEA Framework A Free and Open Source Java Framework for Multiobjective Optimization (Version 5.1) [Computer software]. Retrieved from https://github.com/MOEAFramework/MOEAFramework.

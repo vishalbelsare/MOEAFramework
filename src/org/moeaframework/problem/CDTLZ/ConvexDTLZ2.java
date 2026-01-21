@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -26,8 +26,7 @@ import org.moeaframework.problem.DTLZ.DTLZ2;
 public class ConvexDTLZ2 extends DTLZ2 {
 
 	/**
-	 * Constructs a convex DTLZ2 test problem with the specified number of
-	 * variables and objectives.
+	 * Constructs a convex DTLZ2 test problem with the specified number of variables and objectives.
 	 * 
 	 * @param numberOfVariables the number of variables for this problem
 	 * @param numberOfObjectives the number of objectives for this problem
@@ -37,8 +36,7 @@ public class ConvexDTLZ2 extends DTLZ2 {
 	}
 
 	/**
-	 * Constructs a convex DTLZ2 test problem with the specified number of
-	 * objectives.  This is equivalent to calling
+	 * Constructs a convex DTLZ2 test problem with the specified number of objectives.  This is equivalent to calling
 	 * {@code new DTLZ2(numberOfObjectives+9, numberOfObjectives)}.
 	 * 
 	 * @param numberOfObjectives the number of objectives for this problem
@@ -52,11 +50,10 @@ public class ConvexDTLZ2 extends DTLZ2 {
 		super.evaluate(solution);
 		
 		for (int i = 0; i < numberOfObjectives-1; i++) {
-			solution.setObjective(i, Math.pow(solution.getObjective(i), 4.0));
+			solution.setObjectiveValue(i, Math.pow(solution.getObjectiveValue(i), 4.0));
 		}
 		
-		solution.setObjective(numberOfObjectives-1,
-				Math.pow(solution.getObjective(numberOfObjectives-1), 2.0));
+		solution.setObjectiveValue(numberOfObjectives-1, Math.pow(solution.getObjectiveValue(numberOfObjectives-1), 2.0));
 	}
 
 	@Override

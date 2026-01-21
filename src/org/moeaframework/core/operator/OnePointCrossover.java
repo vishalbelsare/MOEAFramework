@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -19,38 +19,64 @@ package org.moeaframework.core.operator;
 
 import org.moeaframework.core.PRNG;
 import org.moeaframework.core.Solution;
-import org.moeaframework.core.Variable;
-import org.moeaframework.core.Variation;
+import org.moeaframework.core.configuration.Prefix;
+import org.moeaframework.core.configuration.Property;
+import org.moeaframework.core.variable.Variable;
+import org.moeaframework.util.validate.Validate;
 
 /**
- * One-point or single-point crossover. A crossover point is selected and all
- * decision variables to the left/right are swapped between the two parents. The
- * two children resulting from this swapping are returned.
+ * One-point or single-point crossover.  A crossover point is selected and all decision variables to the left/right
+ * are swapped between the two parents.  The two children resulting from this swapping are returned.
  */
+@TypeSafe
+@Prefix("1x")
 public class OnePointCrossover implements Variation {
 
 	/**
 	 * The probability of applying this operator to solutions.
 	 */
-	private final double probability;
+	private double probability;
+	
+	/**
+	 * Constructs a one-point crossover operator with a 100% probability.
+	 */
+	public OnePointCrossover() {
+		this(1.0);
+	}
 
 	/**
-	 * Constructs a one-point crossover operator with the specified probability
-	 * of applying this operator to solutions.
+	 * Constructs a one-point crossover operator with the specified probability of applying this operator to solutions.
 	 * 
 	 * @param probability the probability of applying this operator to solutions
 	 */
 	public OnePointCrossover(double probability) {
-		this.probability = probability;
+		super();
+		setProbability(probability);
+	}
+	
+	@Override
+	public String getName() {
+		return "1x";
 	}
 
 	/**
 	 * Returns the probability of applying this operator to solutions.
 	 * 
-	 * @return the probability of applying this operator to solutions
+	 * @return the probability
 	 */
 	public double getProbability() {
 		return probability;
+	}
+	
+	/**
+	 * Sets the probability of applying this operator to solutions.
+	 * 
+	 * @param probability the probability between 0.0 and 1.0, inclusive
+	 */
+	@Property("rate")
+	public void setProbability(double probability) {
+		Validate.that("probability", probability).isProbability();
+		this.probability = probability;
 	}
 
 	@Override
@@ -58,10 +84,8 @@ public class OnePointCrossover implements Variation {
 		Solution result1 = parents[0].copy();
 		Solution result2 = parents[1].copy();
 
-		if ((PRNG.nextDouble() <= probability) && 
-				(result1.getNumberOfVariables() > 1)) {
-			int crossoverPoint = PRNG.nextInt(
-					result1.getNumberOfVariables() - 1);
+		if ((PRNG.nextDouble() <= probability) && (result1.getNumberOfVariables() > 1)) {
+			int crossoverPoint = PRNG.nextInt(result1.getNumberOfVariables() - 1);
 
 			for (int i = 0; i <= crossoverPoint; i++) {
 				Variable temp = result1.getVariable(i);

@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -18,7 +18,6 @@
 package org.moeaframework.problem.misc;
 
 import org.moeaframework.core.Solution;
-import org.moeaframework.core.variable.EncodingUtils;
 import org.moeaframework.core.variable.RealVariable;
 import org.moeaframework.problem.AbstractProblem;
 
@@ -33,12 +32,10 @@ import org.moeaframework.problem.AbstractProblem;
  * <p>
  * References:
  * <ol>
- *   <li>Van Veldhuizen, D. A (1999).  "Multiobjective Evolutionary Algorithms: 
- *       Classifications, Analyses, and New Innovations."  Air Force Institute
- *       of Technology, Ph.D. Thesis, Appendix B.
- *   <li>Quagliarella, D., and Vicini, A. (1998).  "Sub-population Policies for
- *       a Parallel Multiobjective Genetic Algorithm with Applications to Wing
- *       Design."  In proceedings of the 1998 IEEE International Conference on
+ *   <li>Van Veldhuizen, D. A (1999).  "Multiobjective Evolutionary Algorithms: Classifications, Analyses, and New
+ *       Innovations."  Air Force Institute of Technology, Ph.D. Thesis, Appendix B.
+ *   <li>Quagliarella, D., and Vicini, A. (1998).  "Sub-population Policies for a Parallel Multiobjective Genetic
+ *       Algorithm with Applications to Wing Design."  In proceedings of the 1998 IEEE International Conference on
  *       Systems, Man, and Cybernetics, pp. 3142-3147.
  * </ol>
  */
@@ -51,13 +48,18 @@ public class Quagliarella extends AbstractProblem {
 		this(16);
 	}
 
+	/**
+	 * Constructs the Quagliarella problem with the given number of decision variables.
+	 * 
+	 * @param numberOfVariables the number of decision variables
+	 */
 	public Quagliarella(int numberOfVariables) {
 		super(numberOfVariables, 2);
 	}
 
 	@Override
 	public void evaluate(Solution solution) {
-		double[] x = EncodingUtils.getReal(solution);
+		double[] x = RealVariable.getReal(solution);
 		double A1 = 0.0;
 		double A2 = 0.0;
 		
@@ -66,8 +68,8 @@ public class Quagliarella extends AbstractProblem {
 			A2 += Math.pow(x[i] - 1.5, 2.0) - 10.0*Math.cos(2.0*Math.PI*(x[i] - 1.5)) + 10;
 		}
 		
-		solution.setObjective(0, Math.sqrt(A1 / numberOfVariables));
-		solution.setObjective(1, Math.sqrt(A2 / numberOfVariables));
+		solution.setObjectiveValue(0, Math.sqrt(A1 / numberOfVariables));
+		solution.setObjectiveValue(1, Math.sqrt(A2 / numberOfVariables));
 	}
 
 	@Override

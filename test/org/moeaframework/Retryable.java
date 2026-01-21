@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,19 +17,20 @@
  */
 package org.moeaframework;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
-import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /**
- * Annotation for retrying tests.  Test classes using this annotation must also
- * specify \code{@RunWith(CIRunner.clsas)}.
+ * Annotation for retrying tests.
+ * <p>
+ * Test classes using this annotation must also specify {@code @RunWith(CIRunner.class)}.
  */
 @Target({ElementType.METHOD, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Retryable {
 
-	int value() default 5;
+	int value() default TestEnvironment.RETRIES;
 
 }

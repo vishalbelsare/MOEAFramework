@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,7 +17,6 @@
  */
 
 /**
- * Defines the service provider interfaces (SPIs) and factories for
- * constructing problems, algorithms and operators.
+ * Defines the service provider interfaces (SPIs) and factories for constructing problems, algorithms and operators.
  */
 package org.moeaframework.core.spi;

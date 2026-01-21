@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,36 +17,34 @@
  */
 package org.moeaframework.core.operator.program;
 
-import org.junit.Assert;
 import org.junit.Test;
+import org.moeaframework.Assert;
 import org.moeaframework.core.PRNG;
 import org.moeaframework.core.Solution;
+import org.moeaframework.core.operator.AbstractProgramOperatorTest;
 import org.moeaframework.core.variable.Program;
-import org.moeaframework.util.tree.Rules;
 
-/**
- * Tests the {@link PointMutation} class.
- */
-public class PointMutationTest {
+public class PointMutationTest extends AbstractProgramOperatorTest<PointMutation> {
+	
+	@Override
+	public PointMutation createInstance() {
+		return new PointMutation(1.0);
+	}
 	
 	@Test
 	public void test() {
-		Rules rules = new Rules();
-		rules.populateWithDefaults();
-		rules.setReturnType(Number.class);
-		
-		PointMutation mutation = new PointMutation(1.0);
+		PointMutation mutation = createInstance();
 		
 		for (int i = 0; i < 100; i++) {
-			Program program = new Program(rules);
-			program.setArgument(0, rules.buildTreeFull(Number.class, 4));
+			Program program = createTestVariable();
+			program.setBody(program.getRules().buildTreeFull(Number.class, 4));
 			
-			int fixedNodeIndex = PRNG.nextInt(program.getNumberOfNodes());
-			program.getNodeAt(fixedNodeIndex).setFixed(true);
+			int fixedNodeIndex = PRNG.nextInt(program.getBody().getNumberOfNodes());
+			program.getBody().getNodeAt(fixedNodeIndex).setFixed(true);
 
-			Assert.assertTrue(program.isValid());
-			Assert.assertEquals(5, program.getMinimumHeight());
-			Assert.assertEquals(5, program.getMaximumHeight());
+			Assert.assertTrue(program.getBody().isValid());
+			Assert.assertEquals(4, program.getBody().getMinimumHeight());
+			Assert.assertEquals(4, program.getBody().getMaximumHeight());
 			
 			Solution solution = new Solution(1, 1);
 			solution.setVariable(0, program);
@@ -56,11 +54,11 @@ public class PointMutationTest {
 			
 			Program result = (Program)offspring[0].getVariable(0);
 			
-			Assert.assertTrue(result.isValid());
-			Assert.assertEquals(5, result.getMinimumHeight());
-			Assert.assertEquals(5, result.getMaximumHeight());
-			Assert.assertEquals(program.getNodeAt(fixedNodeIndex).getClass(),
-					result.getNodeAt(fixedNodeIndex).getClass());
+			Assert.assertTrue(result.getBody().isValid());
+			Assert.assertEquals(4, result.getBody().getMinimumHeight());
+			Assert.assertEquals(4, result.getBody().getMaximumHeight());
+			Assert.assertEquals(program.getBody().getNodeAt(fixedNodeIndex).getClass(),
+					result.getBody().getNodeAt(fixedNodeIndex).getClass());
 		}
 	}
 

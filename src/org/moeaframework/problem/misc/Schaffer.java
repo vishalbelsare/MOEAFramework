@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -19,13 +19,12 @@ package org.moeaframework.problem.misc;
 
 import org.moeaframework.core.PRNG;
 import org.moeaframework.core.Solution;
-import org.moeaframework.core.variable.EncodingUtils;
+import org.moeaframework.core.variable.RealVariable;
 import org.moeaframework.problem.AbstractProblem;
 import org.moeaframework.problem.AnalyticalProblem;
 
 /**
- * The Schaffer problem.  The Schaffer problem is univariate, with the optimum
- * defined by {@code 0 <= x <= 2}.
+ * The Schaffer problem.  The Schaffer problem is univariate, with the optimum defined by {@code 0 <= x <= 2}.
  * <p>
  * Properties:
  * <ul>
@@ -35,16 +34,13 @@ import org.moeaframework.problem.AnalyticalProblem;
  * <p>
  * References:
  * <ol>
- *   <li>Schaffer, J. D. (1984).  "Some Experiments in Machine Learning using
- *       Vector Evaluated Genetic Algorithms."  Ph.D. Thesis, Vanderbilt
- *       University, Nashville, USA.
- *   <li>Schaffer, J. D. (1985).  "Multiple Objective Optimization with Vector
- *       Evaluated Genetic Algorithms."  Genetic Algorithms and Their
- *       Applications: Proceedings of the First International Conference on
- *       Genetic Algorithms, pp. 93-100.
- *   <li>Van Veldhuizen, D. A (1999).  "Multiobjective Evolutionary Algorithms: 
- *       Classifications, Analyses, and New Innovations."  Air Force Institute
- *       of Technology, Ph.D. Thesis, Appendix B.
+ *   <li>Schaffer, J. D. (1984).  "Some Experiments in Machine Learning using Vector Evaluated Genetic Algorithms."
+ *       Ph.D. Thesis, Vanderbilt University, Nashville, USA.
+ *   <li>Schaffer, J. D. (1985).  "Multiple Objective Optimization with Vector Evaluated Genetic Algorithms."  Genetic
+ *       Algorithms and Their Applications: Proceedings of the First International Conference on Genetic Algorithms,
+ *       pp. 93-100.
+ *   <li>Van Veldhuizen, D. A (1999).  "Multiobjective Evolutionary Algorithms: Classifications, Analyses, and New
+ *       Innovations."  Air Force Institute of Technology, Ph.D. Thesis, Appendix B.
  * </ol>
  */
 public class Schaffer extends AbstractProblem implements AnalyticalProblem {
@@ -58,16 +54,16 @@ public class Schaffer extends AbstractProblem implements AnalyticalProblem {
 
 	@Override
 	public void evaluate(Solution solution) {
-		double x = EncodingUtils.getReal(solution.getVariable(0));
+		double x = RealVariable.getReal(solution.getVariable(0));
 		
-		solution.setObjective(0, Math.pow(x, 2.0));
-		solution.setObjective(1, Math.pow(x - 2.0, 2.0));
+		solution.setObjectiveValue(0, Math.pow(x, 2.0));
+		solution.setObjectiveValue(1, Math.pow(x - 2.0, 2.0));
 	}
 
 	@Override
 	public Solution newSolution() {
 		Solution solution = new Solution(1, 2);
-		solution.setVariable(0, EncodingUtils.newReal(-10.0, 10.0));
+		solution.setVariable(0, new RealVariable(-10.0, 10.0));
 		return solution;
 	}
 
@@ -75,7 +71,7 @@ public class Schaffer extends AbstractProblem implements AnalyticalProblem {
 	public Solution generate() {
 		Solution solution = newSolution();
 		
-		EncodingUtils.setReal(solution.getVariable(0), PRNG.nextDouble(0.0, 2.0));
+		RealVariable.setReal(solution.getVariable(0), PRNG.nextDouble(0.0, 2.0));
 		evaluate(solution);
 		
 		return solution;

@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -22,25 +22,26 @@ import java.awt.event.HierarchyListener;
 
 import javax.swing.JPanel;
 
+import org.moeaframework.util.mvc.ControllerEvent;
+import org.moeaframework.util.mvc.ControllerListener;
+
 /**
- * Abstract Swing component for displaying results.  The specific implementation
- * determines the type of plot.  The results displayed in the plot are
- * specified by {@link DiagnosticTool#getSelectedResults()}.
+ * Abstract Swing component for displaying results.  The specific implementation determines the type of plot.  The
+ * results displayed in the plot are specified by {@link DiagnosticTool#getSelectedResults()}.
  */
-public abstract class ResultPlot extends JPanel implements ControllerListener, 
-HierarchyListener {
+public abstract class ResultPlot extends JPanel implements ControllerListener, HierarchyListener {
 
 	private static final long serialVersionUID = -4484341164088815299L;
 
 	/**
-	 * The {@link DiagnosticTool} instance containing this plot.
+	 * The frame containing this plot.
 	 */
 	protected final DiagnosticTool frame;
 	
 	/**
-	 * The {@link Controller} this plot uses to access result data.
+	 * The controller this plot uses to access result data.
 	 */
-	protected final Controller controller;
+	protected final DiagnosticToolController controller;
 	
 	/**
 	 * The metric to display.
@@ -50,7 +51,7 @@ HierarchyListener {
 	/**
 	 * Constructs a new Swing component for displaying results.
 	 * 
-	 * @param frame the {@code DiagnosticTool} instance containing this plot
+	 * @param frame the frame containing this plot
 	 * @param metric the metric to display
 	 */
 	public ResultPlot(DiagnosticTool frame, String metric) {
@@ -63,9 +64,8 @@ HierarchyListener {
 	}
 	
 	/**
-	 * Updates the contents of this plot.  This method is automatically invoked
-	 * when the data model is changed, and will always be executed on the
-	 * event dispatch thread.
+	 * Updates the contents of this plot.  This method is automatically invoked when the data model is changed, and
+	 * will always be executed on the event dispatch thread.
 	 */
 	protected abstract void update();
 
@@ -83,7 +83,7 @@ HierarchyListener {
 
 	@Override
 	public void controllerStateChanged(ControllerEvent e) {
-		if (e.getType().equals(ControllerEvent.Type.MODEL_CHANGED)) {
+		if (e.getEventType().equals("modelChanged")) {
 			update();
 		}
 	}

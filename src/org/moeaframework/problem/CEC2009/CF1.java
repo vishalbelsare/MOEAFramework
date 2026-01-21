@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -18,13 +18,12 @@
 package org.moeaframework.problem.CEC2009;
 
 import org.moeaframework.core.Solution;
-import org.moeaframework.core.variable.EncodingUtils;
+import org.moeaframework.core.constraint.GreaterThanOrEqual;
 import org.moeaframework.core.variable.RealVariable;
 import org.moeaframework.problem.AbstractProblem;
 
 /**
- * The constrained CF1 test problem from the CEC 2009 special session and
- * competition.
+ * The constrained CF1 test problem from the CEC 2009 special session and competition.
  */
 public class CF1 extends AbstractProblem {
 
@@ -36,8 +35,7 @@ public class CF1 extends AbstractProblem {
 	}
 
 	/**
-	 * Constructs a CF1 test problem with the specified number of decision
-	 * variables.
+	 * Constructs a CF1 test problem with the specified number of decision variables.
 	 * 
 	 * @param numberOfVariables the number of decision variables
 	 */
@@ -47,14 +45,14 @@ public class CF1 extends AbstractProblem {
 
 	@Override
 	public void evaluate(Solution solution) {
-		double[] x = EncodingUtils.getReal(solution);
+		double[] x = RealVariable.getReal(solution);
 		double[] f = new double[2];
 		double[] c = new double[1];
 
 		CEC2009.CF1(x, f, c, numberOfVariables);
 
-		solution.setObjectives(f);
-		solution.setConstraint(0, c[0] >= 0.0 ? 0.0 : c[0]);
+		solution.setObjectiveValues(f);
+		solution.setConstraintValues(c);
 	}
 
 	@Override
@@ -64,6 +62,8 @@ public class CF1 extends AbstractProblem {
 		for (int i = 0; i < numberOfVariables; i++) {
 			solution.setVariable(i, new RealVariable(0.0, 1.0));
 		}
+		
+		solution.setConstraint(0, GreaterThanOrEqual.to(0.0));
 
 		return solution;
 	}

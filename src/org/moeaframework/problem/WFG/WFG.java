@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -21,12 +21,12 @@ import org.moeaframework.core.Solution;
 import org.moeaframework.core.variable.RealVariable;
 import org.moeaframework.problem.AbstractProblem;
 import org.moeaframework.problem.AnalyticalProblem;
+import org.moeaframework.util.validate.Validate;
 
 /**
  * Implements methods shared by all problems in the WFG test suite.
  */
-public abstract class WFG extends AbstractProblem 
-implements AnalyticalProblem {
+public abstract class WFG extends AbstractProblem implements AnalyticalProblem {
 
 	/**
 	 * The number of position-related variables defined by this problem.
@@ -44,9 +44,8 @@ implements AnalyticalProblem {
 	protected final int M;
 
 	/**
-	 * Constructs a WFG problem instance with the specified number of 
-	 * position-related and distance-related variables and the specified number
-	 * of objectives.
+	 * Constructs a WFG problem instance with the specified number of position-related and distance-related variables
+	 * and the specified number of objectives.
 	 * 
 	 * @param k the number of position-related variables defined by this problem
 	 * @param l the number of distance-related variables defined by this problem
@@ -57,6 +56,16 @@ implements AnalyticalProblem {
 		this.k = k;
 		this.l = l;
 		this.M = M;
+		
+		Validate.that("k", k).isGreaterThanOrEqualTo(1);
+		Validate.that("l", l).isGreaterThanOrEqualTo(1);
+		Validate.that("M", M).isGreaterThanOrEqualTo(2);
+		Validate.that("k", k).isDivisibleBy("M-1", M-1);
+	}
+	
+	@Override
+	public String getName() {
+		return getClass().getSimpleName() + "_" + M;
 	}
 
 	@Override

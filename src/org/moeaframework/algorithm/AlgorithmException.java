@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,7 +17,6 @@
  */
 package org.moeaframework.algorithm;
 
-import org.moeaframework.core.Algorithm;
 import org.moeaframework.core.FrameworkException;
 
 /**
@@ -31,20 +30,9 @@ public class AlgorithmException extends FrameworkException {
 	 * The algorithm responsible for this exception.
 	 */
 	private final Algorithm algorithm;
-	
+
 	/**
-	 * Constructs an algorithm exception originating from the specified
-	 * algorithm.
-	 * 
-	 * @param algorithm the algorithm responsible for this exception
-	 */
-	public AlgorithmException(Algorithm algorithm) {
-		this(algorithm, null, null);
-	}
-	
-	/**
-	 * Constructs an algorithm exception originating from the specified
-	 * algorithm with the given cause.
+	 * Constructs an algorithm exception originating from the specified algorithm with the given cause.
 	 * 
 	 * @param algorithm the algorithm responsible for this exception
 	 * @param cause the cause of this exception
@@ -54,8 +42,7 @@ public class AlgorithmException extends FrameworkException {
 	}
 	
 	/**
-	 * Constructs an algorithm exception originating from the specified
-	 * algorithm with the given message.
+	 * Constructs an algorithm exception originating from the specified algorithm with the given message.
 	 * 
 	 * @param algorithm the algorithm responsible for this exception
 	 * @param message the message describing this exception
@@ -65,15 +52,13 @@ public class AlgorithmException extends FrameworkException {
 	}
 	
 	/**
-	 * Constructs an algorithm exception originating from the specified
-	 * algorithm with the given message and cause.
+	 * Constructs an algorithm exception originating from the specified algorithm with the given message and cause.
 	 * 
 	 * @param algorithm the algorithm responsible for this exception
 	 * @param message the message describing this exception
 	 * @param cause the cause of this exception
 	 */
-	public AlgorithmException(Algorithm algorithm, String message, 
-			Throwable cause) {
+	public AlgorithmException(Algorithm algorithm, String message, Throwable cause) {
 		super(message, cause);
 		this.algorithm = algorithm;
 	}

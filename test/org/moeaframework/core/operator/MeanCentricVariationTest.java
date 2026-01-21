@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,21 +17,20 @@
  */
 package org.moeaframework.core.operator;
 
-import org.junit.Assert;
-import org.moeaframework.TestThresholds;
+import org.junit.Ignore;
+import org.moeaframework.Assert;
+import org.moeaframework.TestEnvironment;
 import org.moeaframework.core.Solution;
 
 /**
- * Provides test methods for checking if the offspring are centered around the
- * centroid of the parents.
+ * Provides test methods for checking if the offspring are centered around the centroid of the parents.
  */
-public abstract class MeanCentricVariationTest extends
-		DistributionVariationTest {
+@Ignore("Abstract test class")
+public abstract class MeanCentricVariationTest<T extends Variation> extends DistributionVariationTest<T> {
 
 	@Override
-	protected void check(Solution[] parents, Solution[] offspring) {
-		Assert.assertArrayEquals(average(parents), average(offspring),
-				TestThresholds.VARIATION_EPS);
+	protected void checkDistribution(Solution[] parents, Solution[] offspring) {
+		Assert.assertArrayEquals(average(parents), average(offspring), TestEnvironment.LOW_PRECISION);
 	}
 
 }

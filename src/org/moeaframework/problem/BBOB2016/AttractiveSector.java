@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -18,19 +18,17 @@
 package org.moeaframework.problem.BBOB2016;
 
 import org.moeaframework.core.Solution;
-import org.moeaframework.core.variable.EncodingUtils;
+import org.moeaframework.core.variable.RealVariable;
 
-/* 
- * The following source code is derived from the Coco Framework available at
- * <https://github.com/numbbo/coco> under the 3-clause BSD license. The
- * original code is copyright 2013 by the NumBBO/CoCO team.  See the AUTHORS
- * file located in the Coco Framework repository for more details.
+/*
+ * The following source code is derived from the Coco Framework available at <https://github.com/numbbo/coco> under the
+ * 3-clause BSD license.  The original code is copyright 2013 by the NumBBO/CoCO team.  See the AUTHORS file located in
+ * the Coco Framework repository for more details.
  */
 
 /**
- * The Attractive Sector function.  It is not intended for this function to be
- * used directly since the BBOB test suite applies additional transformations
- * to the test functions.
+ * The Attractive Sector function.  It is not intended for this function to be used directly since the BBOB test suite
+ * applies additional transformations to the test functions.
  * <p>
  * Properties:
  * <ul>
@@ -59,7 +57,7 @@ public class AttractiveSector extends BBOBFunction {
 
 	@Override
 	public void evaluate(Solution solution) {
-		double[] x = EncodingUtils.getReal(solution);
+		double[] x = RealVariable.getReal(solution);
 		double result = 0.0;
 		
 		for (int i = 0; i < x.length; i++) {
@@ -70,7 +68,7 @@ public class AttractiveSector extends BBOBFunction {
 			}
 		}
 		
-		solution.setObjective(0, result);
+		solution.setObjectiveValue(0, result);
 	}
 
 }

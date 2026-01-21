@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,33 +17,33 @@
  */
 package org.moeaframework.problem.misc;
 
-import org.junit.Assert;
 import org.junit.Test;
-import org.moeaframework.TestUtils;
-import org.moeaframework.core.Problem;
-import org.moeaframework.core.Settings;
+import org.moeaframework.Assert;
+import org.moeaframework.TestEnvironment;
+import org.moeaframework.problem.Problem;
+import org.moeaframework.problem.ProblemTest;
 
-public class Schaffer2Test {
+public class Schaffer2Test extends ProblemTest {
 	
 	@Test
 	public void test() {
 		Problem problem = new Schaffer2();
 		
-		Assert.assertArrayEquals(new double[] { 5.0, 100.0 }, 
-				TestUtils.evaluateAt(problem, -5).getObjectives(),
-				Settings.EPS);
+		Assert.assertArrayEquals(new double[] { 5.0, 100.0 },
+				evaluateAt(problem, -5).getObjectiveValues(),
+				TestEnvironment.HIGH_PRECISION);
 		
-		Assert.assertArrayEquals(new double[] { 0.0, 9.0 }, 
-				TestUtils.evaluateAt(problem, 2).getObjectives(),
-				Settings.EPS);
+		Assert.assertArrayEquals(new double[] { 0.0, 9.0 },
+				evaluateAt(problem, 2).getObjectiveValues(),
+				TestEnvironment.HIGH_PRECISION);
 		
-		Assert.assertArrayEquals(new double[] { 0.0, 1.0 }, 
-				TestUtils.evaluateAt(problem, 4).getObjectives(),
-				Settings.EPS);
+		Assert.assertArrayEquals(new double[] { 0.0, 1.0 },
+				evaluateAt(problem, 4).getObjectiveValues(),
+				TestEnvironment.HIGH_PRECISION);
 		
-		Assert.assertArrayEquals(new double[] { 6.0, 25.0 }, 
-				TestUtils.evaluateAt(problem, 10).getObjectives(),
-				Settings.EPS);
+		Assert.assertArrayEquals(new double[] { 6.0, 25.0 },
+				evaluateAt(problem, 10).getObjectiveValues(),
+				TestEnvironment.HIGH_PRECISION);
 	}
 
 }

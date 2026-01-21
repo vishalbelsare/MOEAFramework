@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,120 +17,56 @@
  */
 package org.moeaframework.core.spi;
 
-import org.moeaframework.core.Problem;
+import org.moeaframework.core.FrameworkException;
 import org.moeaframework.core.Solution;
 import org.moeaframework.problem.AnalyticalProblem;
+import org.moeaframework.problem.Problem;
+import org.moeaframework.problem.ProblemWrapper;
 
 /**
- * Problem factory which instruments {@link Problem} instances with testing
- * code.
+ * Problem factory which instruments {@link Problem} instances with testing code.
  */
 public class ProblemFactoryTestWrapper extends ProblemFactory {
 	
-	/**
-	 * The number of times the {@code close} method has been invoked.
-	 */
+	private int createCount;
+	
 	private int closeCount;
 
 	@Override
 	public synchronized Problem getProblem(String name) {
-		final Problem problem = super.getProblem(name);
-		
-		if (problem instanceof AnalyticalProblem) {
-			return new AnalyticalProblem() {
-				
-				@Override
-				public String getName() {
-					return problem.getName();
-				}
-	
-				@Override
-				public int getNumberOfVariables() {
-					return problem.getNumberOfVariables();
-				}
-	
-				@Override
-				public int getNumberOfObjectives() {
-					return problem.getNumberOfObjectives();
-				}
-	
-				@Override
-				public int getNumberOfConstraints() {
-					return problem.getNumberOfConstraints();
-				}
-	
-				@Override
-				public void evaluate(Solution solution) {
-					problem.evaluate(solution);
-				}
-	
-				@Override
-				public Solution newSolution() {
-					return problem.newSolution();
-				}
-	
-				@Override
-				public void close() {
-					problem.close();
-					closeCount++;
-				}
-
-				@Override
-				public Solution generate() {
-					return ((AnalyticalProblem)problem).generate();
-				}
-				
-			};
-		} else {
-			return new Problem() {
-	
-				@Override
-				public String getName() {
-					return problem.getName();
-				}
-	
-				@Override
-				public int getNumberOfVariables() {
-					return problem.getNumberOfVariables();
-				}
-	
-				@Override
-				public int getNumberOfObjectives() {
-					return problem.getNumberOfObjectives();
-				}
-	
-				@Override
-				public int getNumberOfConstraints() {
-					return problem.getNumberOfConstraints();
-				}
-	
-				@Override
-				public void evaluate(Solution solution) {
-					problem.evaluate(solution);
-				}
-	
-				@Override
-				public Solution newSolution() {
-					return problem.newSolution();
-				}
-	
-				@Override
-				public void close() {
-					problem.close();
-					closeCount++;
-				}
-				
-			};
-		}
+		createCount++;
+		return new CloseWrapper(super.getProblem(name));
 	}
-
-	/**
-	 * Returns the number of times the {@code close} method has been invoked.
-	 * 
-	 * @return the number of times the {@code close} method has been invoked
-	 */
+	
+	public int getCreateCount() {
+		return createCount;
+	}
+	
 	public int getCloseCount() {
 		return closeCount;
+	}
+	
+	private class CloseWrapper extends ProblemWrapper implements AnalyticalProblem {
+
+		protected CloseWrapper(Problem problem) {
+			super(problem);
+		}
+
+		@Override
+		public Solution generate() {
+			if (problem instanceof AnalyticalProblem analyticalProblem) {
+				return analyticalProblem.generate();
+			} else {
+				throw new FrameworkException(problem.getClass() + " does not implement " + AnalyticalProblem.class);
+			}
+		}
+		
+		@Override
+		public void close() {
+			super.close();
+			closeCount++;
+		}
+		
 	}
 	
 }

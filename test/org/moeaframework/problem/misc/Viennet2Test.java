@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,35 +17,34 @@
  */
 package org.moeaframework.problem.misc;
 
-import org.junit.Assert;
 import org.junit.Test;
-import org.moeaframework.TestUtils;
-import org.moeaframework.core.Problem;
-import org.moeaframework.core.Settings;
+import org.moeaframework.Assert;
+import org.moeaframework.TestEnvironment;
+import org.moeaframework.problem.Problem;
 import org.moeaframework.problem.ProblemTest;
 
 public class Viennet2Test extends ProblemTest {
 
 	@Test
-	public void testJMetal() throws Exception {
-		test(new org.uma.jmetal.problem.multiobjective.Viennet2(), new Viennet2());
+	public void testJMetal() {
+		testAgainstJMetal("Viennet2");
 	}
 	
 	@Test
 	public void test() {
 		Problem problem = new Viennet2();
 		
-		Assert.assertArrayEquals(new double[] { 66.0 / 13.0, -65.0 / 4.0, -2274.0 / 175.0 }, 
-				TestUtils.evaluateAt(problem, 0.0, 0.0).getObjectives(),
-				Settings.EPS);
+		Assert.assertArrayEquals(new double[] { 66.0 / 13.0, -65.0 / 4.0, -2274.0 / 175.0 },
+				evaluateAt(problem, 0.0, 0.0).getObjectiveValues(),
+				TestEnvironment.HIGH_PRECISION);
 		
-		Assert.assertArrayEquals(new double[] { 282.0 / 13.0, -473.0 / 36.0, -33002.0 / 2975.0 }, 
-				TestUtils.evaluateAt(problem, -4.0, -4.0).getObjectives(),
-				Settings.EPS);
+		Assert.assertArrayEquals(new double[] { 282.0 / 13.0, -473.0 / 36.0, -33002.0 / 2975.0 },
+				evaluateAt(problem, -4.0, -4.0).getObjectiveValues(),
+				TestEnvironment.HIGH_PRECISION);
 		
-		Assert.assertArrayEquals(new double[] { 90.0 / 13.0, -569.0 / 36.0, -33818.0 / 2975.0 }, 
-				TestUtils.evaluateAt(problem, 4.0, 4.0).getObjectives(),
-				Settings.EPS);
+		Assert.assertArrayEquals(new double[] { 90.0 / 13.0, -569.0 / 36.0, -33818.0 / 2975.0 },
+				evaluateAt(problem, 4.0, 4.0).getObjectiveValues(),
+				TestEnvironment.HIGH_PRECISION);
 	}
 
 }

@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,89 +17,298 @@
  */
 package org.moeaframework.core.variable;
 
+import java.util.BitSet;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+
+import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.moeaframework.Assert;
+import org.moeaframework.TestEnvironment;
+import org.moeaframework.core.Solution;
 
 public class BinaryIntegerVariableTest {
 
-	private BinaryIntegerVariable value;
+	private BinaryIntegerVariable variable;
 
 	@Before
 	public void setUp() {
-		value = new BinaryIntegerVariable(7, 5, 10);
+		variable = new BinaryIntegerVariable(5, 10).withValue(7);
 	}
 
-	/**
-	 * Removes references to shared objects so they can be garbage collected.
-	 */
 	@After
 	public void tearDown() {
-		value = null;
+		variable = null;
+	}
+	
+	@Test
+	public void testName() {
+		Assert.assertNull(new BinaryIntegerVariable(5, 10).getName());
+		Assert.assertEquals("foo", new BinaryIntegerVariable("foo", 5, 10).getName());
 	}
 
 	@Test
 	public void testGetValue() {
-		Assert.assertEquals(7, value.getValue());
-		Assert.assertEquals(5, value.getLowerBound());
-		Assert.assertEquals(10, value.getUpperBound());
+		Assert.assertEquals(7, variable.getValue());
+		Assert.assertEquals(5, variable.getLowerBound());
+		Assert.assertEquals(10, variable.getUpperBound());
 	}
 
 	@Test
 	public void testSetValue() {
-		for (int i = value.getLowerBound(); i <= value.getUpperBound(); i++) {
-			value.setValue(i);
-			Assert.assertEquals(i, value.getValue());
+		for (int i = variable.getLowerBound(); i <= variable.getUpperBound(); i++) {
+			variable.setValue(i);
+			Assert.assertEquals(i, variable.getValue());
 		}
 	}
 
 	@Test
 	public void testEquals() {
-		Assert.assertFalse(value.equals(null));
-		Assert.assertTrue(value.equals(value));
-		Assert.assertTrue(value.equals(new BinaryIntegerVariable(7, 5, 10)));
-		Assert.assertFalse(value.equals(new BinaryIntegerVariable(9, 5, 10)));
-		Assert.assertFalse(value.equals(new BinaryIntegerVariable(7, 2, 10)));
-		Assert.assertFalse(value.equals(new BinaryIntegerVariable(7, 5, 9)));
+		Assert.assertFalse(variable.equals(null));
+		Assert.assertTrue(variable.equals(variable));
+		Assert.assertTrue(variable.equals(new BinaryIntegerVariable(5, 10).withValue(7)));
+		Assert.assertFalse(variable.equals(new BinaryIntegerVariable(5, 10).withValue(9)));
+		Assert.assertFalse(variable.equals(new BinaryIntegerVariable(2, 10).withValue(7)));
+		Assert.assertFalse(variable.equals(new BinaryIntegerVariable(5, 9).withValue(7)));
 	}
 
 	@Test
 	public void testHashCode() {
-		Assert.assertEquals(value.hashCode(), value.hashCode());
-		Assert.assertEquals(value.hashCode(),
-				new BinaryIntegerVariable(7, 5, 10).hashCode());
+		Assert.assertEquals(variable.hashCode(), variable.hashCode());
+		Assert.assertEquals(variable.hashCode(), new BinaryIntegerVariable(5, 10).withValue(7).hashCode());
 	}
 
 	@Test
 	public void testCopy() {
-		BinaryIntegerVariable copy = value.copy();
-		Assert.assertTrue(copy.equals(value));
-		Assert.assertEquals(value.getBitSet(), copy.getBitSet());
+		BinaryIntegerVariable copy = variable.copy();
+		Assert.assertNotSame(variable, copy);
+		Assert.assertEquals(variable, copy);
+		Assert.assertEquals(variable.getBitSet(), copy.getBitSet());
 
 		copy.setValue(9);
-		Assert.assertEquals(7, value.getValue());
-		Assert.assertFalse(copy.equals(value));
+		Assert.assertEquals(7, variable.getValue());
+		Assert.assertNotEquals(variable, copy);
 	}
 
 	@Test(expected = IllegalArgumentException.class)
-	public void testConstructorBoundsCheckLower() {
-		new BinaryIntegerVariable(-1, 0, 10);
-	}
-
-	@Test(expected = IllegalArgumentException.class)
-	public void testConstructorBoundsCheckUpper() {
-		new BinaryIntegerVariable(11, 0, 10);
+	public void testInvalidBounds() {
+		new BinaryIntegerVariable(10, 0);
 	}
 
 	@Test(expected = IllegalArgumentException.class)
 	public void testSetValueBoundsCheckLower() {
-		value.setValue(4);
+		variable.setValue(4);
 	}
 
 	@Test(expected = IllegalArgumentException.class)
 	public void testSetValueBoundsCheckUpper() {
-		value.setValue(11);
+		variable.setValue(11);
+	}
+	
+	@Test
+	public void testToString() {
+		Assert.assertEquals("7", variable.toString());
+	}
+	
+	@Test
+	public void testEncodeDecode() {
+		BinaryIntegerVariable newVariable = new BinaryIntegerVariable(5, 10);
+		newVariable.decode(variable.encode());
+		Assert.assertEquals(variable.getValue(), newVariable.getValue());
+	}
+	
+	@Test
+	public void testRandomize() {
+		DescriptiveStatistics stats = new DescriptiveStatistics();
+		
+		for (int i = 0; i < TestEnvironment.SAMPLES; i++) {
+			variable.randomize();
+			stats.addValue(variable.getValue());
+		}
+		
+		Assert.assertUniformDistribution(variable.getLowerBound(), variable.getUpperBound(), stats);
+	}
+	
+	@Test
+	public void testBinaryEncoding() {
+		Consumer<Number> test = value -> {
+			BitSet bits = BinaryIntegerVariable.encode(value.longValue());
+			String expectedString = Long.toBinaryString(value.longValue());
+			
+			Assert.assertTrue(bits.length() <= expectedString.length());
+			
+			for (int i = 0; i < expectedString.length(); i++) {
+				Assert.assertEquals("bit at index " + i + " differ",
+						expectedString.charAt(expectedString.length() - i - 1) == '1', bits.get(i));
+			}
+		};
+		
+		test.accept(0);
+		test.accept(1);
+		test.accept(2);
+		test.accept(3);
+		test.accept(4);
+		test.accept(5);
+		test.accept(6);
+		test.accept(7);
+		test.accept(-1);
+		test.accept(Integer.MAX_VALUE);
+		test.accept(Integer.MIN_VALUE);
+		test.accept(Long.MAX_VALUE);
+		test.accept(Long.MIN_VALUE);
+	}
+
+	@Test
+	public void testBinaryDecoding() {
+		Consumer<Number> test = value -> {
+			BitSet bits = BinaryIntegerVariable.encode(value.longValue());
+			Assert.assertEquals(value.longValue(), BinaryIntegerVariable.decode(bits));
+		};
+		
+		test.accept(0);
+		test.accept(1);
+		test.accept(2);
+		test.accept(3);
+		test.accept(4);
+		test.accept(5);
+		test.accept(6);
+		test.accept(7);
+		test.accept(-1);
+		test.accept(Integer.MAX_VALUE);
+		test.accept(Integer.MIN_VALUE);
+		test.accept(Long.MAX_VALUE);
+		test.accept(Long.MIN_VALUE);
+	}
+
+	@Test
+	public void testBinaryToGrayConversion() {
+		BiConsumer<Number, String> test = (value, expectedString) -> {
+			BitSet bits = BinaryIntegerVariable.encode(value.longValue());
+			bits = BinaryIntegerVariable.binaryToGray(bits);
+			
+			Assert.assertTrue(bits.length() <= expectedString.length());
+			
+			for (int i = 0; i < expectedString.length(); i++) {
+				Assert.assertEquals("bit at index " + i + " differ",
+						expectedString.charAt(expectedString.length() - i - 1) == '1', bits.get(i));
+			}
+		};
+		
+		test.accept(0, "000");
+		test.accept(1, "001");
+		test.accept(2, "011");
+		test.accept(3, "010");
+		test.accept(4, "110");
+		test.accept(5, "111");
+		test.accept(6, "101");
+		test.accept(7, "100");
+	}
+
+	@Test
+	public void testGrayToBinaryEncoding() {
+		Consumer<Number> test = value -> {
+			BitSet bits = BinaryIntegerVariable.encode(value.longValue());
+			bits = BinaryIntegerVariable.binaryToGray(bits);
+			bits = BinaryIntegerVariable.grayToBinary(bits);
+			Assert.assertEquals(value.longValue(), BinaryIntegerVariable.decode(bits));
+		};
+		
+		test.accept(0);
+		test.accept(1);
+		test.accept(2);
+		test.accept(3);
+		test.accept(4);
+		test.accept(5);
+		test.accept(6);
+		test.accept(7);
+		test.accept(-1);
+		test.accept(Integer.MAX_VALUE);
+		test.accept(Integer.MIN_VALUE);
+		test.accept(Long.MAX_VALUE);
+		test.accept(Long.MIN_VALUE);
+	}
+	
+	@Test
+	public void testSolutionEncoding() {
+		Solution solution = new Solution(3, 1);
+		solution.setVariable(0, new BinaryIntegerVariable(0, 1));
+		solution.setVariable(1, new BinaryIntegerVariable(2, 4));
+		solution.setVariable(2, new BinaryIntegerVariable(-1, 1));
+		
+		BinaryIntegerVariable.setInt(solution, new int[] { 0, 3, 0 });
+		Assert.assertArrayEquals(new int[] { 0, 3, 0 }, BinaryIntegerVariable.getInt(solution));
+		
+		Assert.assertArrayEquals(new int[] { 3, 0 }, BinaryIntegerVariable.getInt(solution, 1, 3));
+		
+		Assert.assertArrayEquals(new int[] { 3 }, BinaryIntegerVariable.getInt(solution, 1, 2));
+		
+		Assert.assertArrayEquals(new int[0], BinaryIntegerVariable.getInt(solution, 1, 1));
+		
+		BinaryIntegerVariable.setInt(solution, 1, 3, new int[] { 2, -1 });
+		
+		Assert.assertArrayEquals(new int[] { 0, 2, -1 }, BinaryIntegerVariable.getInt(solution));
+		
+		BinaryIntegerVariable.setInt(solution, 2, 3, new int[] { 1 });
+		
+		Assert.assertArrayEquals(new int[] { 0, 2, 1 }, BinaryIntegerVariable.getInt(solution));
+		
+		BinaryIntegerVariable.setInt(solution, 2, 2, new int[0]);
+		
+		Assert.assertArrayEquals(new int[] { 0, 2, 1 }, BinaryIntegerVariable.getInt(solution));
+	}
+	
+	@Test(expected = IllegalArgumentException.class)
+	public void testSetInvalidType() {
+		BinaryIntegerVariable.setInt(new BinaryVariable(3), 1);
+	}
+	
+	@Test(expected = IllegalArgumentException.class)
+	public void testGetInvalidType() {
+		BinaryIntegerVariable.getInt(new BinaryVariable(3));
+	}
+	
+	@Test(expected = IllegalArgumentException.class)
+	public void testSetSolutionInvalidType() {
+		Solution solution = new Solution(3, 1);
+		solution.setVariable(0, new BinaryIntegerVariable(0, 1));
+		solution.setVariable(1, new BinaryVariable(2));
+		solution.setVariable(2, new BinaryIntegerVariable(-1, 1));
+		
+		BinaryIntegerVariable.setInt(solution, new int[] { 0, 0, 0 });
+	}
+	
+	@Test(expected = IllegalArgumentException.class)
+	public void testGetSolutionInvalidType() {
+		Solution solution = new Solution(3, 1);
+		solution.setVariable(0, new BinaryIntegerVariable(0, 1));
+		solution.setVariable(1, new BinaryVariable(2));
+		solution.setVariable(2, new BinaryIntegerVariable(-1, 1));
+		
+		BinaryIntegerVariable.getInt(solution);
+	}
+	
+	@Test(expected = IllegalArgumentException.class)
+	public void testTooFewValues() {
+		Solution solution = new Solution(2, 0);
+		solution.setVariable(0, new BinaryIntegerVariable(0, 1));
+		solution.setVariable(1, new BinaryIntegerVariable(0, 1));
+		BinaryIntegerVariable.setInt(solution, new int[] { 0 });
+	}
+	
+	@Test(expected = IllegalArgumentException.class)
+	public void testTooManyValues() {
+		Solution solution = new Solution(2, 0);
+		solution.setVariable(0, new BinaryIntegerVariable(0, 1));
+		solution.setVariable(1, new BinaryIntegerVariable(0, 1));
+		BinaryIntegerVariable.setInt(solution, new int[] { 0, 1, 0 });
+	}
+	
+	@Test
+	public void testDefinition() {
+		Assert.assertEquals("BinaryIntegerVariable(0,1)", new BinaryIntegerVariable(0, 1).getDefinition());
+		Assert.assertEquals("BinaryIntegerVariable(\"foo\",0,1)", new BinaryIntegerVariable("foo", 0, 1).getDefinition());
 	}
 
 }

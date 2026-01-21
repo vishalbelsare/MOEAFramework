@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,14 +17,10 @@
  */
 package org.moeaframework.problem;
 
-import org.moeaframework.core.Problem;
-
 /**
- * Abstract class for a {@link Problem}.  For simplicity, most problems should
- * extend {@code AbstractProblem} rather than implement the {@code Problem}
- * interface directly.  At a minimum, only the {@link #newSolution()} and
- * {@link #evaluate(org.moeaframework.core.Solution)} methods need to be
- * defined.
+ * Abstract class for a {@link Problem}.  For simplicity, most problems should extend {@code AbstractProblem} rather
+ * than implement the {@code Problem} interface directly.  At a minimum, only the {@link #newSolution()} and
+ * {@link #evaluate(org.moeaframework.core.Solution)} methods need to be defined.
  */
 public abstract class AbstractProblem implements Problem {
 
@@ -44,14 +40,7 @@ public abstract class AbstractProblem implements Problem {
 	protected final int numberOfConstraints;
 	
 	/**
-	 * {@code true} if the {@code close()} method has been invoked; {@code 
-	 * false} otherwise.
-	 */
-	private boolean isClosed;
-	
-	/**
-	 * Constructs an unconstrained abstract problem with the specified number
-	 * of decision variables and objectives.
+	 * Constructs an unconstrained abstract problem with the specified number of decision variables and objectives.
 	 * 
 	 * @param numberOfVariables the number of decision variables
 	 * @param numberOfObjectives the number of objectives
@@ -61,26 +50,19 @@ public abstract class AbstractProblem implements Problem {
 	}
 	
 	/**
-	 * Constructs an abstract problem with the specified number of decision 
-	 * variables, objectives and constraints.
+	 * Constructs an abstract problem with the specified number of decision variables, objectives and constraints.
 	 * 
 	 * @param numberOfVariables the number of decision variables
 	 * @param numberOfObjectives the number of objectives
 	 * @param numberOfConstraints the number of constraints
 	 */
-	public AbstractProblem(int numberOfVariables, int numberOfObjectives, 
-			int numberOfConstraints) {
+	public AbstractProblem(int numberOfVariables, int numberOfObjectives, int numberOfConstraints) {
 		super();
 		this.numberOfVariables = numberOfVariables;
 		this.numberOfObjectives = numberOfObjectives;
 		this.numberOfConstraints = numberOfConstraints;
 	}
 	
-	@Override
-	public String getName() {
-		return getClass().getSimpleName();
-	}
-
 	@Override
 	public int getNumberOfVariables() {
 		return numberOfVariables;
@@ -96,22 +78,9 @@ public abstract class AbstractProblem implements Problem {
 		return numberOfConstraints;
 	}
 
-	/**
-	 * Calls {@code close()} if this problem has not yet been closed prior to
-	 * finalization.
-	 */
-	@Override
-	protected void finalize() throws Throwable {
-		if (!isClosed) {
-			close();
-		}
-		
-		super.finalize();
-	}
-
 	@Override
 	public void close() {
-		isClosed = true;
+		// do nothing
 	}
 
 }

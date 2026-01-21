@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,39 +17,52 @@
  */
 package org.moeaframework.problem.CDTLZ;
 
-import org.junit.Assert;
 import org.junit.Test;
-import org.moeaframework.TestThresholds;
-import org.moeaframework.core.Solution;
+import org.moeaframework.Assert;
+import org.moeaframework.problem.Problem;
+import org.moeaframework.problem.ProblemTest;
 
-/**
- * Tests the {@link C1_DTLZ3} class.
- */
-public class C1_DTLZ1Test {
+public class C1_DTLZ1Test extends ProblemTest {
+	
+	@Test
+	public void testProvider() {
+		assertProblemDefined("C1_DTLZ1_2", 2, false);
+		assertProblemDefined("C1_DTLZ1_3", 3, false);
+	}
 	
 	@Test
 	public void test() {
-		test(2);
-		test(3);
-		test(5);
-		test(8);
-		test(10);
-		test(15);
+		Problem problem = new C1_DTLZ1(12, 3);
+		
+		Assert.assertArrayEquals(new double[] { 0.0, 0.0, 125.5 },
+				evaluateAtLowerBounds(problem).getObjectiveValues(),
+				0.000001);
+		
+		Assert.assertArrayEquals(new double[] { -208.16666667 },
+				evaluateAtLowerBounds(problem).getConstraintValues(),
+				0.000001);
+		
+		Assert.assertFalse(evaluateAtLowerBounds(problem).isFeasible());
+		
+		Assert.assertArrayEquals(new double[] { 125.5, 0.0, 0.0 },
+				evaluateAtUpperBounds(problem).getObjectiveValues(),
+				0.000001);
+		
+		Assert.assertArrayEquals(new double[] { -250.0 },
+				evaluateAtUpperBounds(problem).getConstraintValues(),
+				0.000001);
+		
+		Assert.assertFalse(evaluateAtUpperBounds(problem).isFeasible());
 	}
 	
-	/**
-	 * All optimal solutions from the DTLZ3 problem should be feasible.
-	 * 
-	 * @param numberOfObjectives the number of objectives
-	 */
-	public void test(int numberOfObjectives) {
-		C1_DTLZ3 problem = new C1_DTLZ3(numberOfObjectives);
-		
-		for (int i = 0; i <TestThresholds.SAMPLES; i++) {
-			Solution solution = problem.generate();
-			problem.evaluate(solution);
-			Assert.assertFalse(solution.violatesConstraints());
-		}
+	@Test
+	public void testGenerate() {
+		testGenerate("C1_DTLZ1_2", Assert::assertFeasible);
+		testGenerate("C1_DTLZ1_3", Assert::assertFeasible);
+		testGenerate("C1_DTLZ1_5", Assert::assertFeasible);
+		testGenerate("C1_DTLZ1_8", Assert::assertFeasible);
+		testGenerate("C1_DTLZ1_10", Assert::assertFeasible);
+		testGenerate("C1_DTLZ1_15", Assert::assertFeasible);
 	}
 
 }

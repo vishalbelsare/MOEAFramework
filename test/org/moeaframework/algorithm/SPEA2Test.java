@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,134 +17,105 @@
  */
 package org.moeaframework.algorithm;
 
-import java.io.IOException;
-import java.util.Properties;
+import java.util.List;
 
-import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.moeaframework.Retryable;
-import org.moeaframework.TestUtils;
+import org.moeaframework.Assert;
 import org.moeaframework.CIRunner;
-import org.moeaframework.core.FitnessEvaluator;
-import org.moeaframework.core.Population;
-import org.moeaframework.core.Problem;
+import org.moeaframework.Retryable;
 import org.moeaframework.core.Solution;
-import org.moeaframework.core.operator.RandomInitialization;
+import org.moeaframework.core.TypedProperties;
+import org.moeaframework.core.attribute.Fitness;
+import org.moeaframework.core.initialization.RandomInitialization;
+import org.moeaframework.core.population.Population;
 import org.moeaframework.core.spi.OperatorFactory;
 import org.moeaframework.core.spi.ProblemFactory;
-import org.moeaframework.problem.MockRealProblem;
+import org.moeaframework.mock.MockRealProblem;
+import org.moeaframework.mock.MockSolution;
+import org.moeaframework.problem.Problem;
 
-/**
- * Tests the {@link SPEA2} class.
- */
 @RunWith(CIRunner.class)
 @Retryable
-public class SPEA2Test extends AlgorithmTest {
+public class SPEA2Test extends JMetalAlgorithmTest {
 	
-	@Test
-	public void testDTLZ1() throws IOException {
-		test("DTLZ1_2", "SPEA2", "SPEA2-JMetal", true);
-	}
-	
-	@Test
-	public void testDTLZ2() throws IOException {
-		test("DTLZ2_2", "SPEA2", "SPEA2-JMetal", true);
-	}
-	
-	@Test
-	public void testDTLZ7() throws IOException {
-		test("DTLZ7_2", "SPEA2", "SPEA2-JMetal", true);
-	}
-	
-	@Test
-	public void testUF1() throws IOException {
-		test("UF1", "SPEA2", "SPEA2-JMetal", true);
+	public SPEA2Test() {
+		super("SPEA2", true);
 	}
 	
 	@Test
 	public void testComputeDistances() {
-		SPEA2 spea2 = new SPEA2(new MockRealProblem(2), null, null, 0, 1);
-		
-		Solution solution1 = TestUtils.newSolution(0.0, 1.0);
-		Solution solution2 = TestUtils.newSolution(1.0, 0.0);
-		Solution solution3 = TestUtils.newSolution(0.5, 0.5);
+		SPEA2 spea2 = new SPEA2(new MockRealProblem(2));
 		
 		Population population = new Population();
-		population.add(solution1);
-		population.add(solution2);
-		population.add(solution3);
+		population.add(MockSolution.of().withObjectives(0.0, 1.0));
+		population.add(MockSolution.of().withObjectives(1.0, 0.0));
+		population.add(MockSolution.of().withObjectives(0.5, 0.5));
 		
 		double[][] distances = spea2.computeDistanceMatrix(population);
 		
-		TestUtils.assertEquals(0.0, distances[0][0]);
-		TestUtils.assertEquals(0.0, distances[1][1]);
-		TestUtils.assertEquals(0.0, distances[2][2]);
-		TestUtils.assertEquals(Math.sqrt(2), distances[0][1]);
-		TestUtils.assertEquals(Math.sqrt(2), distances[1][0]);
-		TestUtils.assertEquals(Math.sqrt(0.5), distances[0][2]);
-		TestUtils.assertEquals(Math.sqrt(0.5), distances[2][0]);
-		TestUtils.assertEquals(Math.sqrt(0.5), distances[1][2]);
-		TestUtils.assertEquals(Math.sqrt(0.5), distances[2][1]);
+		Assert.assertEquals(0.0, distances[0][0]);
+		Assert.assertEquals(0.0, distances[1][1]);
+		Assert.assertEquals(0.0, distances[2][2]);
+		Assert.assertEquals(Math.sqrt(2), distances[0][1]);
+		Assert.assertEquals(Math.sqrt(2), distances[1][0]);
+		Assert.assertEquals(Math.sqrt(0.5), distances[0][2]);
+		Assert.assertEquals(Math.sqrt(0.5), distances[2][0]);
+		Assert.assertEquals(Math.sqrt(0.5), distances[1][2]);
+		Assert.assertEquals(Math.sqrt(0.5), distances[2][1]);
 	}
 	
 	@Test
 	public void testTruncate1() {
-		SPEA2 spea2 = new SPEA2(new MockRealProblem(), null, null, 0, 1);
+		SPEA2 spea2 = new SPEA2(new MockRealProblem(2));
 		
-		Solution solution1 = TestUtils.newSolution(0.0, 1.0);
-		Solution solution2 = TestUtils.newSolution(1.0, 0.0);
-		Solution solution3 = TestUtils.newSolution(0.5, 0.5);
+		Solution solution1 = MockSolution.of().withObjectives(0.0, 1.0);
+		Solution solution2 = MockSolution.of().withObjectives(1.0, 0.0);
+		Solution solution3 = MockSolution.of().withObjectives(0.5, 0.5);
 		
 		Population population = new Population();
-		population.add(solution1);
-		population.add(solution2);
-		population.add(solution3);
+		population.addAll(List.of(solution1, solution2, solution3));
 		
-		spea2.fitnessEvaluator.evaluate(population);
+		spea2.getFitnessEvaluator().evaluate(population);
 		Population result = spea2.truncate(population, 2);
 		
-		Assert.assertEquals(2, result.size());
-		Assert.assertTrue(result.contains(solution1));
-		Assert.assertTrue(result.contains(solution2));
-		Assert.assertFalse(result.contains(solution3));
+		Assert.assertSize(2, result);
+		Assert.assertContains(result, solution1);
+		Assert.assertContains(result, solution2);
+		Assert.assertNotContains(result, solution3);
 	}
 	
 	@Test
 	public void testTruncate2() {
-		SPEA2 spea2 = new SPEA2(new MockRealProblem(), null, null, 0, 1);
+		SPEA2 spea2 = new SPEA2(new MockRealProblem(2));
 		
-		Solution solution1 = TestUtils.newSolution(0.0, 1.0);
-		Solution solution2 = TestUtils.newSolution(1.0, 0.0);
-		Solution solution3 = TestUtils.newSolution(0.5, 0.5);
+		Solution solution1 = MockSolution.of().withObjectives(0.0, 1.0);
+		Solution solution2 = MockSolution.of().withObjectives(1.0, 0.0);
+		Solution solution3 = MockSolution.of().withObjectives(0.5, 0.5);
 		
 		Population population = new Population();
-		population.add(solution1);
-		population.add(solution2);
-		population.add(solution3);
+		population.addAll(List.of(solution1, solution2, solution3));
 		
-		spea2.fitnessEvaluator.evaluate(population);
+		spea2.getFitnessEvaluator().evaluate(population);
 		Population result = spea2.truncate(population, 1);
 		
-		Assert.assertEquals(1, result.size());
-		Assert.assertTrue(result.contains(solution1) || result.contains(solution2));
-		Assert.assertFalse(result.contains(solution3));
+		Assert.assertSize(1, result);
+		Assert.any(() -> Assert.assertContains(result, solution1), () -> Assert.assertContains(result, solution2));
+		Assert.assertNotContains(result, solution3);
 	}
 	
 	@Test
 	public void testFitnessNondominated() {
-		SPEA2 spea2 = new SPEA2(new MockRealProblem(), null, null, 0, 1);
+		SPEA2 spea2 = new SPEA2(new MockRealProblem(2));
 		
-		Solution solution1 = TestUtils.newSolution(0.0, 1.0);
-		Solution solution2 = TestUtils.newSolution(1.0, 0.0);
-		Solution solution3 = TestUtils.newSolution(0.5, 0.5);
+		Solution solution1 = MockSolution.of().withObjectives(0.0, 1.0);
+		Solution solution2 = MockSolution.of().withObjectives(1.0, 0.0);
+		Solution solution3 = MockSolution.of().withObjectives(0.5, 0.5);
 		
 		Population population = new Population();
-		population.add(solution1);
-		population.add(solution2);
-		population.add(solution3);
+		population.addAll(List.of(solution1, solution2, solution3));
 		
-		spea2.fitnessEvaluator.evaluate(population);
+		spea2.getFitnessEvaluator().evaluate(population);
 		
 		assertFitnessInRange(solution1, 0, 0.9999);
 		assertFitnessInRange(solution2, 0, 0.9999);
@@ -153,18 +124,16 @@ public class SPEA2Test extends AlgorithmTest {
 	
 	@Test
 	public void testFitnessDominated() {
-		SPEA2 spea2 = new SPEA2(new MockRealProblem(), null, null, 0, 1);
+		SPEA2 spea2 = new SPEA2(new MockRealProblem(2));
 		
-		Solution solution1 = TestUtils.newSolution(0.0, 0.0);
-		Solution solution2 = TestUtils.newSolution(1.0, 1.0);
-		Solution solution3 = TestUtils.newSolution(2.0, 2.0);
+		Solution solution1 = MockSolution.of().withObjectives(0.0, 0.0);
+		Solution solution2 = MockSolution.of().withObjectives(1.0, 1.0);
+		Solution solution3 = MockSolution.of().withObjectives(2.0, 2.0);
 		
 		Population population = new Population();
-		population.add(solution1);
-		population.add(solution2);
-		population.add(solution3);
+		population.addAll(List.of(solution1, solution2, solution3));
 		
-		spea2.fitnessEvaluator.evaluate(population);
+		spea2.getFitnessEvaluator().evaluate(population);
 		
 		assertFitnessInRange(solution1, 0, 0.9999);
 		assertFitnessInRange(solution2, 2, 2.9999); // ~= S(1) = 2
@@ -172,7 +141,7 @@ public class SPEA2Test extends AlgorithmTest {
 	}
 	
 	private void assertFitnessInRange(Solution solution, double min, double max) {
-		double fitness = (Double)solution.getAttribute(FitnessEvaluator.FITNESS_ATTRIBUTE);
+		double fitness = Fitness.getAttribute(solution);
 		
 		if ((fitness < min) || (fitness > max)) {
 			Assert.fail("fitness " + fitness + " not within bounds [" + min + ", " + max + "]");
@@ -183,9 +152,10 @@ public class SPEA2Test extends AlgorithmTest {
 	public void testLargeK() {
 		Problem problem = ProblemFactory.getInstance().getProblem("DTLZ2_2");
 		SPEA2 spea2 = new SPEA2(problem,
-				new RandomInitialization(problem, 100),
-				OperatorFactory.getInstance().getVariation(null, new Properties(), problem),
-				0,
+				100,
+				new RandomInitialization(problem),
+				OperatorFactory.getInstance().getVariation(null, new TypedProperties(), problem),
+				100,
 				10000);
 		
 		for (int i = 0; i < 10; i++) {

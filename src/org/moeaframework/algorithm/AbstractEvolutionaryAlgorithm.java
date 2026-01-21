@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,60 +17,75 @@
  */
 package org.moeaframework.algorithm;
 
-import java.io.NotSerializableException;
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 
-import org.moeaframework.core.EvolutionaryAlgorithm;
-import org.moeaframework.core.Initialization;
-import org.moeaframework.core.NondominatedPopulation;
-import org.moeaframework.core.Population;
-import org.moeaframework.core.Problem;
 import org.moeaframework.core.Solution;
+import org.moeaframework.core.configuration.Configurable;
+import org.moeaframework.core.initialization.Initialization;
+import org.moeaframework.core.operator.Variation;
+import org.moeaframework.core.population.NondominatedPopulation;
+import org.moeaframework.core.population.Population;
+import org.moeaframework.problem.Problem;
+import org.moeaframework.util.validate.Validate;
 
 /**
- * Abstract class providing default implementations for several
- * {@link EvolutionaryAlgorithm} methods. Primarily, the {@link #initialize()}
- * method generates and evaluates the initial population, adding the solutions
- * to the archive if available. The {@link #getResult()} method returns the
- * non-dominated solutions from the population and, if available, the archive.
- * The majority of evolutionary algorithms should only need to override the
- * {@link #iterate()} method.
+ * Abstract class providing default implementations for several {@link EvolutionaryAlgorithm} methods.  Primarily,
+ * the {@link #initialize()} method generates and evaluates the initial population, adding the solutions to the archive
+ * if available.  The {@link #getResult()} method returns the non-dominated solutions from the population and, if
+ * available, the archive.  The majority of evolutionary algorithms should only need to override the {@link #iterate()}
+ * method.
  */
-public abstract class AbstractEvolutionaryAlgorithm extends AbstractAlgorithm
-		implements EvolutionaryAlgorithm {
+public abstract class AbstractEvolutionaryAlgorithm extends AbstractAlgorithm implements EvolutionaryAlgorithm,
+Configurable {
+	
+	/**
+	 * The initial population size.
+	 */
+	private int initialPopulationSize;
 
 	/**
 	 * The current population.
 	 */
-	protected final Population population;
+	private Population population;
 
 	/**
 	 * The archive storing the non-dominated solutions.
 	 */
-	protected final NondominatedPopulation archive;
+	private NondominatedPopulation archive;
 
 	/**
 	 * The initialization operator.
 	 */
-	protected final Initialization initialization;
+	private Initialization initialization;
+	
+	/**
+	 * The variation operator.
+	 */
+	private Variation variation;
 
 	/**
 	 * Constructs an abstract evolutionary algorithm.
 	 * 
 	 * @param problem the problem being solved
+	 * @param initialPopulationSize the initial population size
 	 * @param population the population
 	 * @param archive the archive storing the non-dominated solutions
 	 * @param initialization the initialization operator
+	 * @param variation the variation operator
 	 */
-	public AbstractEvolutionaryAlgorithm(Problem problem,
-			Population population, NondominatedPopulation archive,
-			Initialization initialization) {
+	public AbstractEvolutionaryAlgorithm(Problem problem, int initialPopulationSize, Population population,
+			NondominatedPopulation archive, Initialization initialization, Variation variation) {
 		super(problem);
-		this.population = population;
-		this.archive = archive;
-		this.initialization = initialization;
+		setInitialPopulationSize(initialPopulationSize);
+		setPopulation(population);
+		setArchive(archive);
+		setInitialization(initialization);
+		
+		if (variation != null) {
+			setVariation(variation);
+		}
 	}
 
 	@Override
@@ -89,12 +104,17 @@ public abstract class AbstractEvolutionaryAlgorithm extends AbstractAlgorithm
 	}
 
 	@Override
-	protected void initialize() {
+	public void initialize() {
 		super.initialize();
+		
+		if (variation == null) {
+			throw new AlgorithmInitializationException(this,
+					"no variation operator set, must set one by calling setVariation(...)");
+		}
 
 		Population population = getPopulation();
 		NondominatedPopulation archive = getArchive();
-		Solution[] initialSolutions = initialization.initialize();
+		Solution[] initialSolutions = initialization.initialize(initialPopulationSize);
 		
 		evaluateAll(initialSolutions);
 		population.addAll(initialSolutions);
@@ -108,118 +128,111 @@ public abstract class AbstractEvolutionaryAlgorithm extends AbstractAlgorithm
 	public NondominatedPopulation getArchive() {
 		return archive;
 	}
+	
+	/**
+	 * Sets the archive used by this algorithm.  This value can not be set after initialization.
+	 * 
+	 * @param archive the archive
+	 */
+	protected void setArchive(NondominatedPopulation archive) {
+		assertNotInitialized();
+		this.archive = archive;
+	}
+	
+	/**
+	 * Returns the initial population size.
+	 * 
+	 * @return the initial population size
+	 */
+	public int getInitialPopulationSize() {
+		return initialPopulationSize;
+	}
+	
+	/**
+	 * Sets the initial population size.  This value can not be set after initialization.
+	 * 
+	 * @param initialPopulationSize the initial population size
+	 */
+	protected void setInitialPopulationSize(int initialPopulationSize) {
+		assertNotInitialized();
+		Validate.that("initialPopulationSize", initialPopulationSize).isGreaterThan(0);
+		this.initialPopulationSize = initialPopulationSize;
+	}
 
 	@Override
 	public Population getPopulation() {
 		return population;
 	}
-
-	@Override
-	public Serializable getState() throws NotSerializableException {
-		if (!isInitialized()) {
-			throw new AlgorithmInitializationException(this, 
-					"algorithm not initialized");
-		}
-
-		List<Solution> populationList = new ArrayList<Solution>();
-		List<Solution> archiveList = new ArrayList<Solution>();
-
-		for (Solution solution : population) {
-			populationList.add(solution);
-		}
-
-		if (archive != null) {
-			for (Solution solution : archive) {
-				archiveList.add(solution);
-			}
-		}
-
-		return new EvolutionaryAlgorithmState(getNumberOfEvaluations(),
-				populationList, archiveList);
+	
+	/**
+	 * Sets the population used by this algorithm.  This value can not be set after initialization.
+	 * 
+	 * @param population the population
+	 */
+	protected void setPopulation(Population population) {
+		assertNotInitialized();
+		Validate.that("population", population).isNotNull();
+		this.population = population;
 	}
-
-	@Override
-	public void setState(Object objState) throws NotSerializableException {
-		super.initialize();
-
-		EvolutionaryAlgorithmState state = (EvolutionaryAlgorithmState)objState;
-
-		numberOfEvaluations = state.getNumberOfEvaluations();
-		population.addAll(state.getPopulation());
-
-		if (archive != null) {
-			archive.addAll(state.getArchive());
-		}
+	
+	/**
+	 * Returns the variation operator currently in use by this algorithm.
+	 * 
+	 * @return the variation operator
+	 */
+	public Variation getVariation() {
+		return variation;
+	}
+	
+	/**
+	 * Replaces the variation operator to be used by this algorithm.
+	 * 
+	 * @param variation the variation operator
+	 */
+	protected void setVariation(Variation variation) {
+		Validate.that("variation", variation).isNotNull();
+		this.variation = variation;
 	}
 
 	/**
-	 * Proxy for serializing and deserializing the state of an
-	 * {@code AbstractEvolutionaryAlgorithm}. This proxy supports saving
-	 * the {@code numberOfEvaluations}, {@code population} and {@code archive}.
+	 * Returns the initialization method for generating solutions in the initial population.
+	 * 
+	 * @return the initialization method
 	 */
-	private static class EvolutionaryAlgorithmState implements Serializable {
+	public Initialization getInitialization() {
+		return initialization;
+	}
 
-		private static final long serialVersionUID = -6186688380313335557L;
-
-		/**
-		 * The number of objective function evaluations.
-		 */
-		private final int numberOfEvaluations;
-
-		/**
-		 * The population stored in a serializable list.
-		 */
-		private final List<Solution> population;
-
-		/**
-		 * The archive stored in a serializable list.
-		 */
-		private final List<Solution> archive;
-
-		/**
-		 * Constructs a proxy to serialize and deserialize the state of an 
-		 * {@code AbstractEvolutionaryAlgorithm}.
-		 * 
-		 * @param numberOfEvaluations the number of objective function
-		 *        evaluations
-		 * @param population the population stored in a serializable list
-		 * @param archive the archive stored in a serializable list
-		 */
-		public EvolutionaryAlgorithmState(int numberOfEvaluations,
-				List<Solution> population, List<Solution> archive) {
-			super();
-			this.numberOfEvaluations = numberOfEvaluations;
-			this.population = population;
-			this.archive = archive;
+	/**
+	 * Sets the initialization method for generating solutions in the initial population.  This can only
+	 * be set before initializing the algorithm.
+	 * 
+	 * @param initialization the initialization method
+	 */
+	public void setInitialization(Initialization initialization) {
+		assertNotInitialized();
+		Validate.that("initialization", initialization).isNotNull();
+		this.initialization = initialization;
+	}
+	
+	@Override
+	public void saveState(ObjectOutputStream stream) throws IOException {
+		super.saveState(stream);
+		population.saveState(stream);
+		
+		if (archive != null) {
+			archive.saveState(stream);
 		}
+	}
 
-		/**
-		 * Returns the number of objective function evaluations.
-		 * 
-		 * @return the number of objective function evaluations
-		 */
-		public int getNumberOfEvaluations() {
-			return numberOfEvaluations;
+	@Override
+	public void loadState(ObjectInputStream stream) throws IOException, ClassNotFoundException {
+		super.loadState(stream);
+		population.loadState(stream);
+		
+		if (archive != null) {
+			archive.loadState(stream);
 		}
-
-		/**
-		 * Returns the population stored in a serializable list.
-		 * 
-		 * @return the population stored in a serializable list
-		 */
-		public List<Solution> getPopulation() {
-			return population;
-		}
-
-		/**
-		 * Returns the archive stored in a serializable list.
-		 * 
-		 * @return the archive stored in a serializable list
-		 */
-		public List<Solution> getArchive() {
-			return archive;
-		}
-
 	}
 
 }

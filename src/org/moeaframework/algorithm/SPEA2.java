@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -18,7 +18,6 @@
 package org.moeaframework.algorithm;
 
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -26,39 +25,41 @@ import java.util.ListIterator;
 
 import org.apache.commons.math3.util.KthSelector;
 import org.apache.commons.math3.util.Pair;
-import org.moeaframework.core.FitnessEvaluator;
-import org.moeaframework.core.Initialization;
-import org.moeaframework.core.Population;
-import org.moeaframework.core.Problem;
-import org.moeaframework.core.Selection;
+import org.moeaframework.core.Settings;
 import org.moeaframework.core.Solution;
-import org.moeaframework.core.Variation;
+import org.moeaframework.core.attribute.Fitness;
 import org.moeaframework.core.comparator.DominanceComparator;
 import org.moeaframework.core.comparator.FitnessComparator;
 import org.moeaframework.core.comparator.ParetoDominanceComparator;
-import org.moeaframework.core.indicator.IndicatorUtils;
-import org.moeaframework.core.operator.TournamentSelection;
+import org.moeaframework.core.configuration.Configurable;
+import org.moeaframework.core.configuration.Property;
+import org.moeaframework.core.fitness.FitnessEvaluator;
+import org.moeaframework.core.initialization.Initialization;
+import org.moeaframework.core.initialization.RandomInitialization;
+import org.moeaframework.core.operator.Variation;
+import org.moeaframework.core.population.Population;
+import org.moeaframework.core.selection.Selection;
+import org.moeaframework.core.selection.TournamentSelection;
+import org.moeaframework.core.spi.OperatorFactory;
+import org.moeaframework.problem.Problem;
+import org.moeaframework.util.validate.Validate;
 
 /**
- * Implementation of the strength-based evolutionary algorithm (SPEA2).  SPEA2
- * uses a novel strength-based measure of fitness for handling multiple
- * objectives.
+ * Implementation of the strength-based evolutionary algorithm (SPEA2).  SPEA2 uses a novel strength-based measure of
+ * fitness for handling multiple objectives.
  * <p>
- * Note: First, there is a naming difference between this implementation and
- * the original SPEA2 paper.  The original SPEA2 paper defines a "population"
- * and an "archive", but the population is really the offspring and the archive
- * is the population.  Secondly, the SPEA2 paper defines a parameter
- * {@code k = sqrt(population.size())} for computing a crowding-based niching
- * factor.  The SPEA2 C implementation in PISA (written by the same authors
- * as the paper) recommends using {@code k=1} for performance reasons.  This
- * implementation makes {@code k} a user-specified parameter to support either
- * option.  {@code k} should be at least {@code 1} and no larger than
+ * Note: First, there is a naming difference between this implementation and the original SPEA2 paper.  The original
+ * SPEA2 paper defines a "population" and an "archive", but the population is really the offspring and the archive
+ * is the population.  Secondly, the SPEA2 paper defines a parameter {@code k = sqrt(population.size())} for computing
+ * a crowding-based niching factor.  The SPEA2 C implementation in PISA (written by the same authors as the paper)
+ * recommends using {@code k=1} for performance reasons.  This implementation makes {@code k} a user-specified
+ * parameter to support either option.  {@code k} should be at least {@code 1} and no larger than
  * {@code population.size()}.
  * <p>
  * References:
  * <ol>
- *   <li>Zitzler, E., M. Laumanns, and L. Thiele (2001).  SPEA2: Improving the
- *       Strength Pareto Evolutionary Algorithm.  TIK-Report 103.
+ *   <li>Zitzler, E., M. Laumanns, and L. Thiele (2001).  SPEA2: Improving the Strength Pareto Evolutionary Algorithm.
+ *       TIK-Report 103.
  * </ol>
  */
 public class SPEA2 extends AbstractEvolutionaryAlgorithm {
@@ -69,62 +70,119 @@ public class SPEA2 extends AbstractEvolutionaryAlgorithm {
 	private final Selection selection;
 	
 	/**
-	 * The variation operator.
-	 */
-	private final Variation variation;
-	
-	/**
 	 * The number of offspring.
 	 */
-	private final int numberOfOffspring;
+	private int numberOfOffspring;
 	
 	/**
 	 * Strength-based fitness evaluator.
 	 */
-	protected final StrengthFitnessEvaluator fitnessEvaluator;
+	private StrengthFitnessEvaluator fitnessEvaluator;
 	
 	/**
 	 * Compares solutions based on strength.
 	 */
-	protected final FitnessComparator fitnessComparator;
+	private final FitnessComparator fitnessComparator;
+	
+	/**
+	 * Constructs a new instance of SPEA2 with default settings.
+	 * 
+	 * @param problem the problem
+	 */
+	public SPEA2(Problem problem) {
+		this(problem,
+				Settings.DEFAULT_POPULATION_SIZE,
+				new RandomInitialization(problem),
+				OperatorFactory.getInstance().getVariation(problem),
+				Settings.DEFAULT_POPULATION_SIZE,
+				1);
+	}
 
 	/**
 	 * Constructs a new instance of SPEA2.
 	 * 
 	 * @param problem the problem
+	 * @param initialPopulationSize the initial population size
 	 * @param initialization the initialization procedure
 	 * @param variation the variation operator
 	 * @param numberOfOffspring the number of offspring generated each iteration
-	 * @param k niching parameter specifying that crowding is computed using
-	 *        the {@code k}-th nearest neighbor, recommend {@code k=1}
+	 * @param k niching parameter specifying that crowding is computed using the {@code k}-th nearest neighbor,
+	 *        recommend {@code k=1}
 	 */
-	public SPEA2(Problem problem, Initialization initialization,
+	public SPEA2(Problem problem, int initialPopulationSize, Initialization initialization,
 			Variation variation, int numberOfOffspring, int k) {
-		super(problem, new Population(), null, initialization);
-		this.variation = variation;
-		this.numberOfOffspring = numberOfOffspring;
+		super(problem, initialPopulationSize, new Population(), null, initialization, variation);
+		setNumberOfOffspring(numberOfOffspring);
 		
 		fitnessEvaluator = new StrengthFitnessEvaluator(k);
 		fitnessComparator = new FitnessComparator(fitnessEvaluator.areLargerValuesPreferred());
 		selection = new TournamentSelection(fitnessComparator);
 	}
+	
+	@Override
+	public String getName() {
+		return "SPEA-2";
+	}
+	
+	@Override
+	@Property("operator")
+	public void setVariation(Variation variation) {
+		super.setVariation(variation);
+	}
+	
+	@Override
+	@Property("populationSize")
+	public void setInitialPopulationSize(int initialPopulationSize) {
+		super.setInitialPopulationSize(initialPopulationSize);
+	}
+	
+	/**
+	 * Returns the number of offspring produced each iteration.
+	 * 
+	 * @return the number of offspring
+	 */
+	public int getNumberOfOffspring() {
+		return numberOfOffspring;
+	}
+	
+	/**
+	 * Sets the number of offspring produced each iteration.  This is typically set to the same value as the
+	 * population size.
+	 * 
+	 * @param numberOfOffspring the number of offspring
+	 */
+	@Property("offspringSize")
+	public void setNumberOfOffspring(int numberOfOffspring) {
+		Validate.that("numberOfOffspring", numberOfOffspring).isGreaterThan(0);
+		this.numberOfOffspring = numberOfOffspring;
+	}
+	
+	/**
+	 * Returns the strength-based fitness evaluator.
+	 * 
+	 * @return the strength-based fitness evaluator
+	 */
+	public StrengthFitnessEvaluator getFitnessEvaluator() {
+		return fitnessEvaluator;
+	}
 
 	@Override
-	protected void initialize() {
+	public void initialize() {
 		super.initialize();
 		
-		fitnessEvaluator.evaluate(population);
+		fitnessEvaluator.evaluate(getPopulation());
 	}
 
 	@Override
 	protected void iterate() {
 		// mating and selection to generate offspring
+		Population population = getPopulation();
+		Variation variation = getVariation();
 		Population offspring = new Population();
 		int populationSize = population.size();
 
 		while (offspring.size() < numberOfOffspring) {
-			Solution[] parents = selection.select(variation.getArity(),
-					population);
+			Solution[] parents = selection.select(variation.getArity(), population);
 			Solution[] children = variation.evolve(parents);
 
 			offspring.addAll(children);
@@ -157,8 +215,7 @@ public class SPEA2 extends AbstractEvolutionaryAlgorithm {
 		
 		while (iterator.hasNext()) {
 			Solution solution = iterator.next();
-			double fitness = (Double)solution.getAttribute(
-					FitnessEvaluator.FITNESS_ATTRIBUTE);
+			double fitness = Fitness.getAttribute(solution);
 			
 			if (fitness < 1.0) {
 				survivors.add(solution);
@@ -190,8 +247,8 @@ public class SPEA2 extends AbstractEvolutionaryAlgorithm {
 	}
 	
 	/**
-	 * Computes the distance matrix containing the pair-wise distances between
-	 * solutions in objective space.  The diagonal will contain all 0's.
+	 * Computes the distance matrix containing the pair-wise distances between solutions in objective space.  The
+	 * diagonal will contain all 0's.
 	 * 
 	 * @param population the population of solutions
 	 * @return the distance matrix
@@ -203,9 +260,9 @@ public class SPEA2 extends AbstractEvolutionaryAlgorithm {
 			distances[i][i] = 0.0;
 			
 			for (int j = i+1; j < population.size(); j++) {
-				distances[i][j] = distances[j][i] = 
-						IndicatorUtils.euclideanDistance(problem,
-								population.get(i), population.get(j));
+				double distance = population.get(i).euclideanDistance(population.get(j));
+				distances[i][j] = distance;
+				distances[j][i] = distance;
 			}
 		}
 		
@@ -213,8 +270,7 @@ public class SPEA2 extends AbstractEvolutionaryAlgorithm {
 	}
 	
 	/**
-	 * Mapping of pair-wise distances between points.  This mapping is mutable,
-	 * allowing points to be removed.
+	 * Mapping of pair-wise distances between points.  This mapping is mutable, allowing points to be removed.
 	 */
 	public static class MutableDistanceMap {
 		
@@ -239,36 +295,27 @@ public class SPEA2 extends AbstractEvolutionaryAlgorithm {
 		 * @param rawDistanceMatrix the distance matrix
 		 */
 		protected void initialize(double[][] rawDistanceMatrix) {
-			distanceMatrix = new LinkedList<List<Pair<Integer, Double>>>();
+			distanceMatrix = new LinkedList<>();
 			
 			for (int i = 0; i < rawDistanceMatrix.length; i++) {
-				List<Pair<Integer, Double>> distances = new LinkedList<Pair<Integer, Double>>();
+				List<Pair<Integer, Double>> distances = new LinkedList<>();
 				
 				for (int j = 0; j < rawDistanceMatrix[i].length; j++) {
 					if (i != j) {
-						distances.add(new Pair<Integer, Double>(j, rawDistanceMatrix[i][j]));
+						distances.add(new Pair<>(j, rawDistanceMatrix[i][j]));
 					}
 				}
 				
-				Collections.sort(distances, new Comparator<Pair<Integer, Double>>() {
-
-					@Override
-					public int compare(Pair<Integer, Double> o1,
-							Pair<Integer, Double> o2) {
-						return Double.compare(o1.getSecond(), o2.getSecond());
-					}
-					
-				});
+				Collections.sort(distances, (o1, o2) -> Double.compare(o1.getSecond(), o2.getSecond()));
 				
 				distanceMatrix.add(distances);
 			}
 		}
 		
 		/**
-		 * Returns the most crowded point according to SPEA2's truncation
-		 * strategy.  The most crowded point is the point with the smallest
-		 * distance to its nearest neighbor.  Ties are broken by looking at
-		 * the next nearest neighbor repeatedly until a difference is found.
+		 * Returns the most crowded point according to SPEA2's truncation strategy.  The most crowded point is the
+		 * point with the smallest distance to its nearest neighbor.  Ties are broken by looking at the next nearest
+		 * neighbor repeatedly until a difference is found.
 		 * 
 		 * @return the index of the most crowded point
 		 */
@@ -318,10 +365,8 @@ public class SPEA2 extends AbstractEvolutionaryAlgorithm {
 					if (point.getFirst() == index) {
 						iterator.remove();
 					} else if (point.getFirst() > index) {
-						// decrement the index so it stays aligned with the
-						// index in distanceMatrix
-						iterator.set(new Pair<Integer, Double>(
-								point.getFirst()-1, point.getSecond()));
+						// decrement the index so it stays aligned with the index in distanceMatrix
+						iterator.set(new Pair<>(point.getFirst()-1, point.getSecond()));
 					}
 				}
 			}
@@ -332,13 +377,12 @@ public class SPEA2 extends AbstractEvolutionaryAlgorithm {
 	/**
 	 * Fitness evaluator for the strength measure with crowding-based niching.
 	 */
-	public class StrengthFitnessEvaluator implements FitnessEvaluator {
+	public class StrengthFitnessEvaluator implements FitnessEvaluator, Configurable {
 		
 		/**
-		 * Crowding is based on the distance to the {@code k}-th nearest
-		 * neighbor.
+		 * Crowding is based on the distance to the {@code k}-th nearest neighbor.
 		 */
-		private final int k;
+		private int k;
 		
 		/**
 		 * Pareto dominance comparator.
@@ -346,17 +390,36 @@ public class SPEA2 extends AbstractEvolutionaryAlgorithm {
 		private final DominanceComparator comparator;
 		
 		/**
-		 * Constructs a new fitness evaluator for computing the strength
-		 * measure with crowding-based niching.
+		 * Constructs a new fitness evaluator for computing the strength measure with crowding-based niching.
 		 * 
-		 * @param k crowding is based on the distance to the {@code k}-th
-		 *        nearest neighbor
+		 * @param k crowding is based on the distance to the {@code k}-th nearest neighbor
 		 */
 		public StrengthFitnessEvaluator(int k) {
 			super();
-			this.k = k;
+			setK(k);
 			
 			comparator = new ParetoDominanceComparator();
+		}
+		
+		/**
+		 * Returns the value {@code k} that controls which nearest neighbor is used to compute the crowding distance.
+		 * 
+		 * @return the value {@code k}
+		 */
+		public int getK() {
+			return k;
+		}
+		
+		/**
+		 * Sets the value {@code k} that controls which nearest neighbor is used to compute the crowding distance.
+		 * This is set to {@code 1} by default.
+		 * 
+		 * @param k the value {@code k}
+		 */
+		@Property
+		public void setK(int k) {
+			Validate.that("k", k).isGreaterThan(0);
+			this.k = k;
 		}
 
 		@Override
@@ -367,8 +430,7 @@ public class SPEA2 extends AbstractEvolutionaryAlgorithm {
 			// count the number of individuals each solution dominates
 			for (int i = 0; i < population.size()-1; i++) {
 				for (int j = i+1; j < population.size(); j++) {
-					int comparison = comparator.compare(population.get(i),
-							population.get(j));
+					int comparison = comparator.compare(population.get(i), population.get(j));
 					
 					if (comparison < 0) {
 						strength[i]++;
@@ -378,12 +440,10 @@ public class SPEA2 extends AbstractEvolutionaryAlgorithm {
 				}
 			}
 			
-			// the raw fitness is the sum of the dominance counts (strength)
-			// of all dominated solutions
+			// the raw fitness is the sum of the dominance counts (strength) of all dominated solutions
 			for (int i = 0; i < population.size()-1; i++) {
 				for (int j = i+1; j < population.size(); j++) {
-					int comparison = comparator.compare(population.get(i),
-							population.get(j));
+					int comparison = comparator.compare(population.get(i), population.get(j));
 					
 					if (comparison < 0) {
 						fitness[j] += strength[i];
@@ -404,7 +464,7 @@ public class SPEA2 extends AbstractEvolutionaryAlgorithm {
 			
 			// assign fitness attribute to solutions
 			for (int i = 0; i < population.size(); i++) {
-				population.get(i).setAttribute(FITNESS_ATTRIBUTE, fitness[i]);
+				Fitness.setAttribute(population.get(i), fitness[i]);
 			}
 		}
 

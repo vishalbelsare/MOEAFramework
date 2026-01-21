@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -42,8 +42,7 @@ public class Symbol {
 	 * Constructs a symbol with the specified value.
 	 * 
 	 * @param value the value of this symbol
-	 * @param isTerminal {@code true} if this symbol is a terminal;
-	 *        {@code false} otherwise
+	 * @param isTerminal {@code true} if this symbol is a terminal; {@code false} otherwise
 	 */
 	public Symbol(String value, boolean isTerminal) {
 		super();
@@ -61,11 +60,9 @@ public class Symbol {
 	}
 
 	/**
-	 * Returns {@code true} if this symbol is a terminal; {@code false}
-	 * otherwise.
+	 * Returns {@code true} if this symbol is a terminal; {@code false} otherwise.
 	 * 
-	 * @return {@code true} if this symbol is a terminal; {@code false}
-	 *         otherwise
+	 * @return {@code true} if this symbol is a terminal; {@code false} otherwise
 	 */
 	public boolean isTerminal() {
 		return isTerminal;

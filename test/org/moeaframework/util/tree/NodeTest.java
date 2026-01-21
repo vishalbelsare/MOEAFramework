@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -18,13 +18,9 @@
 package org.moeaframework.util.tree;
 
 import org.apache.commons.math3.util.FastMath;
-import org.junit.Assert;
 import org.junit.Test;
+import org.moeaframework.Assert;
 
-/**
- * Tests the {@link Node} class, specific node instances, and the methods in
- * {@link NumberArithmetic}.
- */
 public class NodeTest {
 	
 	public static class UnusedEnvironment extends Environment {
@@ -79,7 +75,7 @@ public class NodeTest {
 				.setArgument(0, new Constant(-1))
 				.setArgument(1, new Constant(2.5));
 		
-		Assert.assertTrue(NumberArithmetic.equals(1.5, 
+		Assert.assertTrue(NumberArithmetic.equals(1.5,
 				(Number)node.evaluate(new UnusedEnvironment())));
 	}
 	
@@ -194,7 +190,7 @@ public class NodeTest {
 		 *   if (n <= 1) return 1;
 		 *   else return n * fact(n-1);
 		 */
-		Define factorial = (Define)new Define("factorial", Number.class, "n", Number.class).setArgument(0, 
+		Define factorial = (Define)new Define("factorial", Number.class, "n", Number.class).setArgument(0,
 				new IfElse(Number.class)
 						.setArgument(0, new LessThanOrEqual()
 								.setArgument(0, new Get(Number.class, "n"))
@@ -212,7 +208,7 @@ public class NodeTest {
 				.setArgument(1, new Call(factorial)
 						.setArgument(0, new Constant(5)));
 		
-		Assert.assertTrue(NumberArithmetic.equals(120, 
+		Assert.assertTrue(NumberArithmetic.equals(120,
 				(Number)program.evaluate(new Environment())));
 	}
 	
@@ -225,9 +221,9 @@ public class NodeTest {
 				.setArgument(0, new Constant(5))
 				.setArgument(1, new Constant(7.0));
 		
-		Assert.assertTrue(NumberArithmetic.equals(5 / 7, 
+		Assert.assertTrue(NumberArithmetic.equals(5 / 7,
 				(Number)node1.evaluate(new UnusedEnvironment())));
-		Assert.assertTrue(NumberArithmetic.equals(5.0 / 7.0, 
+		Assert.assertTrue(NumberArithmetic.equals(5.0 / 7.0,
 				(Number)node2.evaluate(new UnusedEnvironment())));
 	}
 	
@@ -277,7 +273,7 @@ public class NodeTest {
 								.setArgument(0, new Get(Number.class, "x"))
 								.setArgument(1, new Get(Number.class, "i"))));
 		
-		Assert.assertTrue(NumberArithmetic.equals(10, 
+		Assert.assertTrue(NumberArithmetic.equals(10,
 				(Number)node.evaluate(new Environment())));
 	}
 	
@@ -354,7 +350,7 @@ public class NodeTest {
 	public void testLambda() {
 		Lambda lambda = new Lambda(new Multiply()
 				.setArgument(0, new Get(Number.class, "x"))
-				.setArgument(1, new Get(Number.class, "x")), 
+				.setArgument(1, new Get(Number.class, "x")),
 				 "x", Number.class);
 		
 		Node node = lambda
@@ -427,7 +423,7 @@ public class NodeTest {
 				.setArgument(0, new Constant(5))
 				.setArgument(1, new Constant(-5));
 		
-		Assert.assertTrue(NumberArithmetic.equals(5, 
+		Assert.assertTrue(NumberArithmetic.equals(5,
 				(Number)node1.evaluate(new UnusedEnvironment())));
 		Assert.assertTrue(NumberArithmetic.equals(5,
 				(Number)node2.evaluate(new UnusedEnvironment())));
@@ -442,7 +438,7 @@ public class NodeTest {
 				.setArgument(0, new Constant(5))
 				.setArgument(1, new Constant(-5));
 		
-		Assert.assertTrue(NumberArithmetic.equals(5, 
+		Assert.assertTrue(NumberArithmetic.equals(5,
 				(Number)node1.evaluate(new UnusedEnvironment())));
 		Assert.assertTrue(NumberArithmetic.equals(-5,
 				(Number)node2.evaluate(new UnusedEnvironment())));
@@ -457,9 +453,9 @@ public class NodeTest {
 				.setArgument(0, new Constant(5))
 				.setArgument(1, new Constant(7.0));
 		
-		Assert.assertTrue(NumberArithmetic.equals(5 % 7, 
+		Assert.assertTrue(NumberArithmetic.equals(5 % 7,
 				(Number)node1.evaluate(new UnusedEnvironment())));
-		Assert.assertTrue(NumberArithmetic.equals(5.0 % 7.0, 
+		Assert.assertTrue(NumberArithmetic.equals(5.0 % 7.0,
 				(Number)node2.evaluate(new UnusedEnvironment())));
 	}
 	
@@ -472,9 +468,9 @@ public class NodeTest {
 				.setArgument(0, new Constant(5))
 				.setArgument(1, new Constant(-7.0));
 		
-		Assert.assertTrue(NumberArithmetic.equals(5 * 7, 
+		Assert.assertTrue(NumberArithmetic.equals(5 * 7,
 				(Number)node1.evaluate(new UnusedEnvironment())));
-		Assert.assertTrue(NumberArithmetic.equals(5.0 * -7.0, 
+		Assert.assertTrue(NumberArithmetic.equals(5.0 * -7.0,
 				(Number)node2.evaluate(new UnusedEnvironment())));
 	}
 	
@@ -523,7 +519,7 @@ public class NodeTest {
 				.setArgument(0, new Constant(5))
 				.setArgument(1, new Constant(7));
 		
-		Assert.assertTrue(NumberArithmetic.equals(Math.pow(5, 7), 
+		Assert.assertTrue(NumberArithmetic.equals(Math.pow(5, 7),
 				(Number)node.evaluate(new UnusedEnvironment())));
 	}
 	
@@ -624,7 +620,7 @@ public class NodeTest {
 				.setArgument(0, new Constant(-1))
 				.setArgument(1, new Constant(2.5));
 		
-		Assert.assertTrue(NumberArithmetic.equals(-3.5, 
+		Assert.assertTrue(NumberArithmetic.equals(-3.5,
 				(Number)node.evaluate(new Environment())));
 	}
 	
@@ -682,7 +678,7 @@ public class NodeTest {
 		
 		node.evaluate(environment);
 		
-		Assert.assertTrue(NumberArithmetic.equals(10, 
+		Assert.assertTrue(NumberArithmetic.equals(10,
 				environment.get(Number.class, "x")));
 	}
 	

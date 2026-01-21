@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -18,14 +18,12 @@
 package org.moeaframework.problem.misc;
 
 import org.moeaframework.core.Solution;
-import org.moeaframework.core.variable.EncodingUtils;
 import org.moeaframework.core.variable.RealVariable;
 import org.moeaframework.problem.AbstractProblem;
 
 /**
- * The Kursawe test problem. According to a personal correspondence between Van
- * Veldhuizen and Marco Laumanns, a misprint exists in Kursawe's paper. This
- * implementation uses the corrected version.
+ * The Kursawe test problem.  According to a personal correspondence between Van Veldhuizen and Marco Laumanns, a
+ * misprint exists in Kursawe's paper.  This implementation uses the corrected version.
  * <p>
  * Properties:
  * <ul>
@@ -36,11 +34,10 @@ import org.moeaframework.problem.AbstractProblem;
  * <p>
  * References:
  * <ol>
- * <li>Kursawe, F. "A Variant of Evolution Strategies for Vector Optimization."
- * Parallel Problem Solving from Nature, pp. 193-197, 1991.
- * <li>Van Veldhuizen, D. "Multiobjective Evolutionary Algorithms:
- * Classifications, Analyses, and New Innovations." Ph.D. Dissertation. The Air
- * Force Institute of Technology, Air University, 1999.
+ *   <li>Kursawe, F.  "A Variant of Evolution Strategies for Vector Optimization."  Parallel Problem Solving from
+ *       Nature, pp. 193-197, 1991.
+ *   <li>Van Veldhuizen, D.  "Multiobjective Evolutionary Algorithms: Classifications, Analyses, and New Innovations."
+ *       Ph.D. Dissertation.  The Air Force Institute of Technology, Air University, 1999.
  * </ol>
  */
 public class Kursawe extends AbstractProblem {
@@ -63,8 +60,7 @@ public class Kursawe extends AbstractProblem {
 	}
 
 	/**
-	 * Constructs the Kursawe problem with the specified number of decision
-	 * variables.
+	 * Constructs the Kursawe problem with the specified number of decision variables.
 	 * 
 	 * @param numberOfVariables the number of decision variables
 	 */
@@ -73,15 +69,13 @@ public class Kursawe extends AbstractProblem {
 	}
 
 	/**
-	 * Constructs the Kursawe problem with the specified number of decision
-	 * variables.
+	 * Constructs the Kursawe problem with the specified number of decision variables.
 	 * 
 	 * @param numberOfVariables the number of decision variables
 	 * @param lowerBound the lower bound for decision variables
 	 * @param upperBound the upper bound for decision variables
 	 */
-	public Kursawe(int numberOfVariables, double lowerBound, 
-			double upperBound) {
+	public Kursawe(int numberOfVariables, double lowerBound, double upperBound) {
 		super(numberOfVariables, 2);
 		this.lowerBound = lowerBound;
 		this.upperBound = upperBound;
@@ -89,7 +83,7 @@ public class Kursawe extends AbstractProblem {
 
 	@Override
 	public void evaluate(Solution solution) {
-		double[] x = EncodingUtils.getReal(solution);
+		double[] x = RealVariable.getReal(solution);
 		double f1 = 0.0;
 		double f2 = 0.0;
 		
@@ -101,8 +95,8 @@ public class Kursawe extends AbstractProblem {
 			f2 += Math.pow(Math.abs(x[i]), 0.8) + 5.0 * Math.sin(Math.pow(x[i], 3.0));
 		}
 
-		solution.setObjective(0, f1);
-		solution.setObjective(1, f2);
+		solution.setObjectiveValue(0, f1);
+		solution.setObjectiveValue(1, f2);
 	}
 
 	@Override

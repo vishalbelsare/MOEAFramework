@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -20,59 +20,67 @@ package org.moeaframework.util;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.junit.Assert;
 import org.junit.Test;
+import org.moeaframework.Assert;
 
-/**
- * Tests the {@link OptionCompleter} class.
- */
 public class OptionCompleterTest {
 
-	/**
-	 * Tests normal usage, checking for both existing and non-existing entries.
-	 */
 	@Test
-	public void testNormalUsage() {
-		OptionCompleter completer = new OptionCompleter();
-		completer.add("subset");
-		completer.add("superset");
+	public void testLookup() {
+		OptionCompleter completer = new OptionCompleter("subset", "superset");
 
 		Assert.assertEquals("subset", completer.lookup("subset"));
 		Assert.assertEquals("superset", completer.lookup("superset"));
 		Assert.assertEquals("subset", completer.lookup("SUB"));
 		Assert.assertEquals("superset", completer.lookup("SUP"));
+		Assert.assertNull(completer.lookup(null));
 		Assert.assertNull(completer.lookup("su"));
 		Assert.assertNull(completer.lookup("k"));
 		Assert.assertNull(completer.lookup(""));
 	}
+	
+	
+	@Test
+	public void testGetOrThrow() {
+		OptionCompleter completer = new OptionCompleter("subset", "superset");
 
-	/**
-	 * Tests if duplicate entries are correctly ignored.
-	 */
+		Assert.assertEquals("subset", completer.getOrThrow("input", "subset"));
+		Assert.assertEquals("superset", completer.getOrThrow("input", "superset"));
+		Assert.assertEquals("subset", completer.getOrThrow("input", "SUB"));
+		Assert.assertEquals("superset", completer.getOrThrow("input", "SUP"));
+		Assert.assertThrows(IllegalArgumentException.class, () -> completer.getOrThrow("input", null));
+		Assert.assertThrows(IllegalArgumentException.class, () -> completer.getOrThrow("input", "su"));
+		Assert.assertThrows(IllegalArgumentException.class, () -> completer.getOrThrow("input", "k"));
+		Assert.assertThrows(IllegalArgumentException.class, () -> completer.getOrThrow("input", ""));
+	}
+
+
 	@Test
 	public void testDuplicateOption() {
-		OptionCompleter completer = new OptionCompleter();
-		completer.add("subset");
-		completer.add("subset");
-
+		OptionCompleter completer = new OptionCompleter("subset", "subset");
 		Assert.assertEquals("subset", completer.lookup("sub"));
 	}
 
-	/**
-	 * Tests the edge case where the empty string correctly matches any option,
-	 * as long as that is the only option.
-	 */
 	@Test
-	public void testEmptyString() {
-		OptionCompleter completer = new OptionCompleter();
-		completer.add("subset");
-
+	public void testEmptyStringWithSingleOption() {
+		OptionCompleter completer = new OptionCompleter("subset");
 		Assert.assertEquals("subset", completer.lookup(""));
 	}
+	
+	@Test
+	public void testEmptyStringWithMultipleOptions() {
+		OptionCompleter completer = new OptionCompleter("subset", "superset");
+		Assert.assertNull(completer.lookup(""));
+	}
+	
+	@Test
+	public void testOverlappingOption() {
+		OptionCompleter completer = new OptionCompleter("sub", "subset");
+		Assert.assertNull(completer.lookup("su"));
+		Assert.assertEquals("sub", completer.lookup("sub"));
+		Assert.assertEquals("subset", completer.lookup("subs"));
+	}
 
-	/**
-	 * Tests if the {@code add} method works correctly.
-	 */
 	@Test
 	public void testAdd() {
 		OptionCompleter completer = new OptionCompleter();
@@ -82,19 +90,23 @@ public class OptionCompleterTest {
 		Assert.assertEquals("subset", completer.lookup("sub"));
 	}
 
-	/**
-	 * Tests the constructors.
-	 */
 	@Test
 	public void testConstructors() {
 		OptionCompleter completer1 = new OptionCompleter("subset");
 		Assert.assertEquals("subset", completer1.lookup("sub"));
 
-		List<String> options = new ArrayList<String>();
+		List<String> options = new ArrayList<>();
 		options.add("subset");
 
 		OptionCompleter completer2 = new OptionCompleter(options);
 		Assert.assertEquals("subset", completer2.lookup("sub"));
 	}
-
+	
+	@Test
+	public void testLocale() {
+		OptionCompleter completer = new OptionCompleter("\u0130");
+		
+		Assert.assertEquals("\u0130", completer.lookup("\u0069"));
+		Assert.assertEquals("\u0130", completer.lookup("\u0131"));
+	}
 }

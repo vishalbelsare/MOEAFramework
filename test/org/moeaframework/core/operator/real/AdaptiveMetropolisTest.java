@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,40 +17,34 @@
  */
 package org.moeaframework.core.operator.real;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.math3.linear.CholeskyDecomposition;
 import org.apache.commons.math3.linear.MatrixUtils;
 import org.apache.commons.math3.linear.RealMatrix;
-import org.apache.commons.math3.ml.clustering.CentroidCluster;
-import org.apache.commons.math3.ml.clustering.Cluster;
-import org.apache.commons.math3.ml.clustering.DoublePoint;
-import org.apache.commons.math3.ml.clustering.KMeansPlusPlusClusterer;
 import org.apache.commons.math3.stat.correlation.Covariance;
-import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.moeaframework.AbsoluteError;
-import org.moeaframework.RelativeError;
-import org.moeaframework.Retryable;
-import org.moeaframework.TestThresholds;
-import org.moeaframework.TestUtils;
+import org.moeaframework.Assert;
 import org.moeaframework.CIRunner;
+import org.moeaframework.Retryable;
+import org.moeaframework.TestEnvironment;
 import org.moeaframework.core.Solution;
 import org.moeaframework.core.operator.ParentCentricVariationTest;
-import org.moeaframework.core.operator.ParentImmutabilityTest;
-import org.moeaframework.core.variable.EncodingUtils;
+import org.moeaframework.core.variable.RealVariable;
+import org.moeaframework.util.clustering.Cluster;
+import org.moeaframework.util.clustering.Clustering;
 
-/**
- * Tests the {@link AdaptiveMetropolis} class.
- */
 @RunWith(CIRunner.class)
-public class AdaptiveMetropolisTest extends ParentCentricVariationTest {
+public class AdaptiveMetropolisTest extends ParentCentricVariationTest<AdaptiveMetropolis> {
+	
+	@Override
+	public AdaptiveMetropolis createInstance() {
+		return new AdaptiveMetropolis(3, TestEnvironment.SAMPLES, 1.0);
+	}
 	
 	/**
-	 * This is sample output from running Jasper Vrugt's AMALGAM codes in
-	 * MATLAB that is positive definite.
+	 * This is sample output from running Jasper Vrugt's AMALGAM codes in MATLAB that is positive definite.
 	 */
 	@Test
 	public void testVrugtSample() {
@@ -72,8 +66,7 @@ public class AdaptiveMetropolisTest extends ParentCentricVariationTest {
 		double jumpRate = Math.pow(2.4 / Math.sqrt(10), 2.0);
 
 		RealMatrix actual = new CholeskyDecomposition(
-					new Covariance(matrix.scalarMultiply(jumpRate))
-					.getCovarianceMatrix()).getLT();
+					new Covariance(matrix.scalarMultiply(jumpRate)).getCovarianceMatrix()).getLT();
 		
 		RealMatrix expected = MatrixUtils.createRealMatrix(new double[][] {
 				{ 0.0335, -0.0001, -0.0003, -0.0006,  0.0005,  0.0003,  0.0006,  0.0000,  0.0001,  0.0005 },
@@ -87,48 +80,26 @@ public class AdaptiveMetropolisTest extends ParentCentricVariationTest {
 				{ 0.0000,  0.0000,  0.0000,  0.0000,  0.0000,  0.0000,  0.0000,  0.0000,  0.0003, -0.0003 },
 				{ 0.0000,  0.0000,  0.0000,  0.0000,  0.0000,  0.0000,  0.0000,  0.0000,  0.0000,  0.0003 }});
 
-		TestUtils.assertEquals(expected, actual, new AbsoluteError(0.0001));
+		Assert.assertEquals(expected, actual, 0.0001);
 	}
 
-	/**
-	 * Tests if the offspring form clusters distributed around each parent.
-	 */
 	@Test
 	public void testFullDistribution() {
-		AdaptiveMetropolis am = new AdaptiveMetropolis(3, 
-				TestThresholds.SAMPLES, 1.0);
+		AdaptiveMetropolis am = createInstance();
 
-		Solution[] parents = new Solution[] { newSolution(0.0, 0.0),
-				newSolution(0.0, 1.0), newSolution(1.0, 0.0) };
-
+		Solution[] parents = new Solution[] { newSolution(0.0, 0.0), newSolution(0.0, 1.0), newSolution(1.0, 0.0) };
 		Solution[] offspring = am.evolve(parents);
 
-		check(parents, offspring);
+		checkDistribution(parents, offspring);
 	}
 
 	@Test
 	public void testPartialDistribution() {
-		AdaptiveMetropolis am = new AdaptiveMetropolis(3, 
-				TestThresholds.SAMPLES, 1.0);
+		AdaptiveMetropolis am = createInstance();
 
-		Solution[] parents = new Solution[] { newSolution(0.0, 0.0),
-				newSolution(0.0, 1.0), newSolution(0.0, 2.0) };
+		Solution[] parents = new Solution[] { newSolution(0.0, 0.0), newSolution(0.0, 1.0), newSolution(0.0, 2.0) };
 
 		Assert.assertEquals(0, am.evolve(parents).length);
-	}
-
-	/**
-	 * Tests if the parents remain unchanged during variation.
-	 */
-	@Test
-	public void testParentImmutability() {
-		AdaptiveMetropolis am = new AdaptiveMetropolis(3, 
-				3, 1.0);
-
-		Solution[] parents = new Solution[] { newSolution(0.0, 0.0),
-				newSolution(0.0, 1.0), newSolution(1.0, 0.0) };
-
-		ParentImmutabilityTest.test(parents, am);
 	}
 	
 	/**
@@ -137,12 +108,11 @@ public class AdaptiveMetropolisTest extends ParentCentricVariationTest {
 	 * @param cluster the cluster
 	 * @return the covariance matrix for the specified cluster
 	 */
-	private RealMatrix getCovariance(Cluster<DoublePoint> cluster) {
-		List<DoublePoint> points = cluster.getPoints();
-		RealMatrix rm = MatrixUtils.createRealMatrix(points.size(), 2);
+	private RealMatrix getCovariance(Cluster cluster) {
+		RealMatrix rm = MatrixUtils.createRealMatrix(cluster.size(), 2);
 		
-		for (int i=0; i<points.size(); i++) {
-			rm.setRow(i, points.get(i).getPoint());
+		for (int i=0; i < cluster.size(); i++) {
+			rm.setRow(i, cluster.get(i).getPoint());
 		}
 		
 		return new Covariance(rm).getCovarianceMatrix();
@@ -155,23 +125,20 @@ public class AdaptiveMetropolisTest extends ParentCentricVariationTest {
 	 * @param jumpRateCoefficient the jump rate coefficient
 	 * @return the covariance matrix for the specified solutions
 	 */
-	private RealMatrix getCovariance(Solution[] parents, 
-			double jumpRateCoefficient) {
+	private RealMatrix getCovariance(Solution[] parents, double jumpRateCoefficient) {
 		RealMatrix rm = MatrixUtils.createRealMatrix(parents.length, 2);
 		
 		for (int i=0; i<parents.length; i++) {
-			rm.setRow(i, EncodingUtils.getReal(parents[i]));
+			rm.setRow(i, RealVariable.getReal(parents[i]));
 		}
 		
-		rm = rm.scalarMultiply(Math.pow(jumpRateCoefficient / Math.sqrt(2),
-				2.0));
+		rm = rm.scalarMultiply(Math.pow(jumpRateCoefficient / Math.sqrt(2), 2.0));
 		
 		return new Covariance(rm).getCovarianceMatrix();
 	}
 	
 	/**
-	 * Tests if each cluster formed around the parents exhibits the same
-	 * covariance as the parent solutions.
+	 * Tests if each cluster formed around the parents exhibits the same covariance as the parent solutions.
 	 */
 	@Test
 	@Retryable
@@ -179,29 +146,16 @@ public class AdaptiveMetropolisTest extends ParentCentricVariationTest {
 		//the smaller jump rate is used to ensure separation between clusters
 		double jumpRateCoefficient = 0.5;
 		
-		AdaptiveMetropolis am = new AdaptiveMetropolis(3, 
-				TestThresholds.SAMPLES, jumpRateCoefficient);
+		AdaptiveMetropolis am = new AdaptiveMetropolis(3, TestEnvironment.SAMPLES, jumpRateCoefficient);
 
-		Solution[] parents = new Solution[] { newSolution(0.0, 0.0),
-				newSolution(0.0, 5.0), newSolution(2.0, 0.0) };
-
+		Solution[] parents = new Solution[] { newSolution(0.0, 0.0), newSolution(0.0, 5.0), newSolution(2.0, 0.0) };
 		Solution[] offspring = am.evolve(parents);
 		
-		List<DoublePoint> points = new ArrayList<DoublePoint>();
+		List<Cluster> clusters = Clustering.kMeansPlusPlus().clusterVariables(parents.length, offspring);
 
-		for (Solution solution : offspring) {
-			points.add(new DoublePoint(EncodingUtils.getReal(solution)));
-		}
-
-		KMeansPlusPlusClusterer<DoublePoint> clusterer = 
-				new KMeansPlusPlusClusterer<DoublePoint>(parents.length, 100);
-
-		List<CentroidCluster<DoublePoint>> clusters = clusterer.cluster(points);
-
-		for (CentroidCluster<DoublePoint> cluster : clusters) {
-			TestUtils.assertEquals(getCovariance(cluster), 
-					getCovariance(parents, jumpRateCoefficient), 
-					new RelativeError(0.1));
+		for (Cluster cluster : clusters) {
+			Assert.assertEquals(getCovariance(cluster), getCovariance(parents, jumpRateCoefficient),
+					TestEnvironment.LOW_PRECISION);
 		}
 	}
 

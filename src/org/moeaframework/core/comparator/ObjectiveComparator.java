@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,7 +17,6 @@
  */
 package org.moeaframework.core.comparator;
 
-import java.io.Serializable;
 import java.util.Comparator;
 
 import org.moeaframework.core.Solution;
@@ -25,10 +24,7 @@ import org.moeaframework.core.Solution;
 /**
  * Compares two solutions using the value of a specific objective.
  */
-public class ObjectiveComparator implements DominanceComparator, 
-Comparator<Solution>, Serializable {
-
-	private static final long serialVersionUID = -6718367624398691971L;
+public class ObjectiveComparator implements DominanceComparator, Comparator<Solution> {
 
 	/**
 	 * The objective to be compared.
@@ -36,8 +32,7 @@ Comparator<Solution>, Serializable {
 	private final int objective;
 
 	/**
-	 * Constructs a comparator for comparing solutions using the value of the
-	 * specified objective.
+	 * Constructs a comparator for comparing solutions using the value of the specified objective.
 	 * 
 	 * @param objective the objective to be compared
 	 */
@@ -47,10 +42,7 @@ Comparator<Solution>, Serializable {
 
 	@Override
 	public int compare(Solution solution1, Solution solution2) {
-		double value1 = solution1.getObjective(objective);
-		double value2 = solution2.getObjective(objective);
-
-		return Double.compare(value1, value2);
+		return solution1.getObjective(objective).compareTo(solution2.getObjective(objective));
 	}
 
 }

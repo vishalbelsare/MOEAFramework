@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,35 +17,44 @@
  */
 package org.moeaframework.core.indicator;
 
-import org.moeaframework.core.NondominatedPopulation;
-import org.moeaframework.core.Problem;
+import org.moeaframework.core.population.NondominatedPopulation;
+import org.moeaframework.problem.Problem;
 
 /**
- * Computes the R2 indicator.  The R2 indicator is the expected utility
- * evaluated across a set of uniformly-weighted utility functions.  R2 is
- * weakly compatible with the outperformance relation for any set of utility
- * functions.  Values are normalized between {@code [-1, 1]} with {@code -1}
- * preferred.
+ * Computes the R2 indicator.  The R2 indicator is the expected utility evaluated across a set of uniformly-weighted
+ * utility functions.  R2 is weakly compatible with the outperformance relation for any set of utility functions.
+ * Values are normalized between {@code [-1, 1]} with {@code -1} preferred.
  * <p>
  * References:
  * <ol>
- *   <li>Hansen, M. P. and A. Jaszkiewicz (1998).  Evaluating the Quality of
- *       Approximations to the Non-dominated Set.  IMM Technical Report
- *       IMM-REP-1998-7.
+ *   <li>Hansen, M. P. and A. Jaszkiewicz (1998).  Evaluating the Quality of Approximations to the Non-dominated Set.
+ *       IMM Technical Report IMM-REP-1998-7.
  * </ol>
  */
 public class R2Indicator extends RIndicator {
 
 	/**
-	 * Constructs a new R2 indicator using the Chebychev utility function.
+	 * Constructs a new R2 indicator using the Chebyshev utility function.  The default normalization procedure, as
+	 * specified by {@link DefaultNormalizer}, is used.
 	 * 
 	 * @param problem the problem
 	 * @param subdivisions the number of subdivisions along each objective
 	 * @param referenceSet the reference set
 	 */
-	public R2Indicator(Problem problem, int subdivisions,
-			NondominatedPopulation referenceSet) {
-		this(problem, subdivisions, referenceSet, new ChebychevUtility());
+	public R2Indicator(Problem problem, int subdivisions, NondominatedPopulation referenceSet) {
+		this(problem, subdivisions, referenceSet, null);
+	}
+	
+	/**
+	 * Constructs a new R2 indicator using the Chebyshev utility function.
+	 * 
+	 * @param problem the problem
+	 * @param subdivisions the number of subdivisions along each objective
+	 * @param referenceSet the reference set
+	 * @param normalizer the user-provided normalizer, or {@code null} if the default is used
+	 */
+	public R2Indicator(Problem problem, int subdivisions, NondominatedPopulation referenceSet, Normalizer normalizer) {
+		this(problem, subdivisions, referenceSet, normalizer, new ChebyshevUtility());
 	}
 	
 	/**
@@ -54,18 +63,17 @@ public class R2Indicator extends RIndicator {
 	 * @param problem the problem
 	 * @param subdivisions the number of subdivisions along each objective
 	 * @param referenceSet the reference set
+	 * @param normalizer the user-provided normalizer, or {@code null} if the default is used
 	 * @param utilityFunction the utility function
 	 */
-	public R2Indicator(Problem problem, int subdivisions,
-			NondominatedPopulation referenceSet,
+	public R2Indicator(Problem problem, int subdivisions, NondominatedPopulation referenceSet, Normalizer normalizer,
 			UtilityFunction utilityFunction) {
-		super(problem, subdivisions, referenceSet, utilityFunction);
+		super(problem, subdivisions, referenceSet, normalizer, utilityFunction);
 	}
 	
 	@Override
 	public double evaluate(NondominatedPopulation population) {
-		return expectedUtility(
-				getNormalizedReferenceSet()) - expectedUtility(population);
+		return expectedUtility(getNormalizedReferenceSet()) - expectedUtility(normalize(population));
 	}
 
 }

@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,74 +17,81 @@
  */
 package org.moeaframework.algorithm.single;
 
-import java.io.NotSerializableException;
+import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.util.Comparator;
 
-import org.moeaframework.algorithm.AbstractEvolutionaryAlgorithm;
-import org.moeaframework.core.Initialization;
-import org.moeaframework.core.NondominatedPopulation;
-import org.moeaframework.core.Population;
-import org.moeaframework.core.Problem;
-import org.moeaframework.core.Selection;
+import org.moeaframework.core.Settings;
 import org.moeaframework.core.Solution;
-import org.moeaframework.core.Variation;
+import org.moeaframework.core.comparator.AggregateObjectiveComparator;
+import org.moeaframework.core.comparator.LinearDominanceComparator;
+import org.moeaframework.core.configuration.Property;
+import org.moeaframework.core.initialization.Initialization;
+import org.moeaframework.core.initialization.RandomInitialization;
+import org.moeaframework.core.operator.Variation;
+import org.moeaframework.core.population.NondominatedPopulation;
+import org.moeaframework.core.population.Population;
+import org.moeaframework.core.selection.TournamentSelection;
+import org.moeaframework.core.spi.OperatorFactory;
+import org.moeaframework.problem.Problem;
 
 /**
- * Single-objective genetic algorithm (GA) implementation with elitism.  A
- * single elite individual is retained in each generation.
+ * Single-objective genetic algorithm (GA) implementation with elitism.  A single elite individual is retained in each
+ * generation.
  * <p>
  * References:
  * <ol>
- *   <li>John Holland.  "Adaptation in Natural and Artificial Systems."  
- *       MIT Press, ISBN: 9780262082136.
+ *   <li>John Holland.  "Adaptation in Natural and Artificial Systems."  MIT Press, ISBN: 9780262082136.
  * </ol>
  */
-public class GeneticAlgorithm extends AbstractEvolutionaryAlgorithm {
+public class GeneticAlgorithm extends SingleObjectiveEvolutionaryAlgorithm {
 	
-	/**
-	 * The aggregate objective comparator.
-	 */
-	private final AggregateObjectiveComparator comparator;
-
 	/**
 	 * The selection operator.
 	 */
-	private final Selection selection;
+	private TournamentSelection selection;
 
-	/**
-	 * The mutation operator.
-	 */
-	private final Variation variation;
-	
 	/**
 	 * The solution with the best fitness score.
 	 */
 	private Solution eliteSolution;
-
+	
+	/**
+	 * Constructs a new instance of the genetic algorithm (GA) with default settings.
+	 * 
+	 * @param problem the problem
+	 */
+	public GeneticAlgorithm(Problem problem) {
+		this(problem,
+				Settings.DEFAULT_POPULATION_SIZE,
+				new LinearDominanceComparator(),
+				new RandomInitialization(problem),
+				OperatorFactory.getInstance().getVariation(problem));
+	}
+	
 	/**
 	 * Constructs a new instance of the genetic algorithm (GA).
 	 * 
 	 * @param problem the problem
+	 * @param initialPopulationSize the initial population size
 	 * @param comparator the aggregate objective comparator
 	 * @param initialization the initialization method
-	 * @param selection the selection operator
 	 * @param variation the variation operator
 	 */
-	public GeneticAlgorithm(Problem problem,
-			AggregateObjectiveComparator comparator,
-			Initialization initialization,
-			Selection selection,
-			Variation variation) {
-		super(problem, new Population(), null, initialization);
-		this.comparator = comparator;
-		this.variation = variation;
-		this.selection = selection;
+	public GeneticAlgorithm(Problem problem, int initialPopulationSize, AggregateObjectiveComparator comparator,
+			Initialization initialization, Variation variation) {
+		super(problem, initialPopulationSize, new Population(), null, comparator, initialization, variation);
+	}
+	
+	@Override
+	public String getName() {
+		return "GeneticAlgorithm";
 	}
 
 	@Override
-	protected void initialize() {
+	public void initialize() {
 		super.initialize();
-		
+
 		eliteSolution = getPopulation().get(0);
 		updateEliteSolution();
 	}
@@ -92,12 +99,12 @@ public class GeneticAlgorithm extends AbstractEvolutionaryAlgorithm {
 	@Override
 	public void iterate() {
 		Population population = getPopulation();
+		Variation variation = getVariation();
 		Population offspring = new Population();
 		int populationSize = population.size();
 
 		while (offspring.size() < populationSize) {
-			Solution[] parents = selection.select(variation.getArity(),
-					population);
+			Solution[] parents = selection.select(variation.getArity(), population);
 			Solution[] children = variation.evolve(parents);
 
 			offspring.addAll(children);
@@ -134,10 +141,35 @@ public class GeneticAlgorithm extends AbstractEvolutionaryAlgorithm {
 		
 		return result;
 	}
+	
+	@Override
+	@Property("operator")
+	public void setVariation(Variation variation) {
+		super.setVariation(variation);
+	}
+	
+	@Override
+	public void setComparator(AggregateObjectiveComparator comparator) {
+		super.setComparator(comparator);
+		
+		selection = new TournamentSelection(
+				selection != null ? selection.getSize() : 2,
+				comparator);
+	}
+	
+	/**
+	 * Returns the tournament selection operator.  This method is primarily for testing and should remain private to
+	 * prevent callers from modifying the selection operator (to ensure the comparator is kept consistent).
+	 * 
+	 * @return the tournament selection operator
+	 */
+	TournamentSelection getSelection() {
+		return selection;
+	}
 
 	@Override
-	public void setState(Object objState) throws NotSerializableException {
-		super.setState(objState);
+	public void loadState(ObjectInputStream stream) throws IOException, ClassNotFoundException {
+		super.loadState(stream);
 		
 		eliteSolution = getPopulation().get(0);
 		updateEliteSolution();

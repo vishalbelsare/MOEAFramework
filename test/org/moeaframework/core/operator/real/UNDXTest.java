@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -19,61 +19,40 @@ package org.moeaframework.core.operator.real;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.moeaframework.Retryable;
-import org.moeaframework.TestThresholds;
 import org.moeaframework.CIRunner;
+import org.moeaframework.Retryable;
+import org.moeaframework.TestEnvironment;
 import org.moeaframework.core.Solution;
 import org.moeaframework.core.operator.MeanCentricVariationTest;
-import org.moeaframework.core.operator.ParentImmutabilityTest;
 
 @RunWith(CIRunner.class)
-public class UNDXTest extends MeanCentricVariationTest {
+public class UNDXTest extends MeanCentricVariationTest<UNDX> {
+	
+	@Override
+	public UNDX createInstance() {
+		return new UNDX(3, TestEnvironment.SAMPLES);
+	}
 
-	/**
-	 * Test if the offspring centroid is the same as the parent centroid when 3
-	 * completely different parents are used.
-	 */
 	@Test
 	@Retryable
 	public void testFullDistribution() {
-		UNDX undx = new UNDX(3, TestThresholds.SAMPLES);
+		UNDX undx = createInstance();
 
-		Solution[] parents = new Solution[] { newSolution(0.0, 0.0),
-				newSolution(0.0, 1.0), newSolution(1.0, 0.0) };
-
+		Solution[] parents = new Solution[] { newSolution(0.0, 0.0), newSolution(0.0, 1.0), newSolution(1.0, 0.0) };
 		Solution[] offspring = undx.evolve(parents);
 
-		check(parents, offspring);
+		checkDistribution(parents, offspring);
 	}
 
-	/**
-	 * Test if the offspring centroid is the same as the parent centroid when
-	 * the parents are degenerate along one axis.
-	 */
 	@Test
 	@Retryable
 	public void testPartialDistribution() {
-		UNDX undx = new UNDX(3, TestThresholds.SAMPLES);
+		UNDX undx = createInstance();
 
-		Solution[] parents = new Solution[] { newSolution(0.0, 0.0),
-				newSolution(0.0, 1.0), newSolution(0.0, 2.0) };
-
+		Solution[] parents = new Solution[] { newSolution(0.0, 0.0), newSolution(0.0, 1.0), newSolution(0.0, 2.0) };
 		Solution[] offspring = undx.evolve(parents);
 
-		check(parents, offspring);
-	}
-
-	/**
-	 * Tests if the parents remain unchanged during variation.
-	 */
-	@Test
-	public void testParentImmutability() {
-		UNDX undx = new UNDX(3, 3);
-
-		Solution[] parents = new Solution[] { newSolution(0.0, 0.0),
-				newSolution(0.0, 1.0), newSolution(1.0, 0.0) };
-
-		ParentImmutabilityTest.test(parents, undx);
+		checkDistribution(parents, offspring);
 	}
 
 }

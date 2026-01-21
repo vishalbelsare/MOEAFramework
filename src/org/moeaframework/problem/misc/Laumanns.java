@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -19,13 +19,12 @@ package org.moeaframework.problem.misc;
 
 import org.moeaframework.core.PRNG;
 import org.moeaframework.core.Solution;
-import org.moeaframework.core.variable.EncodingUtils;
+import org.moeaframework.core.variable.RealVariable;
 import org.moeaframework.problem.AbstractProblem;
 import org.moeaframework.problem.AnalyticalProblem;
 
 /**
- * The Laumanns problem.  The optimum points like on the line {@code (x, 0)}
- * with {@code -2 <= x <= 0}.
+ * The Laumanns problem.  The optimum points like on the line {@code (x, 0)} with {@code -2 <= x <= 0}.
  * <p>
  * Properties:
  * <ul>
@@ -36,13 +35,11 @@ import org.moeaframework.problem.AnalyticalProblem;
  * <p>
  * References:
  * <ol>
- *   <li>Laumanns, M., Rudolph, G., and Schwefel, H. (1998).  "A Spatial
- *       Predator-Prey Approach to Multi-Objective Optimization: A Preliminary
- *       Study."  Proceedings of the Parallel Problem Solving from Nature,
- *       Springer, pp. 241-249.
- *   <li>Van Veldhuizen, D. A (1999).  "Multiobjective Evolutionary Algorithms: 
- *       Classifications, Analyses, and New Innovations."  Air Force Institute
- *       of Technology, Ph.D. Thesis, Appendix B.
+ *   <li>Laumanns, M., Rudolph, G., and Schwefel, H. (1998).  "A Spatial Predator-Prey Approach to Multi-Objective
+ *       Optimization: A Preliminary Study."  Proceedings of the Parallel Problem Solving from Nature, Springer,
+ *       pp. 241-249.
+ *   <li>Van Veldhuizen, D. A (1999).  "Multiobjective Evolutionary Algorithms: Classifications, Analyses, and New
+ *       Innovations."  Air Force Institute of Technology, Ph.D. Thesis, Appendix B.
  * </ol>
  */
 public class Laumanns extends AbstractProblem implements AnalyticalProblem {
@@ -56,21 +53,21 @@ public class Laumanns extends AbstractProblem implements AnalyticalProblem {
 
 	@Override
 	public void evaluate(Solution solution) {
-		double x = EncodingUtils.getReal(solution.getVariable(0));
-		double y = EncodingUtils.getReal(solution.getVariable(1));
+		double x = RealVariable.getReal(solution.getVariable(0));
+		double y = RealVariable.getReal(solution.getVariable(1));
 		double f1 = Math.pow(x, 2.0) + Math.pow(y, 2.0);
 		double f2 = Math.pow(x+2.0, 2.0) + Math.pow(y, 2.0);
 		
-		solution.setObjective(0, f1);
-		solution.setObjective(1, f2);
+		solution.setObjectiveValue(0, f1);
+		solution.setObjectiveValue(1, f2);
 	}
 
 	@Override
 	public Solution newSolution() {
 		Solution solution = new Solution(2, 2);
 		
-		solution.setVariable(0, EncodingUtils.newReal(-50.0, 50.0));
-		solution.setVariable(1, EncodingUtils.newReal(-50.0, 50.0));
+		solution.setVariable(0, new RealVariable(-50.0, 50.0));
+		solution.setVariable(1, new RealVariable(-50.0, 50.0));
 		
 		return solution;
 	}
@@ -79,8 +76,8 @@ public class Laumanns extends AbstractProblem implements AnalyticalProblem {
 	public Solution generate() {
 		Solution solution = newSolution();
 		
-		EncodingUtils.setReal(solution.getVariable(0), PRNG.nextDouble(-2.0, 0.0));
-		EncodingUtils.setReal(solution.getVariable(1), 0.0);
+		RealVariable.setReal(solution.getVariable(0), PRNG.nextDouble(-2.0, 0.0));
+		RealVariable.setReal(solution.getVariable(1), 0.0);
 		
 		evaluate(solution);
 		return solution;

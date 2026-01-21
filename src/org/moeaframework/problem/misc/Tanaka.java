@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -18,6 +18,7 @@
 package org.moeaframework.problem.misc;
 
 import org.moeaframework.core.Solution;
+import org.moeaframework.core.constraint.LessThanOrEqual;
 import org.moeaframework.core.variable.RealVariable;
 import org.moeaframework.problem.AbstractProblem;
 
@@ -33,9 +34,8 @@ import org.moeaframework.problem.AbstractProblem;
  * <p>
  * References:
  * <ol>
- *   <li>Van Veldhuizen, D. A (1999).  "Multiobjective Evolutionary Algorithms: 
- *       Classifications, Analyses, and New Innovations."  Air Force Institute
- *       of Technology, Ph.D. Thesis, Appendix B.
+ *   <li>Van Veldhuizen, D. A (1999).  "Multiobjective Evolutionary Algorithms: Classifications, Analyses, and New
+ *       Innovations."  Air Force Institute of Technology, Ph.D. Thesis, Appendix B.
  * </ol>
  */
 public class Tanaka extends AbstractProblem {
@@ -54,10 +54,10 @@ public class Tanaka extends AbstractProblem {
 		double c1 = -Math.pow(x,  2.0) - Math.pow(y, 2.0) + 1.0 + 0.1*Math.cos(16.0*Math.atan(x / y));
 		double c2 = Math.pow(x - 0.5, 2.0) + Math.pow(y - 0.5, 2.0) - 0.5;
 		
-		solution.setObjective(0, x);
-		solution.setObjective(1, y);
-		solution.setConstraint(0, c1 <= 0.0 ? 0.0 : c1);
-		solution.setConstraint(1, c2 <= 0.0 ? 0.0 : c2);
+		solution.setObjectiveValue(0, x);
+		solution.setObjectiveValue(1, y);
+		solution.setConstraintValue(0, c1);
+		solution.setConstraintValue(1, c2);
 	}
 
 	@Override
@@ -66,6 +66,9 @@ public class Tanaka extends AbstractProblem {
 		
 		solution.setVariable(0, new RealVariable(Math.nextUp(0.0), Math.PI));
 		solution.setVariable(1, new RealVariable(Math.nextUp(0.0), Math.PI));
+		
+		solution.setConstraint(0, LessThanOrEqual.to(0.0));
+		solution.setConstraint(1, LessThanOrEqual.to(0.0));
 		
 		return solution;
 	}

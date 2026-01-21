@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,31 +17,20 @@
  */
 package org.moeaframework.core.operator.grammar;
 
-import org.junit.Assert;
 import org.junit.Test;
-import org.moeaframework.TestThresholds;
+import org.moeaframework.Assert;
+import org.moeaframework.TestEnvironment;
 import org.moeaframework.core.Solution;
-import org.moeaframework.core.operator.ParentImmutabilityTest;
-import org.moeaframework.core.operator.TypeSafetyTest;
+import org.moeaframework.core.operator.AbstractGrammarOperatorTest;
 import org.moeaframework.core.variable.Grammar;
 
-/**
- * Tests the {@link GrammarCrossover} class.
- */
-public class GrammarCrossoverTest {
+public class GrammarCrossoverTest extends AbstractGrammarOperatorTest<GrammarCrossover> {
 
-	/**
-	 * Tests if the grammar crossover operator is type-safe.
-	 */
-	@Test
-	public void testTypeSafety() {
-		TypeSafetyTest.testTypeSafety(new GrammarCrossover(1.0));
+	@Override
+	public GrammarCrossover createInstance() {
+		return new GrammarCrossover(1.0);
 	}
-
-	/**
-	 * Tests various probabilities to ensure the {@code GrammarCrossover}
-	 * operates with the expected probability.
-	 */
+	
 	@Test
 	public void testProbabilities() {
 		testProbability(0.0);
@@ -50,8 +39,7 @@ public class GrammarCrossoverTest {
 	}
 
 	/**
-	 * Tests if the {@code GrammarCrossover} operates with the specified
-	 * probability.
+	 * Tests if the {@code GrammarCrossover} operates with the specified probability.
 	 * 
 	 * @param probability the expected probability of crossover
 	 */
@@ -59,37 +47,41 @@ public class GrammarCrossoverTest {
 		GrammarCrossover crossover = new GrammarCrossover(probability);
 		int count = 0;
 
-		for (int i = 0; i < TestThresholds.SAMPLES; i++) {
+		for (int i = 0; i < TestEnvironment.SAMPLES; i++) {
+			Grammar g1 = new Grammar(5);
+			g1.fromArray(new int[] { 0, 1, 2, 3, 4 });
+			
+			Grammar g2 = new Grammar(3);
+			g2.fromArray(new int[] { 5, 6, 7 });
+			
 			Solution p1 = new Solution(1, 0);
-			p1.setVariable(0, new Grammar(new int[] { 0, 1, 2, 3, 4 }));
+			p1.setVariable(0, g1);
 
 			Solution p2 = new Solution(1, 0);
-			p2.setVariable(0, new Grammar(new int[] { 5, 6, 7 }));
+			p2.setVariable(0, g2);
 
 			Solution[] offspring = crossover.evolve(new Solution[] { p1, p2 });
 
 			if (check((Grammar)p1.getVariable(0), (Grammar)p2.getVariable(0),
-					(Grammar)offspring[0].getVariable(0), (Grammar)offspring[1]
-							.getVariable(0))) {
+					(Grammar)offspring[0].getVariable(0), (Grammar)offspring[1].getVariable(0))) {
 				count++;
 			}
 		}
 
-		Assert.assertEquals((double)count / TestThresholds.SAMPLES,
-				probability, TestThresholds.VARIATION_EPS);
+		Assert.assertEquals((double)count / TestEnvironment.SAMPLES,
+				probability, TestEnvironment.LOW_PRECISION);
 	}
 
 	/**
-	 * Checks if the two offspring grammars, {@code o1} and {@code o2}, are the
-	 * result of single-point crossover between the two parent grammars,
-	 * {@code p1} and {@code p2}.
+	 * Checks if the two offspring grammars, {@code o1} and {@code o2}, are the result of single-point crossover
+	 * between the two parent grammars, {@code p1} and {@code p2}.
 	 * 
 	 * @param p1 the first parent grammar
 	 * @param p2 the second parent grammar
 	 * @param o1 the first offspring grammar
 	 * @param o2 the second offspring grammar
-	 * @return {@code true} if the two offspring are the result of single-point
-	 *         crossover between the two parents; {@code false} otherwise
+	 * @return {@code true} if the two offspring are the result of single-point crossover between the two parents;
+	 *         {@code false} otherwise
 	 */
 	private boolean check(Grammar p1, Grammar p2, Grammar o1, Grammar o2) {
 		Assert.assertEquals(p1.size() + p2.size(), o1.size() + o2.size());
@@ -125,24 +117,6 @@ public class GrammarCrossoverTest {
 		}
 
 		return crossed;
-	}
-
-	/**
-	 * Tests if the parents remain unchanged during variation.
-	 */
-	@Test
-	public void testParentImmutability() {
-		GrammarCrossover gc = new GrammarCrossover(1.0);
-
-		Solution s1 = new Solution(1, 0);
-		s1.setVariable(0, new Grammar(new int[] { 0, 1, 2, 3, 4 }));
-
-		Solution s2 = new Solution(1, 0);
-		s2.setVariable(0, new Grammar(new int[] { 5, 6, 7 }));
-
-		Solution[] parents = new Solution[] { s1, s2 };
-
-		ParentImmutabilityTest.test(parents, gc);
 	}
 
 }

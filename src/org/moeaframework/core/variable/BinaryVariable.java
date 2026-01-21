@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -21,13 +21,14 @@ import java.util.BitSet;
 
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.moeaframework.core.Defined;
 import org.moeaframework.core.PRNG;
-import org.moeaframework.core.Variable;
+import org.moeaframework.util.validate.Validate;
 
 /**
  * Decision variable for binary strings.
  */
-public class BinaryVariable implements Variable {
+public class BinaryVariable extends AbstractVariable {
 
 	private static final long serialVersionUID = -682157453241538355L;
 
@@ -42,13 +43,22 @@ public class BinaryVariable implements Variable {
 	private final BitSet bitSet;
 
 	/**
-	 * Constructs a binary variable with the specified number of bits. All bits
-	 * are initially set to {@code false}.
+	 * Constructs a binary variable with the specified number of bits.  All bits are initially set to {@code false}.
 	 * 
 	 * @param numberOfBits the number of bits stored in this variable
 	 */
 	public BinaryVariable(int numberOfBits) {
-		super();
+		this(null, numberOfBits);
+	}
+	
+	/**
+	 * Constructs a binary variable with the specified number of bits.  All bits are initially set to {@code false}.
+	 * 
+	 * @param name the name of this decision variable
+	 * @param numberOfBits the number of bits stored in this variable
+	 */
+	public BinaryVariable(String name, int numberOfBits) {
+		super(name);
 		this.numberOfBits = numberOfBits;
 
 		bitSet = new BitSet(numberOfBits);
@@ -80,11 +90,9 @@ public class BinaryVariable implements Variable {
 	}
 
 	/**
-	 * Returns {@code true} if all bits in this variable are set to
-	 * {@code false}; {@code false} otherwise.
+	 * Returns {@code true} if all bits in this variable are set to {@code false}; {@code false} otherwise.
 	 * 
-	 * @return {@code true} if all bits in this variable are set to
-	 *         {@code false}; {@code false} otherwise
+	 * @return {@code true} if all bits in this variable are set to {@code false}; {@code false} otherwise
 	 */
 	public boolean isEmpty() {
 		return bitSet.isEmpty();
@@ -132,20 +140,15 @@ public class BinaryVariable implements Variable {
 	}
 
 	/**
-	 * Returns the Hamming distance between this instance and the specified
-	 * {@code BinaryVariable}. The Hamming distance is the number of bit
-	 * positions in which the two binary strings differ.
+	 * Returns the Hamming distance between this instance and the specified {@code BinaryVariable}.  The Hamming
+	 * distance is the number of bit positions in which the two binary strings differ.
 	 * 
 	 * @param variable the other {@code BinaryVariable}
-	 * @return the Hamming distance between this instance and the specified
-	 *         {@code BinaryVariable}
-	 * @throws IllegalArgumentException if the two binary strings differ in the
-	 *         number of bits
+	 * @return the Hamming distance between this instance and the specified {@code BinaryVariable}
+	 * @throws IllegalArgumentException if the two binary strings differ in the number of bits
 	 */
 	public int hammingDistance(BinaryVariable variable) {
-		if (numberOfBits != variable.numberOfBits) {
-			throw new IllegalArgumentException("must have same number of bits");
-		}
+		Validate.that("numberOfBits", variable.getNumberOfBits()).isEqualTo(numberOfBits);
 
 		int count = 0;
 
@@ -166,8 +169,18 @@ public class BinaryVariable implements Variable {
 	}
 	
 	@Override
+	public String getDefinition() {
+		if (name == null) {
+			return Defined.createDefinition(Variable.class, BinaryVariable.class, numberOfBits);
+		} else {
+			return Defined.createDefinition(Variable.class, BinaryVariable.class, name, numberOfBits);
+		}
+	}
+	
+	@Override
 	public int hashCode() {
 		return new HashCodeBuilder()
+				.appendSuper(super.hashCode())
 				.append(numberOfBits)
 				.append(bitSet)
 				.toHashCode();
@@ -183,6 +196,7 @@ public class BinaryVariable implements Variable {
 			BinaryVariable rhs = (BinaryVariable)obj;
 			
 			return new EqualsBuilder()
+					.appendSuper(super.equals(obj))
 					.append(numberOfBits, rhs.numberOfBits)
 					.append(bitSet, rhs.bitSet)
 					.isEquals();
@@ -191,6 +205,11 @@ public class BinaryVariable implements Variable {
 	
 	@Override
 	public String toString() {
+		return encode();
+	}
+	
+	@Override
+	public String encode() {
 		StringBuilder sb = new StringBuilder();
 		
 		for (int i = 0; i < numberOfBits; i++) {
@@ -199,11 +218,93 @@ public class BinaryVariable implements Variable {
 		
 		return sb.toString();
 	}
+	
+	@Override
+	public void decode(String value) {
+		Validate.that("value.length", value.length()).isEqualTo("numberOfBits", numberOfBits);
+
+		for (int i=0; i<getNumberOfBits(); i++) {
+			char c = value.charAt(i);
+			
+			if (c == '0') {
+				set(i, false);
+			} else if (c == '1') {
+				set(i, true);
+			} else {
+				Validate.that("value", value).fails("Bit string contains invalid character '" + c + "' at index " + i);
+			}
+		}
+	}
 
 	@Override
 	public void randomize() {
 		for (int i = 0; i < getNumberOfBits(); i++) {
 			set(i, PRNG.nextBoolean());
+		}
+	}
+	
+	/**
+	 * Returns the value stored in a binary decision variable as a {@link BitSet}.
+	 * 
+	 * @param variable the decision variable
+	 * @return the value stored in a binary decision variable as a {@code BitSet}
+	 * @throws IllegalArgumentException if the decision variable is not of type {@link BinaryVariable}
+	 */
+	public static BitSet getBitSet(Variable variable) {
+		BinaryVariable binaryVariable = Validate.that("variable", variable).isA(BinaryVariable.class);
+		return binaryVariable.getBitSet();
+	}
+	
+	/**
+	 * Returns the value stored in a binary decision variable as a boolean array.
+	 * 
+	 * @param variable the decision variable
+	 * @return the value stored in a binary decision variable as a boolean array
+	 * @throws IllegalArgumentException if the decision variable is not of type {@link BinaryVariable}
+	 */
+	public static boolean[] getBinary(Variable variable) {
+		BinaryVariable binaryVariable = Validate.that("variable", variable).isA(BinaryVariable.class);
+		boolean[] result = new boolean[binaryVariable.getNumberOfBits()];
+			
+		for (int i=0; i<binaryVariable.getNumberOfBits(); i++) {
+			result[i] = binaryVariable.get(i);
+		}
+			
+		return result;
+	}
+	
+	/**
+	 * Sets the bits in a binary decision variable using the given {@link BitSet}.
+	 * 
+	 * @param variable the decision variable
+	 * @param bitSet the bits to set in the binary decision variable
+	 * @throws IllegalArgumentException if the decision variable is not of type {@link BinaryVariable}
+	 */
+	public static void setBitSet(Variable variable, BitSet bitSet) {
+		BinaryVariable binaryVariable = Validate.that("variable", variable).isA(BinaryVariable.class);
+		
+		for (int i=0; i<binaryVariable.getNumberOfBits(); i++) {
+			binaryVariable.set(i, bitSet.get(i));
+		}
+	}
+	
+	/**
+	 * Sets the bits in a binary decision variable using the given boolean array.
+	 * 
+	 * @param variable the decision variable
+	 * @param values the bits to set in the binary decision variable
+	 * @throws IllegalArgumentException if the decision variable is not of type {@link BinaryVariable}
+	 * @throws IllegalArgumentException if an invalid number of values are provided
+	 */
+	public static void setBinary(Variable variable, boolean[] values) {
+		BinaryVariable binaryVariable = Validate.that("variable", variable).isA(BinaryVariable.class);
+		
+		if (values.length != binaryVariable.getNumberOfBits()) {
+			Validate.that("values", values).fails("Array length must equal the number of bits.");
+		}
+			
+		for (int i=0; i<binaryVariable.getNumberOfBits(); i++) {
+			binaryVariable.set(i, values[i]);
 		}
 	}
 

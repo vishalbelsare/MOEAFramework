@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -18,49 +18,40 @@
 package org.moeaframework.core.operator.permutation;
 
 import org.moeaframework.core.PRNG;
-import org.moeaframework.core.Solution;
-import org.moeaframework.core.Variable;
-import org.moeaframework.core.Variation;
+import org.moeaframework.core.configuration.Prefix;
+import org.moeaframework.core.operator.TypeSafe;
+import org.moeaframework.core.operator.TypeSafeMutation;
 import org.moeaframework.core.variable.Permutation;
 
 /**
- * Insertion mutation operator. Randomly selects an entry in the permutation and
- * inserts it at some other position in the permutation.
+ * Insertion mutation operator.  Randomly selects an entry in the permutation and inserts it at some other position
+ * in the permutation.
  * <p>
  * This operator is type-safe.
  */
-public class Insertion implements Variation {
+@TypeSafe
+@Prefix("insertion")
+public class Insertion extends TypeSafeMutation<Permutation> {
 
 	/**
-	 * The probability of mutating a variable.
+	 * Constructs an insertion mutation operator with the default settings.
 	 */
-	private final double probability;
+	public Insertion() {
+		this(0.3);
+	}
 
 	/**
-	 * Constructs an insertion mutation operator with the specified
-	 * probability of mutating a variable.
+	 * Constructs an insertion mutation operator with the specified probability of mutating a variable.
 	 * 
 	 * @param probability the probability of mutating a variable
 	 */
 	public Insertion(double probability) {
-		super();
-		this.probability = probability;
+		super(Permutation.class, probability);
 	}
-
+	
 	@Override
-	public Solution[] evolve(Solution[] parents) {
-		Solution result = parents[0].copy();
-
-		for (int i = 0; i < result.getNumberOfVariables(); i++) {
-			Variable variable = result.getVariable(i);
-
-			if ((PRNG.nextDouble() <= probability)
-					&& (variable instanceof Permutation)) {
-				evolve((Permutation)variable);
-			}
-		}
-
-		return new Solution[] { result };
+	public String getName() {
+		return "insertion";
 	}
 
 	/**
@@ -68,7 +59,8 @@ public class Insertion implements Variation {
 	 * 
 	 * @param permutation the permutation to be mutated
 	 */
-	public static void evolve(Permutation permutation) {
+	@Override
+	public void mutate(Permutation permutation) {
 		int i = PRNG.nextInt(permutation.size());
 		int j = PRNG.nextInt(permutation.size() - 1);
 
@@ -77,11 +69,6 @@ public class Insertion implements Variation {
 		}
 
 		permutation.insert(i, j);
-	}
-
-	@Override
-	public int getArity() {
-		return 1;
 	}
 
 }

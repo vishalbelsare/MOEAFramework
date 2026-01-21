@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -15,32 +15,23 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with the MOEA Framework.  If not, see <http://www.gnu.org/licenses/>.
  */
-import org.moeaframework.Executor;
-import org.moeaframework.core.NondominatedPopulation;
-import org.moeaframework.core.Solution;
+import org.moeaframework.algorithm.NSGAII;
+import org.moeaframework.problem.DTLZ.DTLZ2;
+import org.moeaframework.problem.Problem;
 
 /**
- * Demonstrates using an Executor to solve the UF1 test problem with NSGA-II,
- * one of the most widely-used multiobjective evolutionary algorithms.
+ * Simplest way to solve a multi-objective optimization problem.  Here, we solve the bi-objective DTLZ2 test problem
+ * using NSGA-II and display the Pareto front.
  */
 public class Example1 {
 
 	public static void main(String[] args) {
-		//configure and run this experiment
-		NondominatedPopulation result = new Executor()
-				.withProblem("UF1")
-				.withAlgorithm("NSGAII")
-				.withMaxEvaluations(10000)
-				.run();
+		Problem problem = new DTLZ2(2);
 		
-		//display the results
-		System.out.format("Objective1  Objective2%n");
+		NSGAII algorithm = new NSGAII(problem);
+		algorithm.run(10000);
 		
-		for (Solution solution : result) {
-			System.out.format("%.4f      %.4f%n",
-					solution.getObjective(0),
-					solution.getObjective(1));
-		}
+		algorithm.getResult().display();
 	}
 
 }

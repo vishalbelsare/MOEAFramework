@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -19,33 +19,21 @@ package org.moeaframework.core.operator.subset;
 
 import java.util.Set;
 
-import org.junit.Assert;
 import org.junit.Test;
-import org.moeaframework.TestThresholds;
+import org.moeaframework.Assert;
+import org.moeaframework.TestEnvironment;
 import org.moeaframework.core.PRNG;
 import org.moeaframework.core.Solution;
-import org.moeaframework.core.operator.ParentImmutabilityTest;
-import org.moeaframework.core.operator.TypeSafetyTest;
-import org.moeaframework.core.variable.Permutation;
+import org.moeaframework.core.operator.AbstractSubsetOperatorTest;
 import org.moeaframework.core.variable.Subset;
 
-/**
- * Tests for {@link Replace} mutation.
- */
-public class ReplaceTest {
-
-	/**
-	 * Tests if the replace mutation operator is type-safe.
-	 */
-	@Test
-	public void testTypeSafety() {
-		TypeSafetyTest.testTypeSafety(new Replace(1.0));
+public class ReplaceTest extends AbstractSubsetOperatorTest<Replace> {
+	
+	@Override
+	public Replace createInstance() {
+		return new Replace(1.0);
 	}
 
-	/**
-	 * Tests various probabilities to ensure replace mutation is applied the
-	 * correct number of times on average.
-	 */
 	@Test
 	public void testProbabilities() {
 		testProbability(0.0);
@@ -62,7 +50,7 @@ public class ReplaceTest {
 		Replace replace = new Replace(probability);
 		int count = 0;
 
-		for (int i = 0; i < TestThresholds.SAMPLES; i++) {
+		for (int i = 0; i < TestEnvironment.SAMPLES; i++) {
 			// These values are randomly chosen in ranges to ensure replacement can always occur
 			int n = PRNG.nextInt(2, 20);
 			int l = PRNG.nextInt(1, n-1);
@@ -76,46 +64,28 @@ public class ReplaceTest {
 
 			Solution mutated = replace.evolve(new Solution[] { original })[0];
 
-			if (testSubset((Subset)original.getVariable(0), (Subset)mutated.getVariable(0))) {
+			if (testReplace((Subset)original.getVariable(0), (Subset)mutated.getVariable(0))) {
 				count++;
 			}
 		}
 
-		Assert.assertEquals(probability, (double)count / TestThresholds.SAMPLES,
-				TestThresholds.VARIATION_EPS);
+		Assert.assertEquals(probability, (double)count / TestEnvironment.SAMPLES, TestEnvironment.LOW_PRECISION);
 	}
 
 	/**
-	 * Returns {@code true} if the result is a valid replacement; {@code false}
-	 * otherwise.
+	 * Returns {@code true} if the result is a valid replacement; {@code false} otherwise.
 	 * 
 	 * @param v1 the first subset
 	 * @param v2 the second subset
-	 * @return {@code true} if the result is a valid replacement; {@code false}
-	 *         otherwise
+	 * @return {@code true} if the result is a valid replacement; {@code false} otherwise
 	 */
-	protected boolean testSubset(Subset v1, Subset v2) {
+	protected boolean testReplace(Subset v1, Subset v2) {
 		// Size should remain unchanged
 		Assert.assertEquals(v1.size(), v2.size());
 		
 		Set<Integer> set = v1.getSet();
 		set.removeAll(v2.getSet());
 		return set.size() == 1;
-	}
-
-	/**
-	 * Tests if the parents remain unchanged during variation.
-	 */
-	@Test
-	public void testParentImmutability() {
-		Replace ins = new Replace(1.0);
-
-		Solution solution = new Solution(1, 0);
-		solution.setVariable(0, new Permutation(100));
-
-		Solution[] parents = new Solution[] { solution };
-
-		ParentImmutabilityTest.test(parents, ins);
 	}
 
 }

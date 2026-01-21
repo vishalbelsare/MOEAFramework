@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,6 +17,8 @@
  */
 package org.moeaframework;
 
+import java.lang.annotation.Annotation;
+
 import org.junit.Ignore;
 import org.junit.internal.AssumptionViolatedException;
 import org.junit.internal.runners.model.EachTestNotifier;
@@ -28,9 +30,9 @@ import org.junit.runners.model.InitializationError;
 import org.junit.runners.model.Statement;
 
 /**
- * JUnit runner designed to handle some compatibility issues when using an
- * automated continuous integration service, such as Travis CI.  Specifically
- * enables the use of the {@link Retryable} and {@link IgnoreOnCI} annotations.
+ * Custom JUnit runner that enables some custom annotations on tests, including {@link Retryable}, {@link Flaky}, and
+ * {@link IgnoreOnCI}, when running in an automated continuous integration (CI) environment, including GitHub Actions
+ * and Travis CI.
  */
 public class CIRunner extends BlockJUnit4ClassRunner {
 
@@ -38,59 +40,60 @@ public class CIRunner extends BlockJUnit4ClassRunner {
 		super(type);
 	}
 
-	public boolean isRunningOnCI() {
-		boolean value = Boolean.parseBoolean(System.getProperty("ON_CI", "false"));
+	private <T extends Annotation> T getAnnotation(final FrameworkMethod method, Class<T> annotationType) {
+		T annotation = method.getAnnotation(annotationType);
 		
-		if (!value) {
-			String env = System.getenv("ON_CI");
-			
-			if (env != null) {
-				value = Boolean.parseBoolean(env);
-			}
+		if (annotation == null) {
+			annotation = getTestClass().getJavaClass().getAnnotation(annotationType);
 		}
 		
-		return value;
+		return annotation;
 	}
-
-	@Override
-	public void run(RunNotifier arg0) {
-		isRunningOnCI();
-		super.run(arg0);
+	
+	private <T extends Annotation> boolean hasAnnotation(final FrameworkMethod method, Class<T> annotationType) {
+		return getAnnotation(method, annotationType) != null;
 	}
 
 	@Override
 	protected void runChild(final FrameworkMethod method, RunNotifier notifier) {
 		Description description = describeChild(method);
+		boolean isRunningOnCI = TestEnvironment.isCI();
 
-		if (method.getAnnotation(Ignore.class) != null) {
+		if (hasAnnotation(method, Ignore.class)) {
 			notifier.fireTestIgnored(description);
-		} else if ((method.getAnnotation(IgnoreOnCI.class) != null ||
-				getTestClass().getJavaClass().getAnnotation(IgnoreOnCI.class) != null) &&
-				isRunningOnCI()) {
-			System.out.println("Ignoring " + description.getDisplayName() + " on CI build");
-			notifier.fireTestIgnored(description);
-		} else {
-			int retries = 0;
-			boolean flaky = false;
-			
-			if (isRunningOnCI()) {
-				if (method.getAnnotation(Retryable.class) != null) {
-					retries = method.getAnnotation(Retryable.class).value();
-				} else if (getTestClass().getJavaClass().getAnnotation(Retryable.class) != null) {
-					retries = getTestClass().getJavaClass().getAnnotation(Retryable.class).value();
-				}
-				
-				if (method.getAnnotation(Flaky.class) != null) {
-					flaky = true;
-				}
+			return;
+		}
+		
+		if (!TestEnvironment.getProperty("ALL_TESTS", false)) {
+			if (hasAnnotation(method, IgnoreOnCI.class) && isRunningOnCI) {
+				System.out.println("Ignoring " + description.getDisplayName() + ", annotated with @" +
+						IgnoreOnCI.class.getSimpleName());
+				notifier.fireTestIgnored(description);
+				return;
 			}
 			
-			runTestUnit(methodBlock(method), description, notifier, retries, flaky);
+			if (hasAnnotation(method, Slow.class)) {
+				System.out.println("Ignoring " + description.getDisplayName() + ", annotated with @" +
+						Slow.class.getSimpleName());
+				notifier.fireTestIgnored(description);
+				return;
+			}
 		}
+			
+		int retries = 0;
+		boolean flaky = isRunningOnCI && hasAnnotation(method, Flaky.class);
+		
+		Retryable retryable = getAnnotation(method, Retryable.class);
+		
+		if (retryable != null) {
+			retries = retryable.value();
+		}
+			
+		runTestUnit(methodBlock(method), description, notifier, retries, flaky);
 	}
 
-	protected final void runTestUnit(Statement statement, Description description,
-			RunNotifier notifier, int retries, boolean flaky) {
+	protected final void runTestUnit(Statement statement, Description description, RunNotifier notifier, int retries,
+			boolean flaky) {
 		EachTestNotifier eachTestNotifier = new EachTestNotifier(notifier, description);
 		eachTestNotifier.fireTestStarted();
 
@@ -113,20 +116,21 @@ public class CIRunner extends BlockJUnit4ClassRunner {
 		}
 	}
 
-	public void retry(EachTestNotifier notifier, Statement statement,
-			Description description, Throwable currentThrowable, int retries, boolean flaky) {
+	public void retry(EachTestNotifier notifier, Statement statement, Description description,
+			Throwable currentThrowable, int retries, boolean flaky) {
 		Throwable caughtThrowable = currentThrowable;
 		int failedAttempts = 1;
 
 		while (retries > failedAttempts) {
 			try {
-				System.out.println(description.getDisplayName() +
-						" failed, retrying (attempt " + failedAttempts +
+				System.out.println(description.getDisplayName() + " failed, retrying (attempt " + failedAttempts +
 						" of " + retries + ")");
 				statement.evaluate();
-				System.out.println(description.getDisplayName() +
-						" was successful after retry");
+				System.out.println(description.getDisplayName() + " was successful after retry");
 				return;
+			} catch (AssumptionViolatedException e) {
+				notifier.addFailedAssumption(e);
+				break;
 			} catch (Throwable t) {
 				failedAttempts++;
 				caughtThrowable = t;
@@ -136,15 +140,13 @@ public class CIRunner extends BlockJUnit4ClassRunner {
 		if (flaky) {
 			fireFlakyTest(description, caughtThrowable);
 		} else {
-			System.out.println(description.getDisplayName() + " failed after " +
-					failedAttempts + " attempts");
+			System.out.println(description.getDisplayName() + " failed after " + failedAttempts + " attempts");
 			notifier.addFailure(caughtThrowable);
 		}
 	}
 	
 	protected void fireFlakyTest(Description description, Throwable e) {
-		System.out.println(description.getDisplayName() +
-				" failed. This test is flaky and will be ignored!");
+		System.out.println(description.getDisplayName() + " failed. This test is flaky and will be ignored!");
 		System.out.println(e.toString());
 	}
 }

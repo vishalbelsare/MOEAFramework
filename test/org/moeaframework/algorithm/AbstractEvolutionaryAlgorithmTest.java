@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -20,41 +20,27 @@ package org.moeaframework.algorithm;
 import java.io.File;
 import java.io.IOException;
 
-import org.junit.Assert;
 import org.junit.Test;
-import org.moeaframework.TestUtils;
-import org.moeaframework.core.Initialization;
-import org.moeaframework.core.NondominatedPopulation;
-import org.moeaframework.core.Population;
-import org.moeaframework.core.Problem;
-import org.moeaframework.core.operator.RandomInitialization;
-import org.moeaframework.core.spi.ProblemFactory;
+import org.moeaframework.Assert;
+import org.moeaframework.TempFiles;
+import org.moeaframework.algorithm.extension.CheckpointExtension;
+import org.moeaframework.algorithm.extension.Frequency;
+import org.moeaframework.core.population.NondominatedPopulation;
+import org.moeaframework.core.population.Population;
+import org.moeaframework.mock.MockEvolutionaryAlgorithm;
 
-/**
- * Tests the {@link AbstractEvolutionaryAlgorithm} class.
- */
 public class AbstractEvolutionaryAlgorithmTest {
 
-	/**
-	 * Returns a new instance of a dummy abstract evolutionary algorithm for
-	 * testing.
-	 * 
-	 * @return a new instance of a dummy abstract evolutionary algorithm for
-	 *         testing
-	 */
 	private AbstractEvolutionaryAlgorithm newInstance() {
-		Problem problem = ProblemFactory.getInstance().getProblem("DTLZ2_2");
-		Population population = new Population();
-		NondominatedPopulation archive = new NondominatedPopulation();
-		Initialization initialization = new RandomInitialization(problem, 50);
-
-		return new AbstractEvolutionaryAlgorithm(problem, population, archive,
-				initialization) {
+		return new MockEvolutionaryAlgorithm() {
 
 			@Override
-			protected void iterate() {
+			public void iterate() {
+				Population population = getPopulation();
+				NondominatedPopulation archive = getArchive();
+				
 				population.clear();
-				population.addAll(initialization.initialize());
+				population.addAll(getInitialization().initialize(50));
 				evaluateAll(population);
 				archive.addAll(population);
 			}
@@ -62,34 +48,27 @@ public class AbstractEvolutionaryAlgorithmTest {
 		};
 	}
 
-	/**
-	 * Tests if abstract evolutionary algorithms are resumable.
-	 * 
-	 * @throws IOException if an I/O error occurred
-	 */
 	@Test
 	public void testResumable() throws IOException {
-		File file = TestUtils.createTempFile();
+		File file = TempFiles.createFile();
 		NondominatedPopulation lastResult = new NondominatedPopulation();
 		NondominatedPopulation lastArchive = new NondominatedPopulation();
 		Population lastPopulation = new Population();
 		int lastNFE = 0;
-		AbstractEvolutionaryAlgorithm algorithm = null;
-		Checkpoints checkpoints = null;
 
 		for (int i = 0; i < 10; i++) {
-			algorithm = newInstance();
-			checkpoints = new Checkpoints(algorithm, file, 0);
+			AbstractEvolutionaryAlgorithm algorithm = newInstance();
+			algorithm.addExtension(new CheckpointExtension(file, Frequency.ofIterations(1)));
+			
+			Assert.assertEquals(lastNFE, algorithm.getNumberOfEvaluations());
+			Assert.assertEquals(lastResult, algorithm.getResult());
+			Assert.assertEquals(lastArchive, algorithm.getArchive());
+			Assert.assertEquals(lastPopulation, algorithm.getPopulation());
 
-			Assert.assertEquals(lastNFE, checkpoints.getNumberOfEvaluations());
-			TestUtils.assertEquals(lastResult, checkpoints.getResult());
-			TestUtils.assertEquals(lastArchive, algorithm.getArchive());
-			TestUtils.assertEquals(lastPopulation, algorithm.getPopulation());
+			algorithm.step();
 
-			checkpoints.step();
-
-			lastNFE = checkpoints.getNumberOfEvaluations();
-			lastResult = checkpoints.getResult();
+			lastNFE = algorithm.getNumberOfEvaluations();
+			lastResult = algorithm.getResult();
 			lastArchive = algorithm.getArchive();
 			lastPopulation = algorithm.getPopulation();
 		}

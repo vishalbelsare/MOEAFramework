@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -22,6 +22,8 @@ package org.moeaframework.util.tree;
  */
 public class NOP extends Node {
 	
+	private static final long serialVersionUID = 8837981428500282032L;
+
 	/**
 	 * Constructs a new node for defining an empty expression.
 	 */

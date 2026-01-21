@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -20,9 +20,8 @@ package org.moeaframework.util.tree;
 import org.moeaframework.core.FrameworkException;
 
 /**
- * Exception indicating no valid tree node was found, so no valid tree
- * could be generated.  The message should identify the required type or
- * node that encountered this error.
+ * Exception indicating no valid tree node was found, so no valid tree could be generated.  The message should identify
+ * the required type or node that encountered this error.
  */
 public class NoValidNodeException extends FrameworkException {
 

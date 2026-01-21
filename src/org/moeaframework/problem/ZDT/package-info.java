@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -21,9 +21,8 @@
  * <p>
  * References:
  * <ol>
- *   <li>Zitzler et al.  "Comparison of Multiobjective Evolutionary Algorithms:
- *       Empirical Results."  Evolutionary Computation Journal.  8(2):125-148, 
- *       2000.
+ *   <li>Zitzler et al.  "Comparison of Multiobjective Evolutionary Algorithms: Empirical Results."  Evolutionary
+ *       Computation Journal.  8(2):125-148, 2000.
  * </ol>
  */
 package org.moeaframework.problem.ZDT;

@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,18 +17,16 @@
  */
 package org.moeaframework;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
-import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /**
- * Annotation for ignoring unit tests on CI builds.  This can be used to ignore
- * tests that frequently fail due to their stochastic nature, are not configured
- * to run correctly in a CI build environment, or exceed the 10 minute
- * timeout.
- * 
- * Test classes using this annotation must also specify \code{@RunWith(CIRunner.clsas)}.
+ * Annotation for ignoring unit tests on CI builds.  This can be used to ignore tests that frequently fail due to their
+ * stochastic nature or are not configured to run correctly in a CI build environment.
+ * <p>
+ * Test classes using this annotation must also specify {@code @RunWith(CIRunner.class)}..
  */
 @Target({ElementType.METHOD, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)

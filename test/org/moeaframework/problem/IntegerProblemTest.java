@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,13 +17,13 @@
  */
 package org.moeaframework.problem;
 
-import org.junit.Assert;
 import org.junit.Test;
-import org.moeaframework.Executor;
-import org.moeaframework.core.NondominatedPopulation;
-import org.moeaframework.core.Settings;
+import org.moeaframework.Assert;
+import org.moeaframework.TestEnvironment;
+import org.moeaframework.algorithm.NSGAII;
 import org.moeaframework.core.Solution;
-import org.moeaframework.core.variable.EncodingUtils;
+import org.moeaframework.core.variable.BinaryIntegerVariable;
+import org.moeaframework.problem.single.Rosenbrock;
 
 /**
  * Tests a problem using integer-valued decision variables.
@@ -31,31 +31,27 @@ import org.moeaframework.core.variable.EncodingUtils;
 public class IntegerProblemTest {
 
 	/**
-	 * The Rosenbrock problem defined using integers instead of floating-point
-	 * values.
+	 * The Rosenbrock problem defined using integers instead of floating-point values.
 	 */
-	public static class StepRosenbrockProblem extends AbstractProblem {
-
+	public static class StepRosenbrockProblem extends Rosenbrock {
+		
 		public StepRosenbrockProblem() {
-			super(2, 1);
+			super();
 		}
 
 		@Override
 		public void evaluate(Solution solution) {
-			int[] x = EncodingUtils.getInt(solution);
-			double f = Math.pow(1 - x[0], 2) + 100*Math.pow(x[1]-x[0]*x[0], 2);
+			int x = BinaryIntegerVariable.getInt(solution.getVariable(0));
+			int y = BinaryIntegerVariable.getInt(solution.getVariable(1));
 			
-			solution.setObjective(0, f);
+			solution.setObjectiveValue(0, 100*(y - x*x)*(y - x*x) + (1 - x)*(1 - x));
 		}
 
 		@Override
 		public Solution newSolution() {
-			Solution solution = new Solution(numberOfVariables, 1);
-
-			for (int i = 0; i < numberOfVariables; i++) {
-				solution.setVariable(i, EncodingUtils.newInt(-100, 100));
-			}
-
+			Solution solution = new Solution(2, 1);
+			solution.setVariable(0, new BinaryIntegerVariable(-10, 10));
+			solution.setVariable(1, new BinaryIntegerVariable(-10, 10));
 			return solution;
 		}
 		
@@ -63,16 +59,12 @@ public class IntegerProblemTest {
 	
 	@Test
 	public void test() {
-		NondominatedPopulation result = new Executor()
-				.withAlgorithm("NSGAII")
-				.withProblemClass(StepRosenbrockProblem.class)
-				.withMaxEvaluations(100000)
-				.run();
+		NSGAII algorithm = new NSGAII(new StepRosenbrockProblem());
+		algorithm.run(100000);
 		
-		Solution solution = result.get(0);
-		Assert.assertArrayEquals(new int[] { 1, 1 }, 
-				EncodingUtils.getInt(solution));
-		Assert.assertEquals(0, solution.getObjective(0), Settings.EPS);
+		Solution solution = algorithm.getResult().get(0);
+		Assert.assertArrayEquals(new int[] { 1, 1 }, BinaryIntegerVariable.getInt(solution));
+		Assert.assertEquals(0, solution.getObjectiveValue(0), TestEnvironment.HIGH_PRECISION);
 	}
 
 }

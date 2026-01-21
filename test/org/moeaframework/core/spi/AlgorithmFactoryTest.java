@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,70 +17,71 @@
  */
 package org.moeaframework.core.spi;
 
-import java.util.Properties;
-
-import org.junit.Assert;
+import org.apache.commons.lang3.StringUtils;
 import org.junit.Test;
-import org.moeaframework.algorithm.AbstractEvolutionaryAlgorithm;
-import org.moeaframework.core.Algorithm;
-import org.moeaframework.core.Population;
-import org.moeaframework.core.Problem;
-import org.moeaframework.core.operator.RandomInitialization;
-import org.moeaframework.problem.MockRealProblem;
+import org.moeaframework.Assert;
+import org.moeaframework.core.TypedProperties;
+import org.moeaframework.mock.MockRealProblem;
 
 /**
- * Tests the {@link AlgorithmFactory} class.  Note that most of the
- * functionality is indirectly tested by other test functions.
+ * Note that most of the functionality is indirectly tested by other test functions.
  */
-public class AlgorithmFactoryTest {
+public class AlgorithmFactoryTest extends AbstractFactoryTest<AlgorithmProvider, AlgorithmFactory> {
+	
+	@Override
+	public Class<AlgorithmProvider> getProviderType() {
+		return AlgorithmProvider.class;
+	}
+	
+	@Override
+	public Class<AlgorithmFactory> getFactoryType() {
+		return AlgorithmFactory.class;
+	}
 
 	@Test
 	public void testCustomProvider() {
-		AlgorithmProvider provider = new AlgorithmProvider() {
-
-			@Override
-			public Algorithm getAlgorithm(String name, Properties properties, Problem problem) {
-				if (name.equalsIgnoreCase("testAlgorithm")) {
-					return new AbstractEvolutionaryAlgorithm(
-							problem,
-							new Population(),
-							null,
-							new RandomInitialization(problem, 100)) {
-
-						@Override
-						protected void iterate() {
-							// do nothing
-						}
-						
-					};
-				} else {
-					return null;
-				}
-			}
-			
-		};
-		
-		AlgorithmFactory originalFactory = AlgorithmFactory.getInstance();
+		TestAlgorithmProvider provider = new TestAlgorithmProvider();
 		
 		AlgorithmFactory factory = new AlgorithmFactory();
 		factory.addProvider(provider);
-		AlgorithmFactory.setInstance(factory);
 		
 		Assert.assertNotNull(factory.getAlgorithm("testAlgorithm",
-				new Properties(),
+				new TypedProperties(),
 				new MockRealProblem()));
+	}
+	
+	@Test
+	public void testNoProvider() {
+		AlgorithmFactory factory = new AlgorithmFactory();
 		
-		try {
-			factory.getAlgorithm("testAlgorithmNonExistant",
-					new Properties(),
-					new MockRealProblem());
+		Assert.assertThrows(ProviderNotFoundException.class, () -> factory.getAlgorithm(
+				"testAlgorithm",
+				new TypedProperties(),
+				new MockRealProblem()));
+	}
+	
+	@Test(expected = ProviderException.class)
+	public void testException() {
+		TestAlgorithmProvider provider = new TestAlgorithmProvider();
+		provider.setException(new ProviderException("Test illegal argument"));
+		
+		AlgorithmFactory factory = new AlgorithmFactory();
+		factory.addProvider(provider);
+		
+		Assert.assertNotNull(factory.getAlgorithm("testAlgorithm",
+				new TypedProperties(),
+				new MockRealProblem()));
+	}
+	
+	@Test
+	public void testDiagnosticToolAlgorithms() {
+		for (String name : createFactory().getAllDiagnosticToolAlgorithms()) {
+			System.out.println("Testing AlgorithmFactory on " + name);
+			Assert.assertNotNull(AlgorithmFactory.getInstance().getAlgorithm(name, new MockRealProblem(2)));
 			
-			Assert.fail("failed to throw ProviderNotFoundException");
-		} catch (ProviderNotFoundException e) {
-			// ok
+			String swapCaseName = StringUtils.swapCase(name);
+			Assert.assertNotNull(AlgorithmFactory.getInstance().getAlgorithm(swapCaseName, new MockRealProblem(2)));
 		}
-		
-		AlgorithmFactory.setInstance(originalFactory);
 	}
 	
 }

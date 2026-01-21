@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -20,19 +20,21 @@ package org.moeaframework.analysis.diagnostics;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
-import java.util.TreeSet;
 import java.util.Set;
+import java.util.TreeSet;
 
-import javax.swing.ListModel;
 import javax.swing.AbstractListModel;
+import javax.swing.ListModel;
+
+import org.moeaframework.util.Iterators;
+import org.moeaframework.util.Iterators.IndexedValue;
 
 /**
  * A sorted {@link ListModel} which stores only unique entries.
  *
  * @param <T> the type of entry stored in this list model
  */
-public class SortedListModel<T extends Comparable<T>> extends 
-AbstractListModel {
+public class SortedListModel<T extends Comparable<T>> extends AbstractListModel<T> {
 	
 	private static final long serialVersionUID = 833503105693282917L;
 	
@@ -46,7 +48,7 @@ AbstractListModel {
 	 */
 	public SortedListModel() {
 		super();
-		set = new TreeSet<T>();
+		set = new TreeSet<>();
 	}
 	
 	/**
@@ -69,8 +71,7 @@ AbstractListModel {
 	}
 	
 	/**
-	 * Adds the specified item to this list model.  If the item already exists,
-	 * the list model is unchanged.
+	 * Adds the specified item to this list model.  If the item already exists, the list model is unchanged.
 	 * 
 	 * @param item the item to add to this list model
 	 */
@@ -81,8 +82,8 @@ AbstractListModel {
 	}
 	
 	/**
-	 * Adds all items contained in this collection to this list model.  This
-	 * method is implemented by invoking {@link #add(Comparable)}.
+	 * Adds all items contained in this collection to this list model.  This method is implemented by invoking
+	 * {@link #add(Comparable)}.
 	 * 
 	 * @param collection the collection of items to add to this list model
 	 */
@@ -99,14 +100,9 @@ AbstractListModel {
 	 * @return the index of the specified item in this list model
 	 */
 	public int getIndexOf(T item) {
-		Iterator<T> iterator = set.iterator();
-		int index = 0;
-		
-		while (iterator.hasNext()) {
-			if (iterator.next().equals(item)) {
-				return index;
-			} else {
-				index++;
+		for (IndexedValue<T> iv : Iterators.enumerate(set)) {
+			if (iv.getValue().equals(item)) {
+				return iv.getIndex();
 			}
 		}
 		

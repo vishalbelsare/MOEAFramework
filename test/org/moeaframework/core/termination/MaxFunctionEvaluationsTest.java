@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,12 +17,10 @@
  */
 package org.moeaframework.core.termination;
 
-import org.junit.Assert;
 import org.junit.Test;
+import org.moeaframework.Assert;
+import org.moeaframework.mock.MockAlgorithm;
 
-/**
- * Tests the {@link MaxFunctionEvaluations} class.
- */
 public class MaxFunctionEvaluationsTest {
 
 	@Test
@@ -36,7 +34,47 @@ public class MaxFunctionEvaluationsTest {
 		algorithm.setNumberOfEvaluations(1000);
 		Assert.assertFalse(termination.shouldTerminate(algorithm));
 		
-		algorithm.setNumberOfEvaluations(10001);
+		algorithm.setNumberOfEvaluations(10000);
+		Assert.assertTrue(termination.shouldTerminate(algorithm));
+	}
+	
+	@Test
+	public void testContinuePreviousRun() {
+		MockAlgorithm algorithm = new MockAlgorithm();
+		MaxFunctionEvaluations termination = new MaxFunctionEvaluations(10000);
+		
+		algorithm.setNumberOfEvaluations(10000);
+		termination.initialize(algorithm);
+		Assert.assertFalse(termination.shouldTerminate(algorithm));
+		
+		algorithm.setNumberOfEvaluations(15000);
+		Assert.assertFalse(termination.shouldTerminate(algorithm));
+		
+		algorithm.setNumberOfEvaluations(20000);
+		Assert.assertTrue(termination.shouldTerminate(algorithm));
+	}
+	
+	@Test
+	public void testMultipleInitializations() {
+		MockAlgorithm algorithm = new MockAlgorithm();
+		MaxFunctionEvaluations termination = new MaxFunctionEvaluations(10000);
+		
+		termination.initialize(algorithm);
+		Assert.assertFalse(termination.shouldTerminate(algorithm));
+		
+		algorithm.setNumberOfEvaluations(5000);
+		Assert.assertFalse(termination.shouldTerminate(algorithm));
+		
+		algorithm.setNumberOfEvaluations(10000);
+		Assert.assertTrue(termination.shouldTerminate(algorithm));
+		
+		termination.initialize(algorithm);
+		Assert.assertFalse(termination.shouldTerminate(algorithm));
+		
+		algorithm.setNumberOfEvaluations(15000);
+		Assert.assertFalse(termination.shouldTerminate(algorithm));
+
+		algorithm.setNumberOfEvaluations(20000);
 		Assert.assertTrue(termination.shouldTerminate(algorithm));
 	}
 	

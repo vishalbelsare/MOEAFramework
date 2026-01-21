@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,141 +17,138 @@
  */
 package org.moeaframework.core.indicator;
 
-import org.junit.Assert;
 import org.junit.Test;
-import org.moeaframework.TestUtils;
-import org.moeaframework.analysis.sensitivity.ProblemStub;
-import org.moeaframework.core.NondominatedPopulation;
+import org.moeaframework.Assert;
 import org.moeaframework.core.Settings;
+import org.moeaframework.core.population.NondominatedPopulation;
+import org.moeaframework.mock.MockSolution;
 
-/**
- * Tests the {@link Normalizer} class.
- */
 public class NormalizerTest {
 	
-	/**
-	 * Tests if the returned set is independent from the original, ensuring
-	 * normalization does not affect the original population.
-	 */
 	@Test
-	public void testNewObject() {
+	public void testNormalizeDoesNotAffectOriginal() {
 		NondominatedPopulation population = new NondominatedPopulation();
-		population.add(TestUtils.newSolution(0.0, 1.0));
-		population.add(TestUtils.newSolution(1.0, 0.0));
+		population.add(MockSolution.of().withObjectives(0.0, 1.0));
+		population.add(MockSolution.of().withObjectives(1.0, 0.0));
 		
-		Normalizer normalizer = new Normalizer(new ProblemStub(2), population);
+		Normalizer normalizer = new Normalizer(population);
 		NondominatedPopulation result = normalizer.normalize(population);
 		
-		Assert.assertTrue(population != result);
-		Assert.assertFalse(population.contains(result.get(0)));
-		Assert.assertFalse(population.contains(result.get(1)));
+		Assert.assertNotSame(population, result);
+		Assert.assertNotContains(population, result.get(0));
+		Assert.assertNotContains(population, result.get(1));
 	}
 	
-	/**
-	 * Tests if a normalized population remains unchanged.
-	 */
 	@Test
-	public void testNoRescale() {
+	public void testNoChangeIfAlreadyNormalized() {
 		NondominatedPopulation population = new NondominatedPopulation();
-		population.add(TestUtils.newSolution(0.0, 1.0));
-		population.add(TestUtils.newSolution(1.0, 0.0));
+		population.add(MockSolution.of().withObjectives(0.0, 1.0));
+		population.add(MockSolution.of().withObjectives(1.0, 0.0));
 		
-		Normalizer normalizer = new Normalizer(new ProblemStub(2), population);
+		Normalizer normalizer = new Normalizer(population);
 		
-		TestUtils.assertEquals(population, normalizer.normalize(population));
+		Assert.assertEquals(population, normalizer.normalize(population));
 	}
 	
-	/**
-	 * Tests normalization when the bounds are derived from the population.
-	 */
 	@Test
-	public void testRescale() {
+	public void testBoundsFromPopulation() {
 		NondominatedPopulation population = new NondominatedPopulation();
-		population.add(TestUtils.newSolution(0.0, 0.1));
-		population.add(TestUtils.newSolution(10.0, -0.1));
-		population.add(TestUtils.newSolution(5.0, 0.0));
+		population.add(MockSolution.of().withObjectives(0.0, 0.1));
+		population.add(MockSolution.of().withObjectives(10.0, -0.1));
+		population.add(MockSolution.of().withObjectives(5.0, 0.0));
 		
-		Normalizer normalizer = new Normalizer(new ProblemStub(2), population);
+		Normalizer normalizer = new Normalizer(population);
 		
 		NondominatedPopulation expected = new NondominatedPopulation();
-		expected.add(TestUtils.newSolution(0.0, 1.0));
-		expected.add(TestUtils.newSolution(1.0, 0.0));
-		expected.add(TestUtils.newSolution(0.5, 0.5));
+		expected.add(MockSolution.of().withObjectives(0.0, 1.0));
+		expected.add(MockSolution.of().withObjectives(1.0, 0.0));
+		expected.add(MockSolution.of().withObjectives(0.5, 0.5));
 		
-		TestUtils.assertEquals(expected, normalizer.normalize(population));
+		Assert.assertEquals(expected, normalizer.normalize(population));
 	}
 	
-	/**
-	 * Tests normalization when a reference point is provided.
-	 */
 	@Test
-	public void testRescaleReferencePoint() {
+	public void testBoundsFromReferencePoint() {
 		NondominatedPopulation population = new NondominatedPopulation();
-		population.add(TestUtils.newSolution(0.0, 0.1));
-		population.add(TestUtils.newSolution(10.0, -0.1));
-		population.add(TestUtils.newSolution(5.0, 0.0));
+		population.add(MockSolution.of().withObjectives(0.0, 0.1));
+		population.add(MockSolution.of().withObjectives(10.0, -0.1));
+		population.add(MockSolution.of().withObjectives(5.0, 0.0));
 		
-		Normalizer normalizer = new Normalizer(new ProblemStub(2), 
-				population, new double[] { 20.0, 0.2 });
+		Normalizer normalizer = new Normalizer(population, new double[] { 20.0, 0.2 });
 		
 		NondominatedPopulation expected = new NondominatedPopulation();
-		expected.add(TestUtils.newSolution(0.0, 0.6666666));
-		expected.add(TestUtils.newSolution(0.5, 0.0));
-		expected.add(TestUtils.newSolution(0.25, 0.3333333));
+		expected.add(MockSolution.of().withObjectives(0.0, 0.6666666));
+		expected.add(MockSolution.of().withObjectives(0.5, 0.0));
+		expected.add(MockSolution.of().withObjectives(0.25, 0.3333333));
 		
-		TestUtils.assertEquals(expected, normalizer.normalize(population));
+		Assert.assertEquals(expected, normalizer.normalize(population));
 	}
 	
-	/**
-	 * Tests normalization when the bounds are defined explicitly.
-	 */
 	@Test
-	public void testRescaleExplicit() {
+	public void testBoundsFromIdealAndReferencePoint() {
 		NondominatedPopulation population = new NondominatedPopulation();
-		population.add(TestUtils.newSolution(0.0, 0.1));
-		population.add(TestUtils.newSolution(10.0, -0.1));
-		population.add(TestUtils.newSolution(5.0, 0.0));
+		population.add(MockSolution.of().withObjectives(0.0, 0.1));
+		population.add(MockSolution.of().withObjectives(10.0, -0.1));
+		population.add(MockSolution.of().withObjectives(5.0, 0.0));
 		
-		Normalizer normalizer = new Normalizer(new ProblemStub(2), 
-				new double[] { 0.0, -0.2 }, new double[] { 20.0, 0.2 });
+		Normalizer normalizer = new Normalizer(new double[] { 0.0, -0.2 }, new double[] { 20.0, 0.2 });
 		
 		NondominatedPopulation expected = new NondominatedPopulation();
-		expected.add(TestUtils.newSolution(0.0, 0.75));
-		expected.add(TestUtils.newSolution(0.5, 0.25));
-		expected.add(TestUtils.newSolution(0.25, 0.5));
+		expected.add(MockSolution.of().withObjectives(0.0, 0.75));
+		expected.add(MockSolution.of().withObjectives(0.5, 0.25));
+		expected.add(MockSolution.of().withObjectives(0.25, 0.5));
 		
-		TestUtils.assertEquals(expected, normalizer.normalize(population));
+		Assert.assertEquals(expected, normalizer.normalize(population));
 	}
 	
-	/**
-	 * Tests if an exception is thrown when an empty set is provided.
-	 */
-	@Test(expected=IllegalArgumentException.class)
-	public void testConstructorException1() {
-		new Normalizer(new ProblemStub(2), new NondominatedPopulation());
-	}
-	
-	/**
-	 * Tests if an exception is thrown on a degenerate set.
-	 */
-	@Test(expected=IllegalArgumentException.class)
-	public void testConstructorException2() {
+	@Test
+	public void testInfeasibleSolutions() {
 		NondominatedPopulation population = new NondominatedPopulation();
-		population.add(TestUtils.newSolution(0.0, 1.0));
+		population.add(MockSolution.of().withObjectives(0.0, 1.0));
+		population.add(MockSolution.of().withObjectives(0.5, 0.5).withConstraintViolation());
+		population.add(MockSolution.of().withObjectives(1.0, 0.0));
 		
-		new Normalizer(new ProblemStub(2), population);
+		Normalizer normalizer = Normalizer.of(new double[] { 0.0, 0.0 }, new double[] { 1.0, 1.0 });
+		
+		NondominatedPopulation expected = new NondominatedPopulation();
+		expected.add(MockSolution.of().withObjectives(0.0, 1.0));
+		expected.add(MockSolution.of().withObjectives(1.0, 0.0));
+		
+		Assert.assertEquals(expected, normalizer.normalize(population));
 	}
 	
-	/**
-	 * Tests if an exception is thrown on a degenerate set.
-	 */
-	@Test(expected=IllegalArgumentException.class)
-	public void testConstructorException3() {
+	@Test
+	public void testNullNormalizer() {
 		NondominatedPopulation population = new NondominatedPopulation();
-		population.add(TestUtils.newSolution(1.0, 1.0));
-		population.add(TestUtils.newSolution(0.0, 1.0 + Settings.EPS/2.0));
+		population.add(MockSolution.of().withObjectives(0.0, 0.0));
+		population.add(MockSolution.of().withObjectives(10.0, -10.0));
+		population.add(MockSolution.of().withObjectives(5.0, 0.0));
 		
-		new Normalizer(new ProblemStub(2), population);
+		Normalizer normalizer = Normalizer.none();
+		
+		Assert.assertEquals(population, normalizer.normalize(population));
+	}
+	
+	@Test(expected=IllegalArgumentException.class)
+	public void testConstructorEmptyReferenceSet() {
+		new Normalizer(new NondominatedPopulation());
+	}
+	
+	@Test(expected=IllegalArgumentException.class)
+	public void testConstructorSingleSolutionInReferenceSet() {
+		NondominatedPopulation population = new NondominatedPopulation();
+		population.add(MockSolution.of().withObjectives(0.0, 1.0));
+		
+		new Normalizer(population);
+	}
+	
+	@Test(expected=IllegalArgumentException.class)
+	public void testConstructorDegenerateReferenceSet() {
+		NondominatedPopulation population = new NondominatedPopulation();
+		population.add(MockSolution.of().withObjectives(1.0, 1.0));
+		population.add(MockSolution.of().withObjectives(0.0, 1.0 + Settings.EPS/2.0));
+		
+		new Normalizer(population);
 	}
 
 }

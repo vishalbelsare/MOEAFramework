@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -18,49 +18,31 @@
 package org.moeaframework.core.comparator;
 
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.moeaframework.Assert;
 import org.moeaframework.core.Solution;
+import org.moeaframework.mock.MockSolution;
 
-/**
- * Tests the {@link ParetoConstraintComparator} class.
- */
 public class ParetoConstraintComparatorTest {
 
-	/**
-	 * The Pareto constraint comparator used for testing.
-	 */
 	private ParetoConstraintComparator comparator;
 
-	/**
-	 * Setup the comparator for use by all test methods.
-	 */
 	@Before
 	public void setUp() {
 		comparator = new ParetoConstraintComparator();
 	}
 
-	/**
-	 * Removes references to shared objects so they can be garbage collected.
-	 */
 	@After
 	public void tearDown() {
 		comparator = null;
 	}
 
-	/**
-	 * Tests if the comparator correctly detects dominance.
-	 */
 	@Test
 	public void testDominance() {
-		Solution solution1 = new Solution(0, 0, 3);
-		Solution solution2 = new Solution(0, 0, 3);
-		Solution solution3 = new Solution(0, 0, 3);
-
-		solution1.setConstraints(new double[] { 0.5, 0.5, 0.5 });
-		solution2.setConstraints(new double[] { 0.0, 0.0, 0.0 });
-		solution3.setConstraints(new double[] { 0.5, 0.0, 0.5 });
+		Solution solution1 = MockSolution.of().withConstraints(0.5, 0.5, 0.5);
+		Solution solution2 = MockSolution.of().withConstraints(0.0, 0.0, 0.0);
+		Solution solution3 = MockSolution.of().withConstraints(0.5, 0.0, 0.5);
 
 		Assert.assertTrue(comparator.compare(solution1, solution2) > 0);
 		Assert.assertTrue(comparator.compare(solution1, solution3) > 0);
@@ -68,32 +50,19 @@ public class ParetoConstraintComparatorTest {
 		Assert.assertTrue(comparator.compare(solution3, solution1) < 0);
 	}
 
-	/**
-	 * Tests if the comparator correctly detects non-dominance.
-	 */
 	@Test
 	public void testNondominance() {
-		Solution solution1 = new Solution(0, 0, 3);
-		Solution solution2 = new Solution(0, 0, 3);
-
-		solution1.setConstraints(new double[] { 0.5, 0.5, 0.5 });
-		solution2.setConstraints(new double[] { 0.5, 0.0, 1.0 });
+		Solution solution1 = MockSolution.of().withConstraints(0.5, 0.5, 0.5);
+		Solution solution2 = MockSolution.of().withConstraints(0.5, 0.0, 1.0);
 
 		Assert.assertEquals(0, comparator.compare(solution1, solution2));
 		Assert.assertEquals(0, comparator.compare(solution2, solution1));
 	}
 	
-	/**
-	 * Tests if the comparator correctly detects non-dominance of equal
-	 * constraints.
-	 */
 	@Test
-	public void testEquals() {
-		Solution solution1 = new Solution(0, 0, 3);
-		Solution solution2 = new Solution(0, 0, 3);
-
-		solution1.setConstraints(new double[] { 0.5, 0.5, 0.5 });
-		solution2.setConstraints(new double[] { 0.5, 0.5, 0.5 });
+	public void testNondominanceOfIdenticalSolutions() {
+		Solution solution1 = MockSolution.of().withConstraints(0.5, 0.5, 0.5);
+		Solution solution2 = MockSolution.of().withConstraints(0.5, 0.5, 0.5);
 
 		Assert.assertEquals(0, comparator.compare(solution1, solution2));
 		Assert.assertEquals(0, comparator.compare(solution2, solution1));

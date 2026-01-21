@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,33 +17,37 @@
  */
 package org.moeaframework.problem.misc;
 
-import org.junit.Assert;
 import org.junit.Test;
-import org.moeaframework.TestUtils;
-import org.moeaframework.core.Problem;
-import org.moeaframework.core.Settings;
+import org.moeaframework.Assert;
+import org.moeaframework.TestEnvironment;
+import org.moeaframework.problem.Problem;
+import org.moeaframework.problem.ProblemTest;
 
-public class Binh2Test {
+public class Binh2Test extends ProblemTest {
 	
 	@Test
 	public void test() {
 		Problem problem = new Binh2();
 		
-		Assert.assertArrayEquals(new double[] { 0.0, 50.0 }, 
-				TestUtils.evaluateAt(problem, 0.0, 0.0).getObjectives(),
-				Settings.EPS);
+		Assert.assertArrayEquals(new double[] { 0.0, 50.0 },
+				evaluateAt(problem, 0.0, 0.0).getObjectiveValues(),
+				TestEnvironment.HIGH_PRECISION);
 		
-		Assert.assertArrayEquals(new double[] { 0.0, 0.0 }, 
-				TestUtils.evaluateAt(problem, 0.0, 0.0).getConstraints(),
-				Settings.EPS);
+		Assert.assertArrayEquals(new double[] { 0.0, -65.3 },
+				evaluateAt(problem, 0.0, 0.0).getConstraintValues(),
+				TestEnvironment.HIGH_PRECISION);
 		
-		Assert.assertArrayEquals(new double[] { 136.0, 4.0 }, 
-				TestUtils.evaluateAt(problem, 5.0, 3.0).getObjectives(),
-				Settings.EPS);
+		Assert.assertTrue(evaluateAt(problem, 0.0, 0.0).isFeasible());
 		
-		Assert.assertArrayEquals(new double[] { 0.0, 0.0 }, 
-				TestUtils.evaluateAt(problem, 5.0, 3.0).getConstraints(),
-				Settings.EPS);
+		Assert.assertArrayEquals(new double[] { 136.0, 4.0 },
+				evaluateAt(problem, 5.0, 3.0).getObjectiveValues(),
+				TestEnvironment.HIGH_PRECISION);
+		
+		Assert.assertArrayEquals(new double[] { -16.0, -37.3 },
+				evaluateAt(problem, 5.0, 3.0).getConstraintValues(),
+				TestEnvironment.HIGH_PRECISION);
+		
+		Assert.assertTrue(evaluateAt(problem, 5.0, 3.0).isFeasible());
 	}
 
 }

@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,31 +17,19 @@
  */
 package org.moeaframework.core.operator.binary;
 
-import org.junit.Assert;
 import org.junit.Test;
-import org.moeaframework.TestThresholds;
-import org.moeaframework.core.Solution;
-import org.moeaframework.core.operator.ParentImmutabilityTest;
-import org.moeaframework.core.operator.TypeSafetyTest;
+import org.moeaframework.Assert;
+import org.moeaframework.TestEnvironment;
+import org.moeaframework.core.operator.AbstractBinaryOperatorTest;
 import org.moeaframework.core.variable.BinaryVariable;
 
-/**
- * Tests the {@link BitFlip} class.
- */
-public class BitFlipTest {
+public class BitFlipTest extends AbstractBinaryOperatorTest<BitFlip> {
 
-	/**
-	 * Tests if the grammar crossover operator is type-safe.
-	 */
-	@Test
-	public void testTypeSafety() {
-		TypeSafetyTest.testTypeSafety(new BitFlip(1.0));
+	@Override
+	public BitFlip createInstance() {
+		return new BitFlip(1.0);
 	}
 
-	/**
-	 * Tests if the correct number of bits are flipped for several probability
-	 * values.
-	 */
 	@Test
 	public void testProbabilities() {
 		testProbability(0.0);
@@ -51,39 +39,22 @@ public class BitFlipTest {
 	}
 
 	/**
-	 * Tests if the correct number of bits are flipped given the specified
-	 * probability.
+	 * Tests if the correct number of bits are flipped given the specified probability.
 	 * 
 	 * @param probability the probability of flipping a bit
 	 */
 	private void testProbability(double probability) {
 		double sum = 0.0;
 
-		for (int i = 0; i < TestThresholds.SAMPLES; i++) {
+		for (int i = 0; i < TestEnvironment.SAMPLES; i++) {
 			BinaryVariable original = new BinaryVariable(100);
 			BinaryVariable mutated = original.copy();
-			BitFlip.evolve(mutated, probability);
+			BitFlip.mutate(mutated, probability);
 
 			sum += original.hammingDistance(mutated);
 		}
 
-		Assert.assertEquals((sum / TestThresholds.SAMPLES) / 100, probability,
-				TestThresholds.VARIATION_EPS);
-	}
-
-	/**
-	 * Tests if the parents remain unchanged during variation.
-	 */
-	@Test
-	public void testParentImmutability() {
-		BitFlip bf = new BitFlip(1.0);
-
-		Solution solution = new Solution(1, 0);
-		solution.setVariable(0, new BinaryVariable(100));
-
-		Solution[] parents = new Solution[] { solution };
-
-		ParentImmutabilityTest.test(parents, bf);
+		Assert.assertEquals((sum / TestEnvironment.SAMPLES) / 100, probability, TestEnvironment.LOW_PRECISION);
 	}
 
 }

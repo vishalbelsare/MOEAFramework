@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,20 +17,18 @@
  */
 package org.moeaframework.problem.DTLZ;
 
-import org.moeaframework.core.PRNG;
 import org.moeaframework.core.Solution;
-import org.moeaframework.core.variable.EncodingUtils;
 import org.moeaframework.core.variable.RealVariable;
+import org.moeaframework.problem.AnalyticalProblem;
 
 /**
  * The DTLZ7 test problem.
  */
-public class DTLZ7 extends DTLZ {
+public class DTLZ7 extends DTLZ implements AnalyticalProblem {
 
 	/**
-	 * Constructs a DTLZ7 test problem with the specified number of objectives.
-	 * This is equivalent to calling {@code new DTLZ7(numberOfObjectives+19, 
-	 * numberOfObjectives)}
+	 * Constructs a DTLZ7 test problem with the specified number of objectives.  This is equivalent to calling
+	 * {@code new DTLZ7(numberOfObjectives+19, numberOfObjectives)}
 	 * 
 	 * @param numberOfObjectives the number of objectives for this problem
 	 */
@@ -39,8 +37,7 @@ public class DTLZ7 extends DTLZ {
 	}
 
 	/**
-	 * Constructs a DTLZ7 test problem with the specified number of variables
-	 * and objectives.
+	 * Constructs a DTLZ7 test problem with the specified number of variables and objectives.
 	 * 
 	 * @param numberOfVariables the number of variables for this problem
 	 * @param numberOfObjectives the number of objectives for this problem
@@ -48,19 +45,23 @@ public class DTLZ7 extends DTLZ {
 	public DTLZ7(int numberOfVariables, int numberOfObjectives) {
 		super(numberOfVariables, numberOfObjectives);
 	}
-
-	@Override
-	public void evaluate(Solution solution) {
-		double[] x = EncodingUtils.getReal(solution);
-		double[] f = new double[numberOfObjectives];
-
+	
+	private double g(double[] x) {
 		int k = numberOfVariables - numberOfObjectives + 1;
-
 		double g = 0.0;
+		
 		for (int i = numberOfVariables - k; i < numberOfVariables; i++) {
 			g += x[i];
 		}
-		g = 1.0 + (9.0 * g) / k;
+		
+		return 1.0 + (9.0 * g) / k;
+	}
+
+	@Override
+	public void evaluate(Solution solution) {
+		double[] x = RealVariable.getReal(solution);
+		double[] f = new double[numberOfObjectives];
+		double g = g(x);
 
 		double h = numberOfObjectives;
 		for (int i = 0; i < numberOfObjectives - 1; i++) {
@@ -70,26 +71,15 @@ public class DTLZ7 extends DTLZ {
 		for (int i = 0; i < numberOfObjectives - 1; i++) {
 			f[i] = x[i];
 		}
+		
 		f[numberOfObjectives - 1] = (1.0 + g) * h;
 
-		solution.setObjectives(f);
+		solution.setObjectiveValues(f);
 	}
 
 	@Override
 	public Solution generate() {
-		Solution solution = newSolution();
-
-		for (int i = 0; i < numberOfObjectives - 1; i++) {
-			((RealVariable)solution.getVariable(i)).setValue(PRNG.nextDouble());
-		}
-
-		for (int i = numberOfObjectives - 1; i < numberOfVariables; i++) {
-			((RealVariable)solution.getVariable(i)).setValue(0.0);
-		}
-
-		evaluate(solution);
-
-		return solution;
+		return generateAt(0.0);
 	}
 
 }

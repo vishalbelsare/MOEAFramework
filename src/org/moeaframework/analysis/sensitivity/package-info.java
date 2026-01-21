@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,16 +17,6 @@
  */
 
 /**
- * Utilities for analyzing an algorithm using control maps and sensitivity
- * analysis.  These utilities are currently only configured to work on
- * real-valued problems.  Academic works which use this package should cite
- * the referenced article below.
- * <p>
- * References:
- * <ol>
- *   <li>Hadka, D. and Reed, P.  "Diagnostic Assessment of Search Controls and
- *       Failure Modes in Many-Objective Evolutionary Optimization."
- *       Evolutionary Computation, 20(3):423-452.
- * </ol>
+ * Sensitivity analysis methods.
  */
 package org.moeaframework.analysis.sensitivity;

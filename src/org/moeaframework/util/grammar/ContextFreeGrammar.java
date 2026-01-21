@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,6 +17,12 @@
  */
 package org.moeaframework.util.grammar;
 
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.Reader;
+import java.io.StreamTokenizer;
+import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -24,8 +30,7 @@ import java.util.Set;
 import java.util.Stack;
 
 /**
- * A context-free grammar. The rule at index {@code 0} is the starting rule when
- * building derivation trees.
+ * A context-free grammar.  The rule at index {@code 0} is the starting rule when building derivation trees.
  * 
  * @see Rule
  */
@@ -37,8 +42,8 @@ public class ContextFreeGrammar {
 	private final List<Rule> rules;
 
 	/**
-	 * The maximum number of times the builder will wrap around the codon array
-	 * before failing to produce a valid derivation.
+	 * The maximum number of times the builder will wrap around the codon array before failing to produce a valid
+	 * derivation.
 	 */
 	private int wrapLimit;
 
@@ -48,27 +53,27 @@ public class ContextFreeGrammar {
 	public ContextFreeGrammar() {
 		super();
 
-		rules = new ArrayList<Rule>();
+		rules = new ArrayList<>();
 		wrapLimit = 10;
 	}
 
 	/**
-	 * Returns the maximum number of times the builder will wrap around the
-	 * codon array before failing to produce a valid derivation.
+	 * Returns the maximum number of times the builder will wrap around the codon array before failing to produce a
+	 * valid derivation.
 	 * 
-	 * @return the maximum number of times the builder will wrap around the
-	 *         codon array before failing to produce a valid derivation
+	 * @return the maximum number of times the builder will wrap around the codon array before failing to produce a
+	 *         valid derivation
 	 */
 	public int getWrapLimit() {
 		return wrapLimit;
 	}
 
 	/**
-	 * Sets the maximum number of times the builder will wrap around the codon
-	 * array before failing to produce a valid derivation.
+	 * Sets the maximum number of times the builder will wrap around the codon array before failing to produce a valid
+	 * derivation.
 	 * 
-	 * @param wrapLimit the maximum number of times the builder will wrap around
-	 *        the codon array before failing to produce a valid derivation
+	 * @param wrapLimit the maximum number of times the builder will wrap around the codon array before failing to
+	 *        produce a valid derivation
 	 */
 	public void setWrapLimit(int wrapLimit) {
 		this.wrapLimit = wrapLimit;
@@ -106,20 +111,17 @@ public class ContextFreeGrammar {
 	 * 
 	 * @param index the index of the rule to be returned
 	 * @return the rule at the specified index
-	 * @throws IndexOutOfBoundsException if index is out of range {@code ((index
-	 *         < 0) || (index >= size())}
+	 * @throws IndexOutOfBoundsException if index is out of range {@code ((index < 0) || (index >= size())}
 	 */
 	public Rule get(int index) {
 		return rules.get(index);
 	}
 
 	/**
-	 * Returns the rule for the specified symbol; or {@code null} if no rule
-	 * with the specified symbol exists.
+	 * Returns the rule for the specified symbol; or {@code null} if no rule with the specified symbol exists.
 	 * 
 	 * @param symbol the symbol of the rule to be returned
-	 * @return the rule for the specified symbol; or {@code null} if no rule
-	 *         with the specified symbol exists
+	 * @return the rule for the specified symbol; or {@code null} if no rule with the specified symbol exists
 	 */
 	public Rule get(Symbol symbol) {
 		for (Rule rule : rules) {
@@ -132,26 +134,23 @@ public class ContextFreeGrammar {
 	}
 
 	/**
-	 * Returns the grammar derivation using the construction rules of
-	 * Grammatical Evolution on the specified codon array; or {@code null} if
-	 * the codon array failed to produce a valid derivation Whenever the
-	 * derivation encounters a rule with multiple productions, the production
-	 * used to expand the rule is chosen using this codon array.
+	 * Returns the grammar derivation using the construction rules of Grammatical Evolution on the specified codon
+	 * array; or {@code null} if the codon array failed to produce a valid derivation Whenever the derivation
+	 * encounters a rule with multiple productions, the production used to expand the rule is chosen using this codon
+	 * array.
 	 * 
 	 * @param array the codon array
-	 * @return the grammar derivation using the construction rules of
-	 *         Grammatical Evolution on the specified codon array; or
-	 *         {@code null} if the codon array failed to produce a valid
-	 *         derivation
+	 * @return the grammar derivation using the construction rules of Grammatical Evolution on the specified codon
+	 *         array; or {@code null} if the codon array failed to produce a valid derivation
 	 * @throws GrammarException if the codon array is empty
 	 */
 	public String build(int[] array) {
 		if (array.length == 0) {
-			throw new GrammarException("codon array is empty");
+			throw new GrammarException("Codon array is empty");
 		}
 
 		StringBuilder sb = new StringBuilder();
-		Stack<Symbol> remaining = new Stack<Symbol>();
+		Stack<Symbol> remaining = new Stack<>();
 
 		int index = 0;
 		int wraps = 0;
@@ -193,9 +192,8 @@ public class ContextFreeGrammar {
 	}
 
 	/**
-	 * Returns {@code true} if this grammar is valid; {@code false} otherwise. A
-	 * grammar is valid if it is non-empty and all non-terminal symbols are
-	 * defined by a rule in the grammar.
+	 * Returns {@code true} if this grammar is valid; {@code false} otherwise.  A grammar is valid if it is non-empty
+	 * and all non-terminal symbols are defined by a rule in the grammar.
 	 * 
 	 * @return {@code true} if this grammar is valid; {@code false} otherwise
 	 */
@@ -204,7 +202,7 @@ public class ContextFreeGrammar {
 			return false;
 		}
 
-		Set<Symbol> symbols = new HashSet<Symbol>();
+		Set<Symbol> symbols = new HashSet<>();
 
 		for (int i = 0; i < size(); i++) {
 			Rule rule = get(i);
@@ -229,6 +227,155 @@ public class ContextFreeGrammar {
 		}
 
 		return true;
+	}
+	
+	/**
+	 * Loads a context-free grammar from a file.
+	 * 
+	 * @param file the file containing the BNF context-free grammar
+	 * @return the grammar
+	 * @throws IOException if an I/O error occurred
+	 * @throws GrammarException if an error occurred parsing the BNF context-free grammar
+	 * @see #load(Reader)
+	 */
+	public static ContextFreeGrammar load(File file) throws IOException {
+		try (FileReader reader = new FileReader(file)) {
+			return load(reader);
+		}
+	}
+	
+	/**
+	 * Loads a context-free grammar from a string.
+	 * 
+	 * @param str the string containing the context-free grammar
+	 * @return the grammar
+	 * @throws GrammarException if an error occurred parsing the BNF context-free grammar
+	 * @see #load(Reader)
+	 */
+	public static ContextFreeGrammar load(String str) {
+		try (StringReader reader = new StringReader(str)) {
+			return load(reader);
+		} catch (IOException e) {
+			throw new GrammarException("Failed to parse grammar", e);
+		}
+	}
+	
+	/**
+	 * Parses the context-free grammar in Backus-Naur form (BNF).  Each rule is defined on a single line, formatted
+	 * with the symbol or identifier on the left-hand side, the separator {@code "::="}, and one or more productions
+	 * on the right-hand side.
+	 * <pre>{@code
+	 *   <symbol> ::= <production> (| <production>)
+	 * }</pre>
+	 * A production can be a constant, a quoted string, a reference to a symbol, or any combination thereof.  For
+	 * example, the following represents a simple mathematical grammar:
+ 	 * <pre>{@code
+ 	 *   <expr> ::= <expr> <op> <expr> | "func(" <expr> ")" | <val>
+ 	 *   <op> ::= + | - | * | '/'
+ 	 *   <val> ::= x | y | z
+ 	 * }</pre>
+	 * 
+	 * @param reader the {@link Reader} containing the BNF context-free grammar
+	 * @return the grammar
+	 * @throws IOException if an I/O error occurred
+	 * @throws GrammarException if an error occurred parsing the BNF context-free grammar
+	 */
+	public static ContextFreeGrammar load(Reader reader) throws IOException {
+		StreamTokenizer tokenizer = new StreamTokenizer(reader);
+		tokenizer.resetSyntax();
+		tokenizer.wordChars('a', 'z');
+		tokenizer.wordChars('A', 'Z');
+		tokenizer.wordChars('0', '9');
+		tokenizer.wordChars('<', '<');
+		tokenizer.wordChars('>', '>');
+		tokenizer.wordChars('_', '_');
+		tokenizer.wordChars('-', '-');
+		tokenizer.wordChars('.', '.');
+		tokenizer.wordChars(128 + 32, 255);
+		tokenizer.whitespaceChars(0, ' ');
+		tokenizer.quoteChar('"');
+		tokenizer.quoteChar('\'');
+		tokenizer.eolIsSignificant(true);
+		tokenizer.slashSlashComments(true);
+		tokenizer.slashStarComments(true);
+
+		ContextFreeGrammar grammar = new ContextFreeGrammar();
+		Rule rule = null;
+		Production production = null;
+
+		while (tokenizer.nextToken() != StreamTokenizer.TT_EOF) {
+			if ((tokenizer.ttype == ':') || (tokenizer.ttype == '=')) {
+				do {
+					tokenizer.nextToken();
+				} while ((tokenizer.ttype == ':') || (tokenizer.ttype == '='));
+
+				if ((rule == null) || (production != null)) {
+					throw new GrammarException("Unexpected rule separator", tokenizer.lineno());
+				}
+
+				tokenizer.pushBack();
+			} else if (tokenizer.ttype == '|') {
+				if ((rule != null) && (production == null)) {
+					throw new GrammarException("Rule must contain at least one production", tokenizer.lineno());
+				}
+
+				production = null;
+			} else if (tokenizer.ttype == StreamTokenizer.TT_EOL) {
+				if ((rule != null) && (production == null)) {
+					throw new GrammarException("Rule must contain at least one production", tokenizer.lineno());
+				}
+
+				rule = null;
+				production = null;
+			} else {
+				String string = null;
+
+				if ((tokenizer.ttype == StreamTokenizer.TT_WORD)
+						|| (tokenizer.ttype == '\'')
+						|| (tokenizer.ttype == '\"')) {
+					string = tokenizer.sval;
+				} else if (tokenizer.ttype == StreamTokenizer.TT_NUMBER) {
+					string = Double.toString(tokenizer.nval);
+				} else {
+					string = Character.toString((char)tokenizer.ttype);
+				}
+
+				if (string.startsWith("<") && string.endsWith(">")) {
+					string = string.substring(1, string.length() - 1);
+
+					if (string.isEmpty()) {
+						throw new GrammarException("Invalid symbol", tokenizer.lineno());
+					}
+
+					if (rule == null) {
+						rule = new Rule(new Symbol(string, false));
+						grammar.add(rule);
+					} else if (production == null) {
+						production = new Production();
+						production.add(new Symbol(string, false));
+						rule.add(production);
+					} else {
+						production.add(new Symbol(string, false));
+					}
+				} else {
+					if (rule == null) {
+						throw new GrammarException("Rule must start with non-terminal", tokenizer.lineno());
+					} else if (production == null) {
+						production = new Production();
+						production.add(new Symbol(string, true));
+						rule.add(production);
+					} else {
+						production.add(new Symbol(string, true));
+					}
+				}
+			}
+		}
+
+		if ((rule != null) && (production == null)) {
+			throw new GrammarException("Rule must contain at least one production", tokenizer.lineno());
+		}
+
+		return grammar;
 	}
 
 }

@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,49 +17,37 @@
  */
 package org.moeaframework.core.operator;
 
-import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.commons.math3.ml.clustering.CentroidCluster;
-import org.apache.commons.math3.ml.clustering.DoublePoint;
-import org.apache.commons.math3.ml.clustering.KMeansPlusPlusClusterer;
-import org.junit.Assert;
-import org.moeaframework.TestThresholds;
+import org.junit.Ignore;
+import org.moeaframework.Assert;
+import org.moeaframework.TestEnvironment;
 import org.moeaframework.core.Solution;
-import org.moeaframework.core.variable.EncodingUtils;
+import org.moeaframework.core.variable.RealVariable;
+import org.moeaframework.util.clustering.Cluster;
+import org.moeaframework.util.clustering.Clustering;
 
 /**
- * Provides test methods for checking if the offspring form clusters around each
- * parent.
+ * Provides test methods for checking if the offspring form clusters around each parent.
  */
-public abstract class ParentCentricVariationTest extends
-		DistributionVariationTest {
+@Ignore("Abstract test class")
+public abstract class ParentCentricVariationTest<T extends Variation> extends DistributionVariationTest<T> {
 
 	@Override
-	protected void check(Solution[] parents, Solution[] offspring) {
-		List<DoublePoint> points = new ArrayList<DoublePoint>();
-
-		for (Solution solution : offspring) {
-			points.add(new DoublePoint(EncodingUtils.getReal(solution)));
-		}
-
-		KMeansPlusPlusClusterer<DoublePoint> clusterer = 
-				new KMeansPlusPlusClusterer<DoublePoint>(parents.length, 100);
-
-		List<CentroidCluster<DoublePoint>> clusters = clusterer.cluster(points);
-
+	protected void checkDistribution(Solution[] parents, Solution[] offspring) {
+		List<Cluster> clusters = Clustering.kMeansPlusPlus().clusterVariables(parents.length, offspring);
+		
 		for (Solution solution : parents) {
 			boolean match = false;
 
 			for (int i = 0; i < clusters.size(); i++) {
 				boolean allEqual = true;
 
-				double[] centroid = clusters.get(i).getCenter().getPoint();
-				double[] parent = EncodingUtils.getReal(solution);
+				double[] centroid = clusters.get(i).getCenter();
+				double[] parent = RealVariable.getReal(solution);
 
 				for (int j = 0; j < parent.length; j++) {
-					if (Math.abs(parent[j] - centroid[j]) > 
-							TestThresholds.VARIATION_EPS) {
+					if (Math.abs(parent[j] - centroid[j]) > TestEnvironment.LOW_PRECISION) {
 						allEqual = false;
 					}
 				}
@@ -69,7 +57,7 @@ public abstract class ParentCentricVariationTest extends
 				}
 			}
 
-			Assert.assertTrue(match);
+			Assert.assertTrue("Failed to find cluster near solution", match);
 		}
 	}
 

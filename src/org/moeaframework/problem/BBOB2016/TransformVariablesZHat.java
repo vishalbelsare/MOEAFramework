@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -18,13 +18,12 @@
 package org.moeaframework.problem.BBOB2016;
 
 import org.moeaframework.core.Solution;
-import org.moeaframework.core.variable.EncodingUtils;
+import org.moeaframework.core.variable.RealVariable;
 
-/* 
- * The following source code is derived from the Coco Framework available at
- * <https://github.com/numbbo/coco> under the 3-clause BSD license. The
- * original code is copyright 2013 by the NumBBO/CoCO team.  See the AUTHORS
- * file located in the Coco Framework repository for more details.
+/*
+ * The following source code is derived from the Coco Framework available at <https://github.com/numbbo/coco> under the
+ * 3-clause BSD license.  The original code is copyright 2013 by the NumBBO/CoCO team.  See the AUTHORS file located in
+ * the Coco Framework repository for more details.
  */
 
 /**
@@ -50,7 +49,7 @@ public class TransformVariablesZHat extends BBOBTransformation {
 
 	@Override
 	public void evaluate(Solution solution) {
-		double[] x = EncodingUtils.getReal(solution);
+		double[] x = RealVariable.getReal(solution);
 		double[] tx = x.clone();
 		
 		tx[0] = x[0];
@@ -59,9 +58,9 @@ public class TransformVariablesZHat extends BBOBTransformation {
 			tx[i] = x[i] + 0.25 * (x[i-1] - 2.0 * Math.abs(xopt[i-1]));
 		}
 		
-		EncodingUtils.setReal(solution, tx);
+		RealVariable.setReal(solution, tx);
 		function.evaluate(solution);
-		EncodingUtils.setReal(solution, x);
+		RealVariable.setReal(solution, x);
 	}
 
 }

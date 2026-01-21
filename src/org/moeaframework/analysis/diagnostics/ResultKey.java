@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -24,8 +24,7 @@ import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 /**
- * The key for a result entry, allowing distinct algorithm and problem pairings
- * in sets and maps.
+ * The key for a result entry, allowing distinct algorithm and problem pairings in sets and maps.
  */
 public class ResultKey implements Comparable<ResultKey>, Serializable {
 

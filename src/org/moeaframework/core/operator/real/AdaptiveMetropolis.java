@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,6 +17,7 @@
  */
 package org.moeaframework.core.operator.real;
 
+import org.apache.commons.math3.exception.MathIllegalArgumentException;
 import org.apache.commons.math3.linear.Array2DRowRealMatrix;
 import org.apache.commons.math3.linear.ArrayRealVector;
 import org.apache.commons.math3.linear.CholeskyDecomposition;
@@ -25,75 +26,88 @@ import org.apache.commons.math3.linear.RealVector;
 import org.apache.commons.math3.stat.correlation.Covariance;
 import org.moeaframework.core.PRNG;
 import org.moeaframework.core.Solution;
-import org.moeaframework.core.Variation;
-import org.moeaframework.core.variable.EncodingUtils;
+import org.moeaframework.core.configuration.Prefix;
+import org.moeaframework.core.configuration.Property;
 import org.moeaframework.core.variable.RealVariable;
+import org.moeaframework.util.validate.Validate;
 
 /**
- * The adaptive metropolis (AM) operator.  AM is a multiparent operator,
- * allowing a user-defined number of parents and offspring.  AM produces
- * normally-distributed clusters around each parent, where the shape of the
- * distribution is controlled by the covariance of the parents.
+ * The adaptive metropolis (AM) operator.  AM is a multiparent operator, allowing a user-defined number of parents
+ * and offspring.  AM produces normally-distributed clusters around each parent, where the shape of the distribution
+ * is controlled by the covariance of the parents.
  * <p>
- * Internally, the Cholesky decomposition is used to update the resulting
- * offspring distribution.  Cholesky decomposition requires that its input be
- * positive definite.  In order to guarantee this condition is satisfied, all
- * parents must be unique.  In the event that the positive definite condition
- * is not satisifed, no offspring are produced and an empty array is returned
- * by {@link #evolve(Solution[])}.
+ * Internally, the Cholesky decomposition is used to update the resulting offspring distribution.  Cholesky
+ * decomposition requires that its input be positive definite.  In order to guarantee this condition is satisfied,
+ * all parents must be unique.  In the event that the positive definite condition is not satisfied, no offspring are
+ * produced and an empty array is returned by {@link #evolve(Solution[])}.
  * <p>
  * References:
  * <ol>
- *   <li>Vrugt, J.A., Robinson, B.A. and Hyman, J.M.  "Self-Adaptive 
- *       MultiMethod Search For Global Optimization in Real-Parameter Spaces."
- *       IEEE Transactions on Evolutionary Computation, pp. 1-17, 2009.
- *   <li>Vrugt, J.A. and Robinson, B.A.  "Improved Evolutionary Optimization 
- *       from Genetically Adaptive Multimethod Search."  Proceedings of the 
- *       National Academy of Sciences of the United States  of America, vol. 
- *       104, pp. 708 - 711, 2007.
- *   <li>Gelman, A., Roberts, G.O. and Gilks, W.R.  "Efficient Metropolis
- *       Jumping Rules."  Bayesian Statistics, vol. 5, pp. 599-607, 1996.
+ *   <li>Vrugt, J.A., Robinson, B.A. and Hyman, J.M.  "Self-Adaptive MultiMethod Search For Global Optimization in
+ *       Real-Parameter Spaces." IEEE Transactions on Evolutionary Computation, pp. 1-17, 2009.
+ *   <li>Vrugt, J.A. and Robinson, B.A.  "Improved Evolutionary Optimization from Genetically Adaptive Multimethod
+ *       Search."  Proceedings of the National Academy of Sciences of the United States  of America, vol. 104,
+ *       pp. 708 - 711, 2007.
+ *   <li>Gelman, A., Roberts, G.O. and Gilks, W.R.  "Efficient Metropolis Jumping Rules."  Bayesian Statistics,
+ *       vol. 5, pp. 599-607, 1996.
  * </ol>
  */
-public class AdaptiveMetropolis implements Variation {
+@Prefix("am")
+public class AdaptiveMetropolis extends MultiParentVariation {
 	
 	/**
-	 * The number of parents required by this operator.
+	 * The jump rate coefficient, controlling the standard deviation of the covariance matrix.  The actual jump rate
+	 * is calculated as {@code Math.pow(jumpRateCoefficient / Math.sqrt(n), 2.0)}, where  {@code n} is the number of
+	 * decision variables.  The recommended value is {@code 2.4}.
 	 */
-	private final int numberOfParents;
-
-	/**
-	 * The number of offspring produced by this operator.
-	 */
-	private final int numberOfOffspring;
+	private double jumpRateCoefficient;
 	
 	/**
-	 * The jump rate coefficient, controlling the standard deviation of the 
-	 * covariance matrix.  The actual jump rate is calculated as {@code 
-	 * Math.pow(jumpRateCoefficient / Math.sqrt(n), 2.0)}, where  {@code n} is
-	 * the number of decision variables.  The recommended value is {@code 2.4}.
+	 * Constructs an adaptive metropolis operator with default settings, taking 10 parents and producing 2 offspring.
+	 * The recommended value of {@code 2.4} is used for the jump rate coefficient.
 	 */
-	private final double jumpRateCoefficient;
+	public AdaptiveMetropolis() {
+		this(10, 2, 2.4);
+	}
 	
 	/**
 	 * Constructs an adaptive metropolis operator.
 	 * 
 	 * @param numberOfParents the number of parents required by this operator
 	 * @param numberOfOffspring the number of parents produced by this operator
-	 * @param jumpRateCoefficient the jump raote coefficient, controlling the
-	 *        standard deviation of the covariance matrix
+	 * @param jumpRateCoefficient the jump raote coefficient, controlling the standard deviation of the covariance
+	 *        matrix
 	 */
-	public AdaptiveMetropolis(int numberOfParents, int numberOfOffspring, 
-			double jumpRateCoefficient) {
-		super();
-		this.numberOfParents = numberOfParents;
-		this.numberOfOffspring = numberOfOffspring;
-		this.jumpRateCoefficient = jumpRateCoefficient;
+	public AdaptiveMetropolis(int numberOfParents, int numberOfOffspring, double jumpRateCoefficient) {
+		super(numberOfParents, numberOfOffspring);
+		setJumpRateCoefficient(jumpRateCoefficient);
 	}
-
+	
 	@Override
-	public int getArity() {
-		return numberOfParents;
+	public String getName() {
+		return "am";
+	}
+	
+	/**
+	 * Returns the jump rate coefficient value.
+	 * 
+	 * @return the jump rate coefficient value
+	 */
+	public double getJumpRateCoefficient() {
+		return jumpRateCoefficient;
+	}
+	
+	/**
+	 * Sets the jump rate coefficient, controlling the standard deviation of the covariance matrix.  The actual jump
+	 * rate is calculated as {@code Math.pow(jumpRateCoefficient / Math.sqrt(n), 2.0)}, where  {@code n} is the number
+	 * of decision variables.  The recommended value is {@code 2.4}.
+	 * 
+	 * @param jumpRateCoefficient the jump rate coefficient value
+	 */
+	@Property("coefficient")
+	public void setJumpRateCoefficient(double jumpRateCoefficient) {
+		Validate.that("jumpRateCoefficient", jumpRateCoefficient).isGreaterThan(0.0);
+		this.jumpRateCoefficient = jumpRateCoefficient;
 	}
 
 	@Override
@@ -103,7 +117,7 @@ public class AdaptiveMetropolis implements Variation {
 		RealMatrix x = new Array2DRowRealMatrix(k, n);
 		
 		for (int i=0; i<k; i++) {
-			x.setRow(i, EncodingUtils.getReal(parents[i]));
+			x.setRow(i, RealVariable.getReal(parents[i]));
 		}
 		
 		try {
@@ -111,8 +125,7 @@ public class AdaptiveMetropolis implements Variation {
 			double jumpRate = Math.pow(jumpRateCoefficient / Math.sqrt(n), 2.0);
 
 			RealMatrix chol = new CholeskyDecomposition(
-						new Covariance(x.scalarMultiply(jumpRate))
-						.getCovarianceMatrix()).getLT();
+						new Covariance(x.scalarMultiply(jumpRate)).getCovarianceMatrix()).getLT();
 			
 			//produce the offspring
 			Solution[] offspring = new Solution[numberOfOffspring];
@@ -121,8 +134,7 @@ public class AdaptiveMetropolis implements Variation {
 				Solution child = parents[PRNG.nextInt(parents.length)].copy();
 				
 				//apply adaptive metropolis step to solution
-				RealVector muC = new ArrayRealVector(
-						EncodingUtils.getReal(child));
+				RealVector muC = new ArrayRealVector(RealVariable.getReal(child));
 				RealVector ru = new ArrayRealVector(n);
 				
 				for (int j=0; j<n; j++) {
@@ -149,7 +161,7 @@ public class AdaptiveMetropolis implements Variation {
 			}
 			
 			return offspring;
-		} catch (Exception e) {
+		} catch (MathIllegalArgumentException e) {
 			return new Solution[0];
 		}
 	}

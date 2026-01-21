@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,108 +17,104 @@
  */
 package org.moeaframework.problem.CDTLZ;
 
-import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
-import org.moeaframework.Executor;
-import org.moeaframework.TestThresholds;
-import org.moeaframework.core.NondominatedPopulation;
+import org.moeaframework.Assert;
+import org.moeaframework.TestEnvironment;
 import org.moeaframework.core.Solution;
-import org.moeaframework.core.variable.EncodingUtils;
+import org.moeaframework.core.variable.RealVariable;
 import org.moeaframework.problem.DTLZ.DTLZ2;
+import org.moeaframework.problem.Problem;
+import org.moeaframework.problem.ProblemTest;
 
-/**
- * Tests the {@link C2_DTLZ2} class.
- */
-public class C2_DTLZ2Test {
+public class C2_DTLZ2Test extends ProblemTest {
 	
-	/**
-	 * Visual test of the Pareto front.  Copy the output and generate a plot,
-	 * such as with R, and compare against the figures in Jain and Deb (2014):
-	 * <pre>
-	 *     library(rgl)
-	 *     x = matrix(c(<paste text>), ncol=3, byrow=T)
-	 *     plot3d(x)
-	 * </pre>
-	 */
 	@Test
-	@Ignore("skip visual tests")
-	public void visualTest() {
-		NondominatedPopulation result = new Executor()
-				.withProblemClass(C2_DTLZ2.class, 3)
-				.withAlgorithm("NSGAIII")
-				.withMaxEvaluations(100000)
-				.run();
-
-		for (Solution solution : result) {
-			if (!solution.violatesConstraints()) {
-				System.out.format("%.4f, %.4f, %.4f,%n",
-						solution.getObjective(0),
-						solution.getObjective(1),
-						solution.getObjective(2));
-			}
-		}
+	public void testProvider() {
+		assertProblemDefined("C2_DTLZ2_2", 2, false);
+		assertProblemDefined("C2_DTLZ2_3", 3, false);
 	}
 	
 	@Test
 	public void test() {
-		test(2, 0.4);
-		test(3, 0.4);
-		test(5, 0.5);
-		test(8, 0.5);
-		test(10, 0.5);
-		test(15, 0.5);
+		Problem problem = new C2_DTLZ2(12, 3);
+		
+		Assert.assertArrayEquals(new double[] { 3.5, 0.0, 0.0 },
+				evaluateAtLowerBounds(problem).getObjectiveValues(),
+				0.000001);
+		
+		Assert.assertArrayEquals(new double[] { 6.09 },
+				evaluateAtLowerBounds(problem).getConstraintValues(),
+				0.000001);
+		
+		Assert.assertFalse(evaluateAtLowerBounds(problem).isFeasible());
+		
+		Assert.assertArrayEquals(new double[] { 1.31228981e-32, 2.14313190e-16, 3.5 },
+				evaluateAtUpperBounds(problem).getObjectiveValues(),
+				0.000001);
+		
+		Assert.assertArrayEquals(new double[] { 6.09 },
+				evaluateAtUpperBounds(problem).getConstraintValues(),
+				0.000001);
+		
+		Assert.assertFalse(evaluateAtUpperBounds(problem).isFeasible());
+	}
+	
+	@Test
+	public void testGenerate() {
+		testGenerate(2, 0.4);
+		testGenerate(3, 0.4);
+		testGenerate(5, 0.5);
+		testGenerate(8, 0.5);
+		testGenerate(10, 0.5);
+		testGenerate(15, 0.5);
 	}
 	
 	/**
-	 * Only a subset of optimal solutions from the DTLZ2 problem should be
-	 * feasible.
+	 * Only a subset of optimal solutions from the DTLZ2 problem should be feasible.
 	 * 
 	 * @param numberOfObjectives the number of objectives
 	 */
-	public void test(int numberOfObjectives, double r) {
-		C2_DTLZ2 problem = new C2_DTLZ2(numberOfObjectives);
-		DTLZ2 originalProblem = new DTLZ2(numberOfObjectives);
-		
-		for (int i = 0; i <TestThresholds.SAMPLES; i++) {
-			Solution originalSlution = originalProblem.generate();
-			Solution solution = problem.newSolution();
-			
-			EncodingUtils.setReal(solution,
-					EncodingUtils.getReal(originalSlution));
-			
-			problem.evaluate(solution);
-			
-			// compute the minimum distance from the solution to either
-			//    1) the M corner solutions, e.g. (1, 0, ..., 0)
-			//    2) the center, e.g., (1/sqrt(M), ..., 1/sqrt(M))
-			double minDistance = Double.POSITIVE_INFINITY;
-			
-			for (int j = 0; j < numberOfObjectives; j++) {
-				double distance = Math.pow(solution.getObjective(j)-1.0, 2.0);
+	public void testGenerate(int numberOfObjectives, double r) {
+		try (C2_DTLZ2 problem = new C2_DTLZ2(numberOfObjectives);
+				DTLZ2 originalProblem = new DTLZ2(numberOfObjectives)) {
+			for (int i = 0; i < TestEnvironment.SAMPLES; i++) {
+				Solution originalSolution = originalProblem.generate();
+				Solution solution = problem.newSolution();
 				
-				for (int k = 0; k < numberOfObjectives; k++) {
-					if (k != j) {
-						distance += Math.pow(solution.getObjective(k), 2.0);
+				RealVariable.setReal(solution, RealVariable.getReal(originalSolution));
+				
+				problem.evaluate(solution);
+				
+				// compute the minimum distance from the solution to either
+				//    1) the M corner solutions, e.g. (1, 0, ..., 0)
+				//    2) the center, e.g., (1/sqrt(M), ..., 1/sqrt(M))
+				double minDistance = Double.POSITIVE_INFINITY;
+				
+				for (int j = 0; j < numberOfObjectives; j++) {
+					double distance = Math.pow(solution.getObjectiveValue(j)-1.0, 2.0);
+					
+					for (int k = 0; k < numberOfObjectives; k++) {
+						if (k != j) {
+							distance += Math.pow(solution.getObjectiveValue(k), 2.0);
+						}
 					}
+					
+					minDistance = Math.min(minDistance, distance);
 				}
 				
+				double distance = 0.0;
+	
+				for (int j = 0; j < numberOfObjectives; j++) {
+					distance += Math.pow(solution.getObjectiveValue(j) - 1 / Math.sqrt(numberOfObjectives), 2.0);
+				}
+	
 				minDistance = Math.min(minDistance, distance);
-			}
-			
-			double distance = 0.0;
-
-			for (int j = 0; j < numberOfObjectives; j++) {
-				distance += Math.pow(solution.getObjective(j) -
-					        1 / Math.sqrt(numberOfObjectives), 2.0);
-			}
-
-			minDistance = Math.min(minDistance, distance);
-			
-			if (minDistance < Math.pow(r, 2.0)) {
-				Assert.assertFalse(solution.violatesConstraints());
-			} else {
-				Assert.assertTrue(solution.violatesConstraints());
+				
+				if (minDistance < Math.pow(r, 2.0)) {
+					Assert.assertFalse(solution.violatesConstraints());
+				} else {
+					Assert.assertTrue(solution.violatesConstraints());
+				}
 			}
 		}
 	}

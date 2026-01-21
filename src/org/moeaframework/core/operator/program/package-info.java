@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,16 +17,14 @@
  */
 
 /**
- * Collection of operators for expression trees for use with Genetic
- * Programming (GP).
+ * Collection of operators for expression trees for use with Genetic Programming (GP).
  * <p>
  * References:
  * <ol>
- *   <li>Poli, R., Langdon, W.B., McPhee, N.F., Koza, J.R.  "A Field Guide to
- *       Genetic Programming."  Available online at {@literal
- *       <http://www.gp-field-guide.org.uk>}, 26 March 2008.
- *   <li>Koza, J.R.  "Genetic Programming: On the Programming of Computers by
- *       Means of Natural Selection."  MIT Press, Cambridge, MA, USA, 1992.
+ *   <li>Poli, R., Langdon, W.B., McPhee, N.F., Koza, J.R.  "A Field Guide to Genetic Programming."  Available online
+ *       at {@literal <http://www.gp-field-guide.org.uk>}, 26 March 2008.
+ *   <li>Koza, J.R.  "Genetic Programming: On the Programming of Computers by Means of Natural Selection."  MIT Press,
+ *       Cambridge, MA, USA, 1992.
  * </ol>
  */
 package org.moeaframework.core.operator.program;

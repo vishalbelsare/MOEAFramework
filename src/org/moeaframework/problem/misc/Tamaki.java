@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -18,6 +18,8 @@
 package org.moeaframework.problem.misc;
 
 import org.moeaframework.core.Solution;
+import org.moeaframework.core.constraint.LessThanOrEqual;
+import org.moeaframework.core.objective.Maximize;
 import org.moeaframework.core.variable.RealVariable;
 import org.moeaframework.problem.AbstractProblem;
 
@@ -29,14 +31,13 @@ import org.moeaframework.problem.AbstractProblem;
  *   <li>Connected and curved Pareto set
  *   <li>Curved Pareto front
  *   <li>Constrained
- *   <li>Maximization (objectives are negated)
+ *   <li>Maximized
  * </ul>
  * <p>
  * References:
  * <ol>
- *   <li>Van Veldhuizen, D. A (1999).  "Multiobjective Evolutionary Algorithms: 
- *       Classifications, Analyses, and New Innovations."  Air Force Institute
- *       of Technology, Ph.D. Thesis, Appendix B.
+ *   <li>Van Veldhuizen, D. A (1999).  "Multiobjective Evolutionary Algorithms: Classifications, Analyses, and New
+ *       Innovations."  Air Force Institute of Technology, Ph.D. Thesis, Appendix B.
  * </ol>
  */
 public class Tamaki extends AbstractProblem {
@@ -53,12 +54,12 @@ public class Tamaki extends AbstractProblem {
 		double x = ((RealVariable)solution.getVariable(0)).getValue();
 		double y = ((RealVariable)solution.getVariable(1)).getValue();
 		double z = ((RealVariable)solution.getVariable(2)).getValue();
-		double c = Math.pow(x, 2.0) + Math.pow(y, 2.0) + Math.pow(z, 2.0) - 1.0;
+		double c = Math.pow(x, 2.0) + Math.pow(y, 2.0) + Math.pow(z, 2.0);
 		
-		solution.setObjective(0, -x);
-		solution.setObjective(1, -y);
-		solution.setObjective(2, -z);
-		solution.setConstraint(0, c <= 0.0 ? 0.0 : c);
+		solution.setObjectiveValue(0, x);
+		solution.setObjectiveValue(1, y);
+		solution.setObjectiveValue(2, z);
+		solution.setConstraintValue(0, c);
 	}
 
 	@Override
@@ -68,6 +69,12 @@ public class Tamaki extends AbstractProblem {
 		solution.setVariable(0, new RealVariable(0.0, 1.0));
 		solution.setVariable(1, new RealVariable(0.0, 1.0));
 		solution.setVariable(2, new RealVariable(0.0, 1.0));
+		
+		solution.setObjective(0, new Maximize());
+		solution.setObjective(1, new Maximize());
+		solution.setObjective(2, new Maximize());
+		
+		solution.setConstraint(0, LessThanOrEqual.to(1.0));
 		
 		return solution;
 	}

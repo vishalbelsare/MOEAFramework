@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,25 +17,18 @@
  */
 package org.moeaframework.core.comparator;
 
-import static org.moeaframework.core.FastNondominatedSorting.CROWDING_ATTRIBUTE;
-
-import java.io.Serializable;
 import java.util.Comparator;
 
 import org.moeaframework.core.Solution;
+import org.moeaframework.core.attribute.CrowdingDistance;
 
 /**
- * Compares solutions using their crowding distance. Solutions with larger
- * crowding distances are preferred.
+ * Compares solutions using their crowding distance.  Solutions with larger crowding distances are preferred.
  */
-public class CrowdingComparator implements DominanceComparator,
-Comparator<Solution>, Serializable {
-
-	private static final long serialVersionUID = 4973403102558586390L;
+public class CrowdingComparator implements DominanceComparator, Comparator<Solution> {
 
 	/**
-	 * Constructs a dominance comparator for comparing solutions using their 
-	 * crowding distance.
+	 * Constructs a dominance comparator for comparing solutions using their crowding distance.
 	 */
 	public CrowdingComparator() {
 		super();
@@ -43,10 +36,8 @@ Comparator<Solution>, Serializable {
 
 	@Override
 	public int compare(Solution solution1, Solution solution2) {
-		double crowding1 = (Double)solution1.getAttribute(CROWDING_ATTRIBUTE);
-		double crowding2 = (Double)solution2.getAttribute(CROWDING_ATTRIBUTE);
-		
-		return -Double.compare(crowding1, crowding2);
+		return -Double.compare(CrowdingDistance.getAttribute(solution1),
+				CrowdingDistance.getAttribute(solution2));
 	}
 
 }

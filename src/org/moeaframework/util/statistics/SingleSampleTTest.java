@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,27 +17,26 @@
  */
 package org.moeaframework.util.statistics;
 
+import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.commons.math3.stat.inference.TestUtils;
 
 /**
- * The Single-Sample t test determines if the population's mean equals some
- * specified value.
- * <p>
+ * The Single-Sample t test determines if the population's mean equals some specified value.
  * <ul>
- * <li>Null Hypothesis: The population's mean equals X.
- * <li>Alternative Hypothesis: The population's mean does not equal X.
+ *   <li>Null Hypothesis: The population's mean equals X.
+ *   <li>Alternative Hypothesis: The population's mean does not equal X.
  * </ul>
  * <p>
  * Assumptions:
  * <ol>
- * <li>Samples are randomly selected from the population
- * <li>The distribution of the underlying population is normal
+ *   <li>Samples are randomly selected from the population
+ *   <li>The distribution of the underlying population is normal
  * </ol>
  * <p>
  * References:
  * <ol>
- * <li>Sheskin, D.J. "Handbook of Parametric and Nonparametric Statistical
- * Procedures, Third Edition." Chapman & Hall/CRC. 2004.
+ *   <li>Sheskin, D.J. "Handbook of Parametric and Nonparametric Statistical Procedures, Third Edition." Chapman &amp;
+ *       Hall/CRC. 2004.
  * </ol>
  */
 public class SingleSampleTTest extends IntervalRatioStatisticalTest {
@@ -82,6 +81,15 @@ public class SingleSampleTTest extends IntervalRatioStatisticalTest {
 	 */
 	public void addAll(double[] values) {
 		super.addAll(values, 0);
+	}
+	
+	/**
+	 * Returns the descriptive statistics for the recorded data.
+	 * 
+	 * @return the descriptive statistics
+	 */
+	public DescriptiveStatistics getStatistics() {
+		return super.getStatistics(0);
 	}
 
 	/**

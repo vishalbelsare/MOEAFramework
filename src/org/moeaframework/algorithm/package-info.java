@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,7 +17,6 @@
  */
 
 /**
- * Implementations of various algorithms and support tools for working with
- * algorithms.
+ * Implementations of various algorithms and support tools for working with algorithms.
  */
 package org.moeaframework.algorithm;

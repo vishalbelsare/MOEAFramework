@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,33 +17,26 @@
  */
 package org.moeaframework.core.comparator;
 
-import java.io.Serializable;
-
 /**
- * Compares two solutions using aggregate constraint violation and the Pareto
- * dominance relation as originally proposed by Kalyanmoy Deb.
+ * Compares two solutions using aggregate constraint violation and the Pareto dominance relation as originally proposed
+ * by Kalyanmoy Deb.
  * <p>
  * References:
  * <ol>
- * <li>Deb, K., "An Efficient Constraint Handling Method for Genetic
- * Algorithms." Computer Methods in Applied Mechanics and Engineering, pp.
- * 311--338, 1998.
+ *   <li>Deb, K., "An Efficient Constraint Handling Method for Genetic Algorithms." Computer Methods in Applied
+ *       Mechanics and Engineering, pp. 311--338, 1998.
  * </ol>
  * 
  * @see AggregateConstraintComparator
  * @see ParetoObjectiveComparator
  */
-public class ParetoDominanceComparator extends ChainedComparator implements
-Serializable {
-
-	private static final long serialVersionUID = -3198596505754896119L;
+public class ParetoDominanceComparator extends ChainedComparator {
 
 	/**
 	 * Constructs a Pareto dominance comparator.
 	 */
 	public ParetoDominanceComparator() {
-		super(new AggregateConstraintComparator(),
-				new ParetoObjectiveComparator());
+		super(new AggregateConstraintComparator(), new ParetoObjectiveComparator());
 	}
 
 }

@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -18,92 +18,51 @@
 package org.moeaframework.problem.DTLZ;
 
 import org.junit.Test;
+import org.moeaframework.Assert;
+import org.moeaframework.core.spi.ProblemFactory;
+import org.moeaframework.problem.Problem;
 import org.moeaframework.problem.ProblemTest;
 
-/**
- * Tests the {@link DTLZ7} class.
- */
 public class DTLZ7Test extends ProblemTest {
-
-	/**
-	 * Tests the 2D case.
-	 * 
-	 * @throws Exception if a JMetal error occurred
-	 */
+	
 	@Test
-	public void testDTLZ7_2D() throws Exception {
-		test(2);
+	public void test() {
+		Problem problem = new DTLZ7(3);
+		
+		Assert.assertArrayEquals(new double[] { 0.0, 0.0, 6.0 },
+				evaluateAtLowerBounds(problem).getObjectiveValues(),
+				0.000001);
+		
+		Assert.assertArrayEquals(new double[] { 1.0, 1.0, 31.0 },
+				evaluateAtUpperBounds(problem).getObjectiveValues(),
+				0.000001);
 	}
 
-	/**
-	 * Tests the 3D case.
-	 * 
-	 * @throws Exception if a JMetal error occurred
-	 */
 	@Test
-	public void testDTLZ7_3D() throws Exception {
-		test(3);
+	public void testJMetal2D() {
+		testAgainstJMetal("DTLZ7_2");
 	}
 
-	/**
-	 * Tests the 4D case.
-	 * 
-	 * @throws Exception if a JMetal error occurred
-	 */
 	@Test
-	public void testDTLZ7_4D() throws Exception {
-		test(4);
+	public void testJMetal3D() {
+		testAgainstJMetal("DTLZ7_3");
 	}
-
-	/**
-	 * Tests the 5D case.
-	 * 
-	 * @throws Exception if a JMetal error occurred
-	 */
+	
 	@Test
-	public void testDTLZ7_5D() throws Exception {
-		test(5);
+	public void testProvider() {
+		assertProblemDefined("DTLZ7_2", 2);
+		assertProblemDefined("DTLZ7_3", 3);
 	}
-
-	/**
-	 * Tests the 6D case.
-	 * 
-	 * @throws Exception if a JMetal error occurred
-	 */
+	
 	@Test
-	public void testDTLZ7_6D() throws Exception {
-		test(6);
+	public void testName() {
+		Assert.assertEquals("DTLZ7_2", ProblemFactory.getInstance().getProblem("DTLZ7").getName());
 	}
-
-	/**
-	 * Tests the 7D case.
-	 * 
-	 * @throws Exception if a JMetal error occurred
-	 */
+	
 	@Test
-	public void testDTLZ7_7D() throws Exception {
-		test(7);
-	}
-
-	/**
-	 * Tests the 8D case.
-	 * 
-	 * @throws Exception if a JMetal error occurred
-	 */
-	@Test
-	public void testDTLZ7_8D() throws Exception {
-		test(8);
-	}
-
-	/**
-	 * Asserts that the {@link DTLZ7#evaluate} method works correctly.
-	 * 
-	 * @param M the number of objectives
-	 * @throws Exception if a JMetal error occurred
-	 */
-	protected void test(int M) throws Exception {
-		test(new org.uma.jmetal.problem.multiobjective.dtlz.DTLZ7(M + 19, M),
-				new org.moeaframework.problem.DTLZ.DTLZ7(M));
+	public void testEpsilons() {
+		assertEpsilonsDefined("DTLZ7_2");
+		assertEpsilonsDefined("DTLZ7_3");
 	}
 
 }

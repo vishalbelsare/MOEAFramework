@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,38 +17,46 @@
  */
 package org.moeaframework.algorithm;
 
-import java.io.Serializable;
 import java.util.Comparator;
 
-import org.moeaframework.core.FastNondominatedSorting;
-import org.moeaframework.core.FitnessEvaluator;
-import org.moeaframework.core.Initialization;
-import org.moeaframework.core.Population;
-import org.moeaframework.core.Problem;
-import org.moeaframework.core.Selection;
+import org.moeaframework.core.Settings;
 import org.moeaframework.core.Solution;
-import org.moeaframework.core.Variation;
+import org.moeaframework.core.TypedProperties;
+import org.moeaframework.core.attribute.Fitness;
+import org.moeaframework.core.attribute.Rank;
 import org.moeaframework.core.comparator.ChainedComparator;
 import org.moeaframework.core.comparator.FitnessComparator;
 import org.moeaframework.core.comparator.NondominatedSortingComparator;
 import org.moeaframework.core.comparator.RankComparator;
-import org.moeaframework.core.operator.TournamentSelection;
+import org.moeaframework.core.configuration.ConfigurationException;
+import org.moeaframework.core.configuration.Property;
+import org.moeaframework.core.fitness.AdditiveEpsilonIndicatorFitnessEvaluator;
+import org.moeaframework.core.fitness.FitnessEvaluator;
+import org.moeaframework.core.fitness.HypervolumeContributionFitnessEvaluator;
+import org.moeaframework.core.fitness.HypervolumeFitnessEvaluator;
+import org.moeaframework.core.initialization.Initialization;
+import org.moeaframework.core.initialization.RandomInitialization;
+import org.moeaframework.core.operator.Variation;
+import org.moeaframework.core.population.FastNondominatedSorting;
+import org.moeaframework.core.population.Population;
+import org.moeaframework.core.selection.Selection;
+import org.moeaframework.core.selection.TournamentSelection;
+import org.moeaframework.core.spi.OperatorFactory;
+import org.moeaframework.problem.Problem;
 
 /**
- * Implementation of the S-metric Selection MOEA (SMS-MOEA).  The S metric is
- * also known as the hypervolume indicator.
+ * Implementation of the S-metric Selection MOEA (SMS-EMOA).  The S metric is also known as the hypervolume indicator.
  * <p>
  * References:
  * <ol>
- *   <li>Emmerich, M., N. Beume, and B. Naujoks (2007).  An EMO Algorithm Using
- *       the Hypervolume Measure as Selection Criterion.  European Journal of
- *       Operational Research, 3:1653-1669.
+ *   <li>Emmerich, M., N. Beume, and B. Naujoks (2007).  An EMO Algorithm Using the Hypervolume Measure as Selection
+ *       Criterion.  European Journal of Operational Research, 3:1653-1669.
+ * </ol>
  */
 public class SMSEMOA extends AbstractEvolutionaryAlgorithm {
 	
 	/**
-	 * The fitness evaluator to use (e.g., hypervolume or additive-epsilon
-	 * indicator).
+	 * The fitness evaluator to use (e.g., hypervolume or additive-epsilon indicator).
 	 */
 	private FitnessEvaluator fitnessEvaluator;
 	
@@ -58,41 +66,80 @@ public class SMSEMOA extends AbstractEvolutionaryAlgorithm {
 	private Selection selection;
 	
 	/**
-	 * The variation operator.
+	 * Constructs a new SMS-EMOA instance with default settings.
+	 * 
+	 * @param problem the problem
 	 */
-	private Variation variation;
+	public SMSEMOA(Problem problem) {
+		this(problem,
+				Settings.DEFAULT_POPULATION_SIZE,
+				new RandomInitialization(problem),
+				OperatorFactory.getInstance().getVariation(problem),
+				new HypervolumeContributionFitnessEvaluator(problem));
+	}
 
 	/**
 	 * Constructs a new SMS-EMOA instance.
 	 * 
 	 * @param problem the problem
+	 * @param initialPopulationSize the initial population size
 	 * @param initialization the initialization operator
 	 * @param variation the variation operator
 	 * @param fitnessEvaluator the fitness evaluator
 	 */
-	public SMSEMOA(Problem problem, Initialization initialization,
+	public SMSEMOA(Problem problem, int initialPopulationSize, Initialization initialization,
 			Variation variation, FitnessEvaluator fitnessEvaluator) {
-		super(problem,
-				new Population(),
-				null,
-				initialization);
-		this.variation = variation;
+		super(problem, initialPopulationSize, new Population(), null, initialization, variation);
+		setFitnessEvaluator(fitnessEvaluator);
+	}
+	
+	@Override
+	public String getName() {
+		return "SMS-EMOA";
+	}
+	
+	@Override
+	@Property("operator")
+	public void setVariation(Variation variation) {
+		super.setVariation(variation);
+	}
+	
+	@Override
+	@Property("populationSize")
+	public void setInitialPopulationSize(int initialPopulationSize) {
+		super.setInitialPopulationSize(initialPopulationSize);
+	}
+	
+	/**
+	 * Returns the fitness evaluator.
+	 * 
+	 * @return the fitness evaluator
+	 */
+	public FitnessEvaluator getFitnessEvaluator() {
+		return fitnessEvaluator;
+	}
+	
+	/**
+	 * Sets the fitness evaluator.  If {@code null}, will default to non-dominated sorting for selection.
+	 * 
+	 * @param fitnessEvaluator the fitness evaluator
+	 */
+	public void setFitnessEvaluator(FitnessEvaluator fitnessEvaluator) {
 		this.fitnessEvaluator = fitnessEvaluator;
 		
-		if (fitnessEvaluator ==  null) {
-			selection = new TournamentSelection(
-					new NondominatedSortingComparator());
+		if (fitnessEvaluator == null) {
+			selection = new TournamentSelection(new NondominatedSortingComparator());
 		} else {
-			selection = new TournamentSelection(
-					new NondominatedFitnessComparator());
+			selection = new TournamentSelection(new NondominatedFitnessComparator());
 		}
 	}
 
 	@Override
-	protected void initialize() {
+	public void initialize() {
 		super.initialize();
 		
 		// rank the solutions
+		Population population = getPopulation();
 		new FastNondominatedSorting().evaluate(population);
 		
 		if (fitnessEvaluator != null) {
@@ -102,6 +149,8 @@ public class SMSEMOA extends AbstractEvolutionaryAlgorithm {
 
 	@Override
 	protected void iterate() {
+		Population population = getPopulation();
+		Variation variation = getVariation();
 		int populationSize = population.size();
 		Solution[] parents = selection.select(variation.getArity(), population);
 		Solution[] offspring = variation.evolve(parents);
@@ -113,13 +162,10 @@ public class SMSEMOA extends AbstractEvolutionaryAlgorithm {
 		new FastNondominatedSorting().evaluate(population);
 		
 		if (fitnessEvaluator == null) {
-			population.truncate(populationSize, 
-					new NondominatedSortingComparator());
+			population.truncate(populationSize, new NondominatedSortingComparator());
 		} else {
 			computeFitnessForLastFront();
-			
-			population.truncate(populationSize, 
-					new NondominatedFitnessComparator());
+			population.truncate(populationSize, new NondominatedFitnessComparator());
 		}
 	}
 	
@@ -130,9 +176,8 @@ public class SMSEMOA extends AbstractEvolutionaryAlgorithm {
 		Population front = new Population();
 		int rank = 0;
 		
-		for (Solution solution : population) {
-			int solutionRank = (Integer)solution.getAttribute(
-					FastNondominatedSorting.RANK_ATTRIBUTE);
+		for (Solution solution : getPopulation()) {
+			int solutionRank = Rank.getAttribute(solution);
 			
 			if (solutionRank > rank) {
 				front.clear();
@@ -143,20 +188,55 @@ public class SMSEMOA extends AbstractEvolutionaryAlgorithm {
 				front.add(solution);
 			}
 			
-			solution.setAttribute(FitnessEvaluator.FITNESS_ATTRIBUTE, 0.0);
+			Fitness.setAttribute(solution, 0.0);
 		}
 		
 		fitnessEvaluator.evaluate(front);
 	}
 	
-	private class NondominatedFitnessComparator extends ChainedComparator
-	implements Comparator<Solution>, Serializable {
+	@Override
+	public void applyConfiguration(TypedProperties properties) {
+		if (properties.contains("indicator")) {
+			String indicator = properties.getString("indicator");
+			
+			if ("hypervolume".equalsIgnoreCase(indicator)) {
+				setFitnessEvaluator(new HypervolumeFitnessEvaluator(problem));
+			} else if ("epsilon".equalsIgnoreCase(indicator)) {
+				setFitnessEvaluator(new AdditiveEpsilonIndicatorFitnessEvaluator(problem));
+			} else if ("hypervolumeContribution".equalsIgnoreCase(indicator)) {
+				setFitnessEvaluator(new HypervolumeContributionFitnessEvaluator(problem));
+			} else if ("crowding".equalsIgnoreCase(indicator)) {
+				setFitnessEvaluator(null);
+			} else {
+				throw new ConfigurationException("Invalid indicator: " + indicator);
+			}
+		}
+		
+		super.applyConfiguration(properties);
+		
+	}
 
-		private static final long serialVersionUID = -4088873047790962685L;
+	@Override
+	public TypedProperties getConfiguration() {
+		TypedProperties properties = super.getConfiguration();
+		
+		if (fitnessEvaluator == null) {
+			properties.setString("indicator", "crowding");
+		} else if (fitnessEvaluator instanceof HypervolumeFitnessEvaluator) {
+			properties.setString("indicator", "hypervolume");
+		} else if (fitnessEvaluator instanceof AdditiveEpsilonIndicatorFitnessEvaluator) {
+			properties.setString("indicator", "epsilon");
+		} else if (fitnessEvaluator instanceof HypervolumeContributionFitnessEvaluator) {
+			properties.setString("indicator", "hypervolumeContribution");
+		}
+		
+		return properties;
+	}
+	
+	private class NondominatedFitnessComparator extends ChainedComparator implements Comparator<Solution> {
 
 		public NondominatedFitnessComparator() {
-			super(new RankComparator(), new FitnessComparator(
-					fitnessEvaluator.areLargerValuesPreferred()));
+			super(new RankComparator(), new FitnessComparator(fitnessEvaluator.areLargerValuesPreferred()));
 		}
 
 	}

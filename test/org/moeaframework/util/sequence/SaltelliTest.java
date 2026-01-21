@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,32 +17,25 @@
  */
 package org.moeaframework.util.sequence;
 
-import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.moeaframework.Retryable;
-import org.moeaframework.TestThresholds;
+import org.moeaframework.Assert;
 import org.moeaframework.CIRunner;
+import org.moeaframework.Retryable;
+import org.moeaframework.TestEnvironment;
 
-/**
- * Tests the {@link Saltelli} class.
- */
 @RunWith(CIRunner.class)
 @Retryable
-public class SaltelliTest extends SequenceTest {
-
-	/**
-	 * Tests to ensure the sequence exhibits a uniform distribution in the
-	 * range {@code [0, 1]}.
-	 */
-	@Test
-	public void test() {
-		test(new Saltelli());
+public class SaltelliTest extends AbstractSequenceTest<Saltelli> {
+	
+	@Override
+	public Saltelli createInstance() {
+		return new Saltelli();
 	}
 
 	@Override
 	protected void test(Sequence sequence, int D) {
-		int N = (2 * D + 2) * (TestThresholds.SAMPLES / 10);
+		int N = (2 * D + 2) * (TestEnvironment.SAMPLES / 10);
 
 		double[][] points = sequence.generate(N, D);
 
@@ -53,12 +46,8 @@ public class SaltelliTest extends SequenceTest {
 		checkSaltelli(points, D);
 	}
 
-	/**
-	 * Tests if an exception is thrown when requesting a Saltelli sequence with
-	 * an invalid size.
-	 */
 	@Test(expected = IllegalArgumentException.class)
-	public void testSize() {
+	public void testInvalidSize() {
 		Saltelli sequence = new Saltelli();
 
 		sequence.generate(7, 2);

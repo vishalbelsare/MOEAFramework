@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -20,14 +20,12 @@ package org.moeaframework.problem.CEC2009;
 import org.moeaframework.problem.WFG.WFG1;
 
 /**
- * The unconstrained UF13 test problem from the CEC 2009 special session and
- * competition.
+ * The unconstrained UF13 test problem from the CEC 2009 special session and competition.
  */
 public class UF13 extends WFG1 {
 
 	/**
-	 * Constructs a UF13 test problem with 30 decision variables and 5
-	 * objectives.
+	 * Constructs a UF13 test problem with 30 decision variables and 5 objectives.
 	 */
 	public UF13() {
 		super(8, 22, 5);

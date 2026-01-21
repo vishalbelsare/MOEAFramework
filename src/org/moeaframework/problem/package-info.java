@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,7 +17,6 @@
  */
 
 /**
- * Package containing standardized problems and utility classes for working
- * with problems.
+ * Package containing standardized problems and utility classes for working with problems.
  */
 package org.moeaframework.problem;

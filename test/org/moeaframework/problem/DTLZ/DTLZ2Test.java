@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,125 +17,76 @@
  */
 package org.moeaframework.problem.DTLZ;
 
-import org.junit.Assert;
 import org.junit.Test;
-import org.moeaframework.TestThresholds;
+import org.moeaframework.Assert;
+import org.moeaframework.TestEnvironment;
 import org.moeaframework.core.Solution;
-import org.moeaframework.problem.AnalyticalProblem;
+import org.moeaframework.core.spi.ProblemFactory;
+import org.moeaframework.problem.Problem;
 import org.moeaframework.problem.ProblemTest;
 
-/**
- * Tests the {@link DTLZ2} class.
- */
 public class DTLZ2Test extends ProblemTest {
-
-	/**
-	 * Tests the 2D case.
-	 * 
-	 * @throws Exception if a JMetal error occurred
-	 */
+	
 	@Test
-	public void testDTLZ2_2D() throws Exception {
-		test(2);
-		testReferenceSet(2);
+	public void testBounds() {
+		Problem problem = new DTLZ2(10, 3);
+		
+		Assert.assertArrayEquals(new double[] { 3.0, 0.0, 0.0 },
+				evaluateAtLowerBounds(problem).getObjectiveValues(),
+				0.000001);
+		
+		Assert.assertArrayEquals(new double[] { 0.0, 0.0, 3.0 },
+				evaluateAtUpperBounds(problem).getObjectiveValues(),
+				0.000001);
 	}
 
-	/**
-	 * Tests the 3D case.
-	 * 
-	 * @throws Exception if a JMetal error occurred
-	 */
 	@Test
-	public void testDTLZ2_3D() throws Exception {
-		test(3);
-		testReferenceSet(3);
+	public void testJMetal2D() {
+		testAgainstJMetal("DTLZ2_2");
 	}
 
-	/**
-	 * Tests the 4D case.
-	 * 
-	 * @throws Exception if a JMetal error occurred
-	 */
 	@Test
-	public void testDTLZ2_4D() throws Exception {
-		test(4);
-		testReferenceSet(4);
+	public void testJMetal3D() {
+		testAgainstJMetal("DTLZ2_3");
 	}
 
-	/**
-	 * Tests the 5D case.
-	 * 
-	 * @throws Exception if a JMetal error occurred
-	 */
 	@Test
-	public void testDTLZ2_5D() throws Exception {
-		test(5);
-		testReferenceSet(5);
+	public void testProvider() {
+		assertProblemDefined("DTLZ2_2", 2);
+		assertProblemDefined("DTLZ2_3", 3);
 	}
-
-	/**
-	 * Tests the 6D case.
-	 * 
-	 * @throws Exception if a JMetal error occurred
-	 */
+	
 	@Test
-	public void testDTLZ2_6D() throws Exception {
-		test(6);
-		testReferenceSet(6);
+	public void testName() {
+		Assert.assertEquals("DTLZ2_2", ProblemFactory.getInstance().getProblem("DTLZ2").getName());
 	}
-
-	/**
-	 * Tests the 7D case.
-	 * 
-	 * @throws Exception if a JMetal error occurred
-	 */
+	
 	@Test
-	public void testDTLZ2_7D() throws Exception {
-		test(7);
-		testReferenceSet(7);
+	public void testEpsilons() {
+		assertEpsilonsDefined("DTLZ2_2");
+		assertEpsilonsDefined("DTLZ2_3");
 	}
-
-	/**
-	 * Tests the 8D case.
-	 * 
-	 * @throws Exception if a JMetal error occurred
-	 */
+	
 	@Test
-	public void testDTLZ2_8D() throws Exception {
-		test(8);
-		testReferenceSet(8);
+	public void testGenerate() {
+		testGenerate("DTLZ2_2", DTLZ2Test::assertParetoFrontSolution);
+		testGenerate("DTLZ2_3", DTLZ2Test::assertParetoFrontSolution);
 	}
-
-	/**
-	 * Asserts that the {@link DTLZ2#evaluate} method works correctly.
-	 * 
-	 * @param M the number of objectives
-	 * @throws Exception if a JMetal error occurred
-	 */
-	protected void test(int M) throws Exception {
-		test(new org.uma.jmetal.problem.multiobjective.dtlz.DTLZ2(M + 9, M),
-				new org.moeaframework.problem.DTLZ.DTLZ2(M));
+	
+	@Test
+	public void testReferenceSet() {
+		testReferenceSet("DTLZ2_2", DTLZ2Test::assertParetoFrontSolution);
+		testReferenceSet("DTLZ2_3", DTLZ2Test::assertParetoFrontSolution);
 	}
-
-	/**
-	 * Tests if the {@link DTLZ2#generate} method works correctly.
-	 * 
-	 * @param M the number of objectives
-	 */
-	protected void testReferenceSet(int M) {
-		AnalyticalProblem problem = new org.moeaframework.problem.DTLZ.DTLZ2(M);
-
-		for (int i = 0; i < TestThresholds.SAMPLES; i++) {
-			Solution solution = problem.generate();
-			double sum = 0.0;
-
-			for (int j = 0; j < solution.getNumberOfObjectives(); j++) {
-				sum += Math.pow(solution.getObjective(j), 2.0);
-			}
-
-			Assert.assertEquals(1.0, Math.sqrt(sum),
-					TestThresholds.SOLUTION_EPS);
+	
+	protected static void assertParetoFrontSolution(Solution solution) {
+		double sum = 0.0;
+		
+		for (int j = 0; j < solution.getNumberOfObjectives(); j++) {
+			sum += Math.pow(solution.getObjectiveValue(j), 2.0);
 		}
+
+		Assert.assertEquals(1.0, Math.sqrt(sum), TestEnvironment.LOW_PRECISION);
 	}
 
 }

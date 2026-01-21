@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,80 +17,73 @@
  */
 package org.moeaframework.algorithm;
 
-import java.io.NotSerializableException;
-import java.io.Serializable;
-import java.util.ArrayList;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.List;
 
 import org.apache.commons.math3.stat.StatUtils;
-import org.moeaframework.core.FastNondominatedSorting;
-import org.moeaframework.core.FitnessEvaluator;
-import org.moeaframework.core.NondominatedPopulation;
 import org.moeaframework.core.PRNG;
-import org.moeaframework.core.Population;
-import org.moeaframework.core.Problem;
+import org.moeaframework.core.Settings;
 import org.moeaframework.core.Solution;
+import org.moeaframework.core.TypedProperties;
 import org.moeaframework.core.comparator.AggregateConstraintComparator;
 import org.moeaframework.core.comparator.ChainedComparator;
 import org.moeaframework.core.comparator.FitnessComparator;
 import org.moeaframework.core.comparator.NondominatedSortingComparator;
 import org.moeaframework.core.comparator.ObjectiveComparator;
 import org.moeaframework.core.comparator.RankComparator;
-import org.moeaframework.core.variable.EncodingUtils;
+import org.moeaframework.core.configuration.Configurable;
+import org.moeaframework.core.configuration.ConfigurationException;
+import org.moeaframework.core.configuration.Property;
+import org.moeaframework.core.fitness.AdditiveEpsilonIndicatorFitnessEvaluator;
+import org.moeaframework.core.fitness.HypervolumeFitnessEvaluator;
+import org.moeaframework.core.fitness.IndicatorFitnessEvaluator;
+import org.moeaframework.core.population.FastNondominatedSorting;
+import org.moeaframework.core.population.NondominatedPopulation;
+import org.moeaframework.core.population.Population;
 import org.moeaframework.core.variable.RealVariable;
+import org.moeaframework.problem.Problem;
+import org.moeaframework.util.validate.Validate;
 
 /**
- * The Covariance Matrix Adaption Evolution Strategy (CMA-ES) algorithm for
- * single and multi-objective problems.  For multi-objective problems,
- * individuals are compared using Pareto ranking and crowding distance to break
- * ties.  An optional {@code fitnessEvaluator} parameter can be specified to
- * replace the crowding distance calculation with, for example, the
- * hypervolume indicator.
+ * The Covariance Matrix Adaption Evolution Strategy (CMA-ES) algorithm for single and multi-objective problems.
+ * For multi-objective problems, individuals are compared using Pareto ranking and crowding distance to break
+ * ties.  An optional {@code fitnessEvaluator} parameter can be specified to replace the crowding distance calculation
+ * with, for example, the hypervolume indicator.
  * <p>
- * This file is based on the Java implementation of CMA-ES by Nikolaus Hansen
- * available at https://www.lri.fr/~hansen/cmaes_inmatlab.html#java,
- * originally licensed under the GNU LGPLv3.
+ * This file is based on the Java implementation of CMA-ES by Nikolaus Hansen available at
+ * {@literal https://www.lri.fr/~hansen/cmaes_inmatlab.html#java}, originally licensed under the GNU LGPLv3.
  * <p>
  * References:
  * <ol>
- *   <li>Hansen and Kern (2004). Evaluating the CMA Evolution Strategy on
- *       Multimodal Test Functions. In Proceedings of the Eighth International
- *       Conference on Parallel Problem Solving from Nature PPSN VIII,
- *       pp. 282-291, Berlin: Springer.
- *   <li>Hansen, N. (2011).  The CMA Evolution Strategy: A Tutorial.
- *       Available at https://www.lri.fr/~hansen/cmatutorial.pdf.
- *   <li>Igel, C., N. Hansen, and S. Roth (2007).  Covariance Matrix Adaptation
- *       for Multi-objective Optimization.  Evolutionary Computation,
- *       15(1):1-28.
+ *   <li>Hansen and Kern (2004).  Evaluating the CMA Evolution Strategy on Multimodal Test Functions.  In Proceedings
+ *       of the Eighth International Conference on Parallel Problem Solving from Nature PPSN VIII, pp. 282-291,
+ *       Berlin: Springer.
+ *   <li>Hansen, N. (2011).  The CMA Evolution Strategy: A Tutorial.  Available at
+ *       https://www.lri.fr/~hansen/cmatutorial.pdf.
+ *   <li>Igel, C., N. Hansen, and S. Roth (2007).  Covariance Matrix Adaptation for Multi-objective Optimization.
+ *       Evolutionary Computation, 15(1):1-28.
  * </ol>
  */
-public class CMAES extends AbstractAlgorithm {
+public class CMAES extends AbstractAlgorithm implements Configurable {
 	
 	/**
-	 * An initial search point to start searching from, or {@code null} if no
-	 * initial search point is specified.
+	 * An initial search point to start searching from, or {@code null} if no initial search point is specified.
 	 */
 	private final double[] initialSearchPoint;
 	
 	/**
-	 * If {@code true}, perform consistency checks to ensure CMA-ES remains
-	 * numerically stable.
+	 * Secondary comparison criteria for comparing population individuals with the same rank.  If {@code null}, the
+	 * default crowding distance metric is used.
 	 */
-	private final boolean checkConsistency;
-	
-	/**
-	 * Secondary comparison criteria for comparing population individuals
-	 * with the same rank.  If {@code null}, the default crowding distance
-	 * metric is used.
-	 */
-	private final FitnessEvaluator fitnessEvaluator;
+	private IndicatorFitnessEvaluator fitnessEvaluator;
 	
 	/**
 	 * Nondominated archive of the best solutions found.
 	 */
-	private final NondominatedPopulation archive;
+	private NondominatedPopulation archive;
 
 	/**
 	 * The number of iterations already performed.
@@ -98,10 +91,8 @@ public class CMAES extends AbstractAlgorithm {
 	private int iteration;
 
 	/**
-	 * The number of iterations in which only the covariance diagonal is used.
-	 * This enhancement helps speed up the algorithm when there are many
-	 * decision variables.  Set to {@code 0} to always use the full covariance
-	 * matrix.
+	 * The number of iterations in which only the covariance diagonal is used.  This enhancement helps speed up the
+	 * algorithm when there are many decision variables.  Set to {@code 0} to always use the full covariance matrix.
 	 */
 	private int diagonalIterations;
 
@@ -201,13 +192,17 @@ public class CMAES extends AbstractAlgorithm {
 	private int lastEigenupdate;
 	
 	/**
-	 * Constructs a new CMA-ES instance using default parameters.
-	 *
-	 * @param problem the problem to optimize
-	 * @param lambda the offspring population size
+	 * If {@code true}, perform consistency checks to ensure CMA-ES remains numerically stable.
 	 */
-	public CMAES(Problem problem, int lambda) {
-		this(problem, lambda, null, new NondominatedPopulation());
+	private boolean checkConsistency;
+	
+	/**
+	 * Constructs a new CMA-ES intance using default parameters.
+	 * 
+	 * @param problem the problem to optimize
+	 */
+	public CMAES(Problem problem) {
+		this(problem, Settings.DEFAULT_POPULATION_SIZE, null, new NondominatedPopulation());
 	}
 	
 	/**
@@ -215,94 +210,358 @@ public class CMAES extends AbstractAlgorithm {
 	 *
 	 * @param problem the problem to optimize
 	 * @param lambda the offspring population size
-	 * @param fitnessEvaluator secondary comparison criteria for comparing
-	 *        population individuals with the same rank, or {@code null} to use
-	 *        the default crowding distance metric
+	 * @param fitnessEvaluator secondary comparison criteria for comparing population individuals with the same rank,
+	 *        or {@code null} to use the default crowding distance metric
 	 * @param archive the nondominated archive for storing the elite individuals
 	 */
-	public CMAES(Problem problem, int lambda, FitnessEvaluator fitnessEvaluator,
+	public CMAES(Problem problem, int lambda, IndicatorFitnessEvaluator fitnessEvaluator,
 			NondominatedPopulation archive) {
-		this(problem, lambda, fitnessEvaluator, archive, null, false,
+		this(problem, lambda, fitnessEvaluator, archive, null, Settings.isCMAESConsistencyCheckingEnabled(),
 				-1, -1, -1, -1, -1, -1, -1);
 	}
 
 	/**
 	 * Constructs a new CMA-ES instance with the given parameters.
 	 * <p>
-	 * If the parameters {@code cc}, {@code cs}, {@code damps}, {@code ccov},
-	 * {@code ccovsep}, {@code sigma}, and {@code diagonalIterations} are set
-	 * to any negative number, then the default parameter will be used.
+	 * If the parameters {@code cc}, {@code cs}, {@code damps}, {@code ccov}, {@code ccovsep}, {@code sigma}, and
+	 * {@code diagonalIterations} are set to any negative number, then the default parameter will be used.
 	 * 
 	 * @param problem the problem to optimize
 	 * @param lambda the offspring population size
-	 * @param fitnessEvaluator secondary comparison criteria for comparing
-	 *        population individuals with the same rank, or {@code null} to use
-	 *        the default crowding distance metric
+	 * @param fitnessEvaluator secondary comparison criteria for comparing population individuals with the same rank,
+	 *        or {@code null} to use the default crowding distance metric
 	 * @param archive the nondominated archive for storing the elite individuals
-	 * @param initialSearchPoint an initial search point, or {@code null} if
-	 *        no initial search point is specified
-	 * @param checkConsistency if {@code true}, performs checks to ensure
-	 *        CMA-ES remains numerically stable
+	 * @param initialSearchPoint an initial search point, or {@code null} if no initial search point is specified
+	 * @param checkConsistency if {@code true}, performs checks to ensure CMA-ES remains numerically stable
 	 * @param cc the cumulation parameter
 	 * @param cs the step size of the cumulation parameter
 	 * @param damps the damping factor for the step size
 	 * @param ccov the learning rate
 	 * @param ccovsep the learning rate when in diagonal-only mode
 	 * @param sigma the initial standard deviation
-	 * @param diagonalIterations the number of iterations in which only the
-	 *        covariance diagonal is used
+	 * @param diagonalIterations the number of iterations in which only the covariance diagonal is used
 	 */
-	public CMAES(Problem problem, int lambda, FitnessEvaluator fitnessEvaluator,
-			NondominatedPopulation archive, double[] initialSearchPoint,
-			boolean checkConsistency, double cc, double cs, double damps,
-			double ccov, double ccovsep, double sigma, int diagonalIterations) {
+	public CMAES(Problem problem, int lambda, IndicatorFitnessEvaluator fitnessEvaluator,
+			NondominatedPopulation archive, double[] initialSearchPoint, boolean checkConsistency, double cc,
+			double cs, double damps, double ccov, double ccovsep, double sigma, int diagonalIterations) {
 		super(problem);
-		this.lambda = lambda;
-		this.initialSearchPoint = initialSearchPoint;
-		this.checkConsistency = checkConsistency;
-		this.fitnessEvaluator = fitnessEvaluator;
-		this.archive = archive;
-		this.cc = cc;
-		this.cs = cs;
-		this.damps = damps;
-		this.ccov = ccov;
-		this.ccovsep = ccovsep;
-		this.sigma = sigma;
-		this.diagonalIterations = diagonalIterations;
+		setLambda(lambda);
+		setArchive(archive);
+		setCc(cc);
+		setCs(cs);
+		setDamps(damps);
+		setCcov(ccov);
+		setCcovsep(ccovsep);
+		setSigma(sigma);
+		setDiagonalIterations(diagonalIterations);
+		setFitnessEvaluator(fitnessEvaluator);
+		setCheckConsistency(checkConsistency);
 		
-		population = new Population();
+		Validate.that("problem", problem).isType(RealVariable.class);
+		
+		this.initialSearchPoint = initialSearchPoint;
+		this.population = new Population();
+	}
+	
+	@Override
+	public String getName() {
+		return "CMA-ES";
+	}
+
+	/**
+	 * Returns the number of iterations in which only the covariance diagonal is used.
+	 * 
+	 * @return the number of iterations in which only the covariance diagonal is used
+	 */
+	public int getDiagonalIterations() {
+		return diagonalIterations;
+	}
+
+	/**
+	 * Sets the number of iterations in which only the covariance diagonal is used.  If set to {@code -1}, a default
+	 * value will be provided during initialization.  This property can only be configured before initialization.
+	 * 
+	 * @param diagonalIterations the number of iterations in which only the covariance diagonal is used
+	 */
+	@Property
+	public void setDiagonalIterations(int diagonalIterations) {
+		assertNotInitialized();
+		this.diagonalIterations = diagonalIterations;
+	}
+
+	/**
+	 * Returns the number of offspring generated each iteration.
+	 * 
+	 * @return the number of offspring generated each iteration
+	 */
+	public int getLambda() {
+		return lambda;
+	}
+
+	/**
+	 * Sets the number of offspring generated each iteration.  If set to {@code -1}, a default value will be provided
+	 * during initialization.  This property can only be configured before initialization.
+	 * 
+	 * @param lambda the number of offspring generated each iteration
+	 */
+	@Property
+	public void setLambda(int lambda) {
+		assertNotInitialized();
+		this.lambda = lambda;
+	}
+
+	/**
+	 * Returns the overall standard deviation.
+	 * 
+	 * @return the overall standard deviation
+	 */
+	public double getSigma() {
+		return sigma;
+	}
+
+	/**
+	 * Sets the overall standard deviation.  If set to {@code -1}, a default value will be provided during
+	 * initialization.  This property can only be configured before initialization.
+	 * 
+	 * @param sigma the overall standard deviation
+	 */
+	@Property
+	public void setSigma(double sigma) {
+		assertNotInitialized();
+		this.sigma = sigma;
+	}
+
+	/**
+	 * Returns the learning rate.
+	 * 
+	 * @return the learning rate
+	 */
+	public double getCcov() {
+		return ccov;
+	}
+
+	/**
+	 * Sets the learning rate.  If set to {@code -1}, a default value will be provided during initialization.  This
+	 * property can only be configured before initialization.
+	 * 
+	 * @param ccov the learning rate
+	 */
+	@Property
+	public void setCcov(double ccov) {
+		assertNotInitialized();
+		this.ccov = ccov;
+	}
+
+	/**
+	 * Returns the learning rate when diagonal mode is active.
+	 * 
+	 * @return the learning rate when diagonal mode is active
+	 */
+	public double getCcovsep() {
+		return ccovsep;
+	}
+
+	/**
+	 * Sets the learning rate when diagonal mode is active.  If set to {@code -1}, a default value will be provided
+	 * during initialization.  This property can only be configured before initialization.
+	 * 
+	 * @param ccovsep the learning rate when diagonal mode is active
+	 */
+	@Property
+	public void setCcovsep(double ccovsep) {
+		assertNotInitialized();
+		this.ccovsep = ccovsep;
+	}
+
+	/**
+	 * Returns the step size of the cumulation parameter.
+	 * 
+	 * @return the step size of the cumulation parameter
+	 */
+	public double getCs() {
+		return cs;
+	}
+
+	/**
+	 * Sets the step size of the cumulation parameter.  If set to {@code -1}, a default value will be provided during
+	 * initialization.  This property can only be configured before initialization.
+	 * 
+	 * @param cs the step size of the cumulation parameter
+	 */
+	@Property
+	public void setCs(double cs) {
+		assertNotInitialized();
+		this.cs = cs;
+	}
+
+	/**
+	 * Returns the cumulation parameter.
+	 * 
+	 * @return the cumulation parameter
+	 */
+	public double getCc() {
+		return cc;
+	}
+
+	/**
+	 * Sets the cumulation parameter.  If set to {@code -1}, a default value will be provided during initialization.
+	 * This property can only be configured before initialization.
+	 * 
+	 * @param cc the cumulation parameter
+	 */
+	@Property
+	public void setCc(double cc) {
+		assertNotInitialized();
+		this.cc = cc;
+	}
+
+	/**
+	 * Returns the damping for step size.
+	 * 
+	 * @return the damping for step size
+	 */
+	public double getDamps() {
+		return damps;
+	}
+
+	/**
+	 * Sets the damping for step size.  If set to {@code -1}, a default value will be provided during initialization.
+	 * This property can only be configured before initialization.
+	 * 
+	 * @param damps the damping for step size
+	 */
+	@Property
+	public void setDamps(double damps) {
+		assertNotInitialized();
+		this.damps = damps;
+	}
+
+	/**
+	 * Returns the initial search point to start searching from, or {@code null} if no initial search point was
+	 * specified.
+	 * 
+	 * @return the initial search point to start searching from, or {@code null} if no initial search point was
+	 *         specified
+	 */
+	public double[] getInitialSearchPoint() {
+		return initialSearchPoint;
 	}
 	
 	/**
-	 * Validates parameters prior to calling the {@link #initialize()} method.
-	 * Checks include ensuring the initial search point is valid and ensures
-	 * each devision variable is real-valued.
+	 * Returns the non-dominated archive of the best solutions found.
 	 * 
-	 * @param prototypeSolution an example solution for retrieving variable
-	 *        types and bounds
-	 * @throws IllegalArgumentException if any of the checks fail
+	 * @return the non-dominated archive of the best solutions found
 	 */
-	private void preInitChecks(Solution prototypeSolution) {
-		if (initialSearchPoint != null) {
-			if (initialSearchPoint.length != prototypeSolution.getNumberOfVariables()) {
-				throw new IllegalArgumentException("initial search point is not the correct length (expected=" + prototypeSolution.getNumberOfVariables() + ", actual=" + initialSearchPoint.length + ")");
+	public NondominatedPopulation getArchive() {
+		return archive;
+	}
+	
+	/**
+	 * Sets the non-dominated archive of the best solutions found.  This property can only be configured before
+	 * initialization.
+	 * 
+	 * @param archive the non-dominated archive of the best solutions found
+	 */
+	public void setArchive(NondominatedPopulation archive) {
+		assertNotInitialized();
+		this.archive = archive;
+	}
+	
+	/**
+	 * Returns the indicator-based fitness evaluator.
+	 * 
+	 * @return the indicator-based fitness evaluator
+	 */
+	public IndicatorFitnessEvaluator getFitnessEvaluator() {
+		return fitnessEvaluator;
+	}
+	
+	/**
+	 * Sets the indicator-based fitness evaluator used as a secondary comparison criteria for comparing population
+	 * individuals with the same rank, or {@code null} to use the default crowding distance metric
+	 * 
+	 * @param fitnessEvaluator the indicator-based fitness evaluator
+	 */
+	public void setFitnessEvaluator(IndicatorFitnessEvaluator fitnessEvaluator) {
+		this.fitnessEvaluator = fitnessEvaluator;
+	}
+	
+	/**
+	 * Returns {@code true} if consistency checks are enabled; {@code false} otherwise.
+	 * 
+	 * @return {@code true} if consistency checks are enabled; {@code false} otherwise
+	 */
+	public boolean isCheckConsistency() {
+		return checkConsistency;
+	}
+	
+	/**
+	 * Enables or disables consistency checks to ensure CMA-ES remains numerically stable.  This property can only be
+	 * configured before initialization.
+	 * 
+	 * @param checkConsistency {@code true} if consistency checks are enabled; {@code false} otherwise
+	 */
+	@Property
+	public void setCheckConsistency(boolean checkConsistency) {
+		assertNotInitialized();
+		this.checkConsistency = checkConsistency;
+	}
+
+	@Override
+	public void applyConfiguration(TypedProperties properties) {
+		if (properties.contains("indicator")) {
+			String indicator = properties.getString("indicator");
+			
+			if ("hypervolume".equalsIgnoreCase(indicator)) {
+				setFitnessEvaluator(new HypervolumeFitnessEvaluator(problem));
+			} else if ("epsilon".equalsIgnoreCase(indicator)) {
+				setFitnessEvaluator(new AdditiveEpsilonIndicatorFitnessEvaluator(problem));
+			} else if ("crowding".equalsIgnoreCase(indicator)) {
+				setFitnessEvaluator(null);
+			} else {
+				throw new ConfigurationException("Invalid indicator: " + indicator);
 			}
 		}
 		
+		Configurable.super.applyConfiguration(properties);
+	}
+
+	@Override
+	public TypedProperties getConfiguration() {
+		TypedProperties properties = Configurable.super.getConfiguration();
+		
+		if (fitnessEvaluator == null) {
+			properties.setString("indicator", "crowding");
+		} else if (fitnessEvaluator instanceof HypervolumeFitnessEvaluator) {
+			properties.setString("indicator", "hypervolume");
+		} else if (fitnessEvaluator instanceof AdditiveEpsilonIndicatorFitnessEvaluator) {
+			properties.setString("indicator", "epsilon");
+		}
+		
+		return properties;
+	}
+
+	/**
+	 * Validates parameters prior to calling the {@link #initialize()} method.  Checks include ensuring the initial
+	 * search point is valid.
+	 * 
+	 * @param prototypeSolution an example solution for retrieving variable bounds
+	 * @throws IllegalArgumentException if any of the checks fail
+	 */
+	private void preInitChecks(Solution prototypeSolution) {
+		if (initialSearchPoint == null) {
+			return;
+		}
+		
+		if (initialSearchPoint.length != prototypeSolution.getNumberOfVariables()) {
+			Validate.that("initialSearchPoint", initialSearchPoint)
+				.fails("must match the number of decision variables");
+		}
+		
 		for (int i = 0; i < problem.getNumberOfVariables(); i++) {
-			if (prototypeSolution.getVariable(i) instanceof RealVariable) {
-				RealVariable variable = (RealVariable)prototypeSolution.getVariable(i);
-				
-				if (initialSearchPoint != null) {
-					if (initialSearchPoint[i] > variable.getUpperBound()) {
-						throw new IllegalArgumentException("initial search point is out of bounds (index=" + i + ", value=" + initialSearchPoint[i] + ", ub=" + variable.getUpperBound() + ")");
-					} else if (initialSearchPoint[i] < variable.getLowerBound()) {
-						throw new IllegalArgumentException("initial search point is out of bounds (index=" + i + ", value=" + initialSearchPoint[i] + ", lb=" + variable.getLowerBound() + ")");
-					}
-				}
-			} else {
-				throw new IllegalArgumentException("CMA-ES is only applicable to real-valued decision variables");
-			}
+			RealVariable realVariable = (RealVariable)prototypeSolution.getVariable(i);
+			Validate.that("initialSearchPoint", initialSearchPoint[i])
+				.isBetween(realVariable.getLowerBound(), realVariable.getUpperBound());
 		}
 	}
 	
@@ -312,55 +571,23 @@ public class CMAES extends AbstractAlgorithm {
 	 * @throws IllegalArgumentException if any of the checks fail
 	 */
 	private void postInitChecks() {
-		if (problem.getNumberOfVariables() == 0) {
-			throw new IllegalArgumentException("dimension must be greater than zero");
-		}
-		
-		if (lambda <= 1) {
-			throw new IllegalArgumentException("offspring population size, lambda, must be greater than one (lambda=" + lambda + ")");
-		}
-		
-		if (mu < 1) {
-			throw new IllegalArgumentException("number of parents used in recombination, mu, must be smaller or equal to lambda (lambda=" + lambda + ", mu=" + mu + ")");
-		}
-		
-		if ((cs <= 0) || (cs > 1)) {
-			throw new IllegalArgumentException("0 < cs <= 1 must hold for step-size cumulation parameter (cs=" + cs + ")");
-		}
-		
-		if (damps <= 0) {
-			throw new IllegalArgumentException("step size damping parameter, damps, must be greater than zero (damps=" + damps + ")");
-		}
-		
-		if ((cc <= 0) || (cc > 1)) {
-			throw new IllegalArgumentException("0 < cc <= 1 must hold for cumulation parameter (cc=" + cc + ")");
-		}
-		
-		if (mueff < 0) {
-			throw new IllegalArgumentException("mueff >= 0 must hold (mueff=" + mueff + ")");
-		}
-		
-		if (ccov < 0) {
-			throw new IllegalArgumentException("ccov >= 0 must hold (ccov=" + ccov + ")");
-		}
-		
-		if (ccovsep < 0) {
-			throw new IllegalArgumentException("ccovsep >= 0 must hold (ccovsep=" + ccovsep + ")");
-		}
-		
-		if (sigma <= 0) {
-			throw new IllegalArgumentException("initial standard deviation, sigma, must be positive (sigma=" + sigma + ")");
-		}
-		
-		if (StatUtils.min(diagD) <= 0) {
-			throw new IllegalArgumentException("initial standard deviations, diagD, must be positive");
-		}
+		Validate.that("number of variables", problem.getNumberOfVariables()).isGreaterThan(0);
+		Validate.that("lambda (offspring population size)", lambda).isGreaterThanOrEqualTo(1);
+		Validate.that("mu (number of parents selected for recombination)", mu).isLessThanOrEqualTo("lambda", lambda);
+		Validate.that("cs (step-size cumulation parameter)", cs).isBetween(0.0, 1.0);
+		Validate.that("damps (step-size damping parameter)", damps).isGreaterThan(0.0);
+		Validate.that("cc (cumulation parameter)", cc).isBetween(0.0, 1.0);
+		Validate.that("mueff (variance effectiveness)", mueff).isGreaterThanOrEqualTo(0.0);
+		Validate.that("ccov (learning rate)", ccov).isGreaterThanOrEqualTo(0.0);
+		Validate.that("ccovsep (learning rate when diagonal mode is active)", ccovsep).isGreaterThanOrEqualTo(0.0);
+		Validate.that("sigma (initial standard deviation)", sigma).isGreaterThan(0.0);
+		Validate.that("diagD (initial standard deviations)", StatUtils.min(diagD)).isGreaterThan(0.0);
 	}
 
-	@Override
-	public void initialize() {
-		super.initialize();
-		
+	/**
+	 * Initializes the internal state of the algorithm.
+	 */
+	protected void initializeState() {
 		int N = problem.getNumberOfVariables();
 		Solution prototypeSolution = problem.newSolution();
 		
@@ -463,6 +690,15 @@ public class CMAES extends AbstractAlgorithm {
 		
 		postInitChecks();
 	}
+	
+	@Override
+	public void initialize() {
+		super.initialize();
+		initializeState();
+		
+		// Run one iteration to produce the initial population.
+		iterate();
+	}
 
 	/**
 	 * Performs eigenvalue decomposition to update B and diagD.
@@ -480,7 +716,8 @@ public class CMAES extends AbstractAlgorithm {
 			// set B <- C
 			for (int i = 0; i < N; i++) {
 				for (int j = 0; j <= i; j++) {
-					B[i][j] = B[j][i] = C[i][j];
+					B[i][j] = C[i][j];
+					B[j][i] = C[i][j];
 				}
 			}
 
@@ -496,7 +733,7 @@ public class CMAES extends AbstractAlgorithm {
 			// assign diagD to eigenvalue square roots
 			for (int i = 0; i < N; i++) {
 				if (diagD[i] < 0) { // numerical problem?
-					System.err.println("an eigenvalue has become negative");
+					System.err.println("WARNING: An eigenvalue has become negative, setting to 0!");
 					diagD[i] = 0;
 				}
 
@@ -514,7 +751,7 @@ public class CMAES extends AbstractAlgorithm {
 			population.sort(new ObjectiveComparator(0));
 			
 			if (population.get(0).getObjective(0) == population.get(Math.min(lambda-1, lambda/2 + 1) - 1).getObjective(0)) {
-				System.err.println("flat fitness landscape, consider reformulation of fitness, step size increased");
+				System.err.println("WARNING: Flat fitness landscape, consider reformulation of fitness, step size increased");
 				sigma *= Math.exp(0.2 + cs/damps);
 			}
 		}
@@ -621,9 +858,7 @@ public class CMAES extends AbstractAlgorithm {
 	/**
 	 * Comparator using indicator-based fitness to break ties.
 	 */
-	private class NondominatedFitnessComparator extends ChainedComparator implements Comparator<Solution>, Serializable {
-
-		private static final long serialVersionUID = -4088873047790962685L;
+	private class NondominatedFitnessComparator extends ChainedComparator implements Comparator<Solution> {
 
 		public NondominatedFitnessComparator() {
 			super(new RankComparator(), new FitnessComparator(fitnessEvaluator.areLargerValuesPreferred()));
@@ -632,11 +867,10 @@ public class CMAES extends AbstractAlgorithm {
 	}
 	
 	/**
-	 * Comparator for single-objective problems using aggregate constraint violations to handle constrained optimization problems.
+	 * Comparator for single-objective problems using aggregate constraint violations to handle constrained
+	 * optimization problems.
 	 */
-	private class SingleObjectiveComparator extends ChainedComparator implements Comparator<Solution>, Serializable {
-
-		private static final long serialVersionUID = 6182830776461513578L;
+	private static class SingleObjectiveComparator extends ChainedComparator implements Comparator<Solution> {
 
 		public SingleObjectiveComparator() {
 			super(new AggregateConstraintComparator(), new ObjectiveComparator(0));
@@ -669,7 +903,7 @@ public class CMAES extends AbstractAlgorithm {
 			xmean[i] = 0;
 
 			for (int j = 0; j < mu; j++) {
-				xmean[i] += weights[j] * EncodingUtils.getReal(population.get(j).getVariable(i));
+				xmean[i] += weights[j] * RealVariable.getReal(population.get(j).getVariable(i));
 			}
 
 			BDz[i] = Math.sqrt(mueff) * (xmean[i] - xold[i]) / sigma;
@@ -727,7 +961,7 @@ public class CMAES extends AbstractAlgorithm {
 				C[i][j] = (1.0 - (diagonalIterations >= iteration ? ccovsep : ccov)) * C[i][j] + ccov * (1.0 / mueff) * (pc[i] * pc[j] + (1 - hsig) * cc * (2.0 - cc) * C[i][j]);
 
 				for (int k = 0; k < mu; k++) {
-					C[i][j] += ccov * (1 - 1.0 / mueff) * weights[k] * (EncodingUtils.getReal(population.get(k).getVariable(i)) - xold[i]) * (EncodingUtils.getReal(population.get(k).getVariable(j)) - xold[j]) / sigma / sigma;
+					C[i][j] += ccov * (1 - 1.0 / mueff) * weights[k] * (RealVariable.getReal(population.get(k).getVariable(i)) - xold[i]) * (RealVariable.getReal(population.get(k).getVariable(j)) - xold[j]) / sigma / sigma;
 				}
 			}
 		}
@@ -755,38 +989,19 @@ public class CMAES extends AbstractAlgorithm {
 	}
 	
 	@Override
-	public void step() {
-		// Since unlike other algorithms, the initialize() method does not
-		// produce an initial population.  To remain consistent, we override
-		// the step() method so that iterate() is called after initialize().
-		if (isTerminated()) {
-			throw new AlgorithmTerminationException(this, 
-					"algorithm already terminated");
-		} else if (!isInitialized()) {
-			initialize();
-			iterate();
-		} else {
-			iterate();
-		}
-	}
-	
-	@Override
 	public NondominatedPopulation getResult() {
 		return archive;
 	}
 	
-	// The remaining functions in this file are copied almost verbatim from
-	// Nikolaus Hansen's Java implementation.
+	// The remaining functions in this file are copied almost verbatim from Nikolaus Hansen's Java implementation.
 	
 	/**
-	 * Symmetric Householder reduction to tridiagonal form, taken from JAMA
-	 * package.
+	 * Symmetric Householder reduction to tridiagonal form, taken from JAMA package.
 	 * 
-	 * This is derived from the Algol procedures tred2 by Bowdler, Martin,
-	 * Reinsch, and Wilkinson, Handbook for Auto. Comp., Vol.ii-Linear Algebra,
-	 * and the corresponding Fortran subroutine in EISPACK.
+	 * This is derived from the Algol procedures tred2 by Bowdler, Martin, Reinsch, and Wilkinson, Handbook for Auto.
+	 * Comp., Vol.ii-Linear Algebra, and the corresponding Fortran subroutine in EISPACK.
 	 */
-	public static void tred2(int n, double[][] V, double[] d, double[] e) {
+	private static void tred2(int n, double[][] V, double[] d, double[] e) {
 		for (int j = 0; j < n; j++) {
 			d[j] = V[n-1][j];
 		}
@@ -892,11 +1107,10 @@ public class CMAES extends AbstractAlgorithm {
 	/**
 	 * Symmetric tridiagonal QL algorithm, taken from JAMA package.
 	 * 
-	 * This is derived from the Algol procedures tql2, by Bowdler, Martin,
-	 * Reinsch, and Wilkinson, Handbook for Auto. Comp., Vol.ii-Linear Algebra,
-	 * and the corresponding Fortran subroutine in EISPACK.
+	 * This is derived from the Algol procedures tql2, by Bowdler, Martin, Reinsch, and Wilkinson, Handbook for Auto.
+	 * Comp., Vol.ii-Linear Algebra, and the corresponding Fortran subroutine in EISPACK.
 	 */
-	public static void tql2(int n, double[] d, double[] e, double[][] V) {
+	private static void tql2(int n, double[] d, double[] e, double[][] V) {
 		for (int i = 1; i < n; i++) {
 			e[i-1] = e[i];
 		}
@@ -916,8 +1130,7 @@ public class CMAES extends AbstractAlgorithm {
 				m++;
 			}
 
-			// If m == l, d[l] is an eigenvalue,
-			// otherwise, iterate.
+			// If m == l, d[l] is an eigenvalue, otherwise, iterate.
 			if (m > l) {
 				int iter = 0;
 				do {
@@ -1001,8 +1214,7 @@ public class CMAES extends AbstractAlgorithm {
 	}
 
 	/**
-	 * Exhaustive test of the output of the eigendecomposition.  Needs O(n^3)
-	 * operations.
+	 * Exhaustive test of the output of the eigendecomposition.  Needs O(n^3) operations.
 	 * 
 	 * @return the number of detected inaccuracies
 	 */
@@ -1024,11 +1236,11 @@ public class CMAES extends AbstractAlgorithm {
 				/* check here, is the normalization the right one? */
 				if (Math.abs(cc - C[i>j?i:j][i>j?j:i])/Math.sqrt(C[i][i]*C[j][j]) > 1e-10
 						&& Math.abs(cc - C[i>j?i:j][i>j?j:i]) > 1e-9) { /* quite large */
-					System.err.println("imprecise result detected " + i + " " + j + " " + cc + " " + C[i>j?i:j][i>j?j:i] + " " + (cc-C[i>j?i:j][i>j?j:i]));
+					System.err.println("WARNING: Imprecise result detected " + i + " " + j + " " + cc + " " + C[i>j?i:j][i>j?j:i] + " " + (cc-C[i>j?i:j][i>j?j:i]));
 					++res;
 				}
 				if (Math.abs(dd - (i==j?1:0)) > 1e-10) {
-					System.err.println("imprecise result detected (Q not orthog.) " + i + " " + j + " " + dd);
+					System.err.println("WARNING: Imprecise result detected (Q not orthog.) " + i + " " + j + " " + dd);
 					++res;
 				}
 			}
@@ -1051,151 +1263,47 @@ public class CMAES extends AbstractAlgorithm {
 		return r;
 	}
 	
-	/**
-	 * Proxy for serializing and deserializing the state of a {@code CMAES}
-	 * instance.
-	 */
-	private static class CMAESState implements Serializable {
+	@Override
+	public void saveState(ObjectOutputStream stream) throws IOException {
+		super.saveState(stream);
 
-		private static final long serialVersionUID = 2634186176589891715L;
-
-		/**
-		 * The {@code population} from the {@code MOEAD} instance.
-		 */
-		private final List<Solution> population;
+		stream.writeObject(xmean);
+		stream.writeInt(iteration);
+		stream.writeDouble(sigma);
+		stream.writeObject(diagD);
+		stream.writeObject(pc);
+		stream.writeObject(ps);
+		stream.writeObject(B);
+		stream.writeObject(C);
+		stream.writeInt(lastEigenupdate);
+		population.saveState(stream);
 		
-		/**
-		 * The archive stored in a serializable list.
-		 */
-		private final List<Solution> archive;
-		
-		/**
-		 * The value of {@code iteration} from the {@code CMAES} instance.
-		 */
-		private int iteration;
-
-		/**
-		 * The value of {@code sigma} from the {@code CMAES} instance.
-		 */
-		private double sigma;
-
-		/**
-		 * The value of {@code diagD} from the {@code CMAES} instance.
-		 */
-		private double[] diagD;
-
-		/**
-		 * The value of {@code xmean} from the {@code CMAES} instance.
-		 */
-		private double[] xmean;
-
-		/**
-		 * The value of {@code pc} from the {@code CMAES} instance.
-		 */
-		private double[] pc;
-
-		/**
-		 * The value of {@code ps} from the {@code CMAES} instance.
-		 */
-		private double[] ps;
-
-		/**
-		 * The value of {@code B} from the {@code CMAES} instance.
-		 */
-		private double[][] B;
-
-		/**
-		 * The value of {@code C} from the {@code CMAES} instance.
-		 */
-		private double[][] C;
-
-		/**
-		 * The value of {@code lastEigenupdate} from the {@code CMAES} instance.
-		 */
-		private int lastEigenupdate;
-		
-		/**
-		 * Constructs a proxy for serializing and deserializing the state of a
-		 * {@code CMAES} instance.
-		 * 
-		 * @param population the value of {@code population} from the {@code CMAES} instance
-		 * @param archive the value of {@code archive} from the {@code CMAES} instance
-		 * @param iteration the value of {@code iteration} from the {@code CMAES} instance
-		 * @param sigma the value of {@code sigma} from the {@code CMAES} instance
-		 * @param diagD the value of {@code diagD} from the {@code CMAES} instance
-		 * @param xmean the value of {@code xmean} from the {@code CMAES} instance
-		 * @param pc the value of {@code pc} from the {@code CMAES} instance
-		 * @param ps the value of {@code ps} from the {@code CMAES} instance
-		 * @param B the value of {@code B} from the {@code CMAES} instance
-		 * @param C the value of {@code C} from the {@code CMAES} instance
-		 * @param lastDigenupdate the value of {@code lastEigenupdate} from the {@code CMAES} instance
-		 */
-		public CMAESState(List<Solution> population, List<Solution> archive,
-				int iteration, double sigma, double[] diagD, double[] xmean,
-				double[] pc, double[] ps, double[][] B, double[][] C,
-				int lastEigenupdate) {
-			super();
-			this.population = population;
-			this.archive = archive;
-			this.iteration = iteration;
-			this.sigma = sigma;
-			this.diagD = diagD;
-			this.xmean = xmean;
-			this.pc = pc;
-			this.ps = ps;
-			this.B = B;
-			this.C = C;
-			this.lastEigenupdate = lastEigenupdate;
+		if (archive != null) {
+			archive.saveState(stream);
 		}
-
 	}
 
 	@Override
-	public Serializable getState() throws NotSerializableException {
-		if (!isInitialized()) {
-			throw new AlgorithmInitializationException(this, 
-					"algorithm not initialized");
-		}
+	public void loadState(ObjectInputStream stream) throws IOException, ClassNotFoundException {
+		super.loadState(stream);
 
-		List<Solution> populationList = new ArrayList<Solution>();
-		List<Solution> archiveList = new ArrayList<Solution>();
-
-		for (Solution solution : population) {
-			populationList.add(solution);
-		}
+		xmean = (double[])stream.readObject();
+		
+		initializeState();
+		
+		iteration = stream.readInt();
+		sigma = stream.readDouble();
+		diagD = (double[])stream.readObject();
+		pc = (double[])stream.readObject();
+		ps = (double[])stream.readObject();
+		B = (double[][])stream.readObject();
+		C = (double[][])stream.readObject();
+		lastEigenupdate = stream.readInt();
+		population.loadState(stream);
 
 		if (archive != null) {
-			for (Solution solution : archive) {
-				archiveList.add(solution);
-			}
+			archive.loadState(stream);
 		}
-
-		return new CMAESState(populationList, archiveList, iteration, sigma,
-				diagD.clone(), xmean.clone(), pc.clone(), ps.clone(),
-				B.clone(), C.clone(), lastEigenupdate);
-	}
-
-	@Override
-	public void setState(Object objState) throws NotSerializableException {
-		CMAESState state = (CMAESState)objState;
-		
-		xmean = state.xmean.clone();
-		initialize();
-		
-		population.addAll(state.population);
-		
-		if (archive != null) {
-			archive.addAll(state.archive);
-		}
-		
-		iteration = state.iteration;
-		sigma = state.sigma;
-		diagD = state.diagD.clone();
-		pc = state.pc.clone();
-		ps = state.ps.clone();
-		B = state.B.clone();
-		C = state.C.clone();
-		lastEigenupdate = state.lastEigenupdate;
 	}
 
 }

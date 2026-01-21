@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,44 +17,41 @@
  */
 package org.moeaframework.util.statistics;
 
+import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.commons.math3.stat.inference.TestUtils;
+import org.moeaframework.util.validate.Validate;
 
 /**
- * The Single-Factor Between-Subjects Analysis of Variance determines if (at
- * least) two out of K >= 2 populations have differing means.
- * <p>
+ * The Single-Factor Between-Subjects Analysis of Variance determines if (at least) two out of K >= 2 populations
+ * have differing means.
  * <ul>
- * <li>Null Hypothesis: All populations have equal means.
- * <li>Alternative Hypothesis: Not all populations have equal means.
+ *   <li>Null Hypothesis: All populations have equal means.
+ *   <li>Alternative Hypothesis: Not all populations have equal means.
  * </ul>
  * <p>
  * Assumptions:
  * <ol>
- * <li>Samples are randomly selected from their corresponding populations
- * <li>The distribution of the underlying populations are normal
- * <li>The variances of the underlying populations are identical
+ *   <li>Samples are randomly selected from their corresponding populations
+ *   <li>The distribution of the underlying populations are normal
+ *   <li>The variances of the underlying populations are identical
  * </ol>
  * <p>
  * References:
  * <ol>
- * <li>Sheskin, D.J. "Handbook of Parametric and Nonparametric Statistical
- * Procedures, Third Edition." Chapman & Hall/CRC. 2004.
+ *   <li>Sheskin, D.J. "Handbook of Parametric and Nonparametric Statistical Procedures, Third Edition." Chapman &amp;
+ *       Hall/CRC. 2004.
  * </ol>
  */
 public class OneWayANOVA extends IntervalRatioStatisticalTest {
 
 	/**
-	 * Constructs a one-way ANOVA statistical test with the specified number of
-	 * groups.
+	 * Constructs a one-way ANOVA statistical test with the specified number of groups.
 	 * 
 	 * @param numberOfGroups the number of groups being tested
 	 */
 	public OneWayANOVA(int numberOfGroups) {
 		super(numberOfGroups);
-		
-		if (numberOfGroups <= 1) {
-			throw new IllegalArgumentException("requires two or more groups");
-		}
+		Validate.that("numberOfGroups", numberOfGroups).isGreaterThan(1);
 	}
 
 	// make method public
@@ -67,6 +64,12 @@ public class OneWayANOVA extends IntervalRatioStatisticalTest {
 	@Override
 	public void addAll(double[] values, int group) {
 		super.addAll(values, group);
+	}
+	
+	// make method public
+	@Override
+	public DescriptiveStatistics getStatistics(int group) {
+		return super.getStatistics(group);
 	}
 
 	/**

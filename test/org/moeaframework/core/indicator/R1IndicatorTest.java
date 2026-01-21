@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,42 +17,46 @@
  */
 package org.moeaframework.core.indicator;
 
-import java.io.File;
 import java.io.IOException;
 
-import org.junit.Assert;
 import org.junit.Test;
-import org.moeaframework.TestUtils;
-import org.moeaframework.core.NondominatedPopulation;
-import org.moeaframework.core.PopulationIO;
-import org.moeaframework.problem.MockRealProblem;
+import org.moeaframework.Assert;
+import org.moeaframework.core.population.NondominatedPopulation;
+import org.moeaframework.mock.MockRealProblem;
+import org.moeaframework.mock.MockSolution;
+import org.moeaframework.problem.Problem;
 
 /**
- * Tests the {@link R1Indicator} class.  The raw values used here were produced
- * using the PISA r-ind.exe program.
+ * The raw values used here were produced using the PISA r-ind.exe program.
  */
-public class R1IndicatorTest {
+public class R1IndicatorTest extends AbstractIndicatorTest<R1Indicator> {
+	
+	@Override
+	public R1Indicator createInstance(Problem problem, NondominatedPopulation referenceSet) {
+		return new R1Indicator(problem, 500, referenceSet);
+	}
+	
+	@Override
+	public double getWorstValue() {
+		return 0.0;
+	}
 
 	@Test
-	public void testZero() throws IOException {
-		NondominatedPopulation referenceSet = new NondominatedPopulation(
-				PopulationIO.readObjectives(new File("./pf/DTLZ2.2D.pf")));
-		
-		R1Indicator indicator = new R1Indicator(new MockRealProblem(2), 500, referenceSet);
+	public void testSame() throws IOException {
+		NondominatedPopulation referenceSet = getDefaultReferenceSet();
+		Indicator indicator = createInstance(new MockRealProblem(2), referenceSet);
 		Assert.assertEquals(0.5, indicator.evaluate(referenceSet), 0.000001);
 	}
 	
 	@Test
-	public void testSet() throws IOException {
-		NondominatedPopulation referenceSet = new NondominatedPopulation(
-				PopulationIO.readObjectives(new File("./pf/DTLZ2.2D.pf")));
+	public void testCase() throws IOException {
+		NondominatedPopulation referenceSet = NondominatedPopulation.load("./pf/DTLZ2.2D.pf");
 		
 		NondominatedPopulation population = new NondominatedPopulation();
-		population.add(TestUtils.newSolution(0.75, 0.25));
-		population.add(TestUtils.newSolution(0.25, 0.75));
+		population.add(MockSolution.of().withObjectives(0.75, 0.25));
+		population.add(MockSolution.of().withObjectives(0.25, 0.75));
 		
-		R1Indicator indicator = new R1Indicator(new MockRealProblem(2), 500, referenceSet);
-		
+		Indicator indicator = createInstance(new MockRealProblem(2), referenceSet);
 		Assert.assertEquals(5.269461078e-001, indicator.evaluate(population), 0.000001);
 	}
 	

@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -20,60 +20,68 @@ package org.moeaframework.core.operator.real;
 import org.moeaframework.core.PRNG;
 import org.moeaframework.core.Settings;
 import org.moeaframework.core.Solution;
-import org.moeaframework.core.Variable;
-import org.moeaframework.core.Variation;
+import org.moeaframework.core.configuration.Prefix;
+import org.moeaframework.core.configuration.Property;
+import org.moeaframework.core.operator.TypeSafe;
+import org.moeaframework.core.operator.Variation;
 import org.moeaframework.core.variable.RealVariable;
+import org.moeaframework.core.variable.Variable;
+import org.moeaframework.util.validate.Validate;
 
 /**
- * Simulated binary crossover (SBX) operator.  SBX attempts to simulate the 
- * offspring distribution of binary-encoded single-point crossover on 
- * real-valued decision variables.  An example of this distribution,
- * which favors offspring nearer to the two parents, is shown below.
+ * Simulated binary crossover (SBX) operator.  SBX attempts to simulate the offspring distribution of binary-encoded
+ * single-point crossover on real-valued decision variables.  An example of this distribution, which favors offspring
+ * nearer to the two parents, is shown below.
  * <p>
- * <img src="doc-files/SBX-1.png" alt="Example SBX operator distribution" />
+ * <img src="doc-files/SBX.png" alt="Example SBX operator distribution" />
  * <p>
- * The distribution index controls the shape of the offspring distribution. 
- * Larger values for the distribution index generates offspring closer to the 
- * parents.
+ * The distribution index controls the shape of the offspring distribution.  Larger values for the distribution index
+ * generates offspring closer to the parents.
  * <p>
  * This operator is type-safe.
  * <p>
  * References:
  * <ol>
- *   <li>Deb, K. and Agrawal, R. B.  "Simulated Binary Crossover for Continuous
- *       Search Space."  Indian Institute of Technology, Kanpur, India.  
- *       Technical Report No. IITK/ME/SMD-94027, 1994.
+ *   <li>Deb, K. and Agrawal, R. B.  "Simulated Binary Crossover for Continuous Search Space."  Indian Institute of
+ *       Technology, Kanpur, India.  Technical Report No. IITK/ME/SMD-94027, 1994.
  * </ol>
  */
+@TypeSafe
+@Prefix("sbx")
 public class SBX implements Variation {
 
 	/**
 	 * The probability of applying this SBX operator to each variable.
 	 */
-	private final double probability;
+	private double probability;
 
 	/**
 	 * The distribution index of this SBX operator.
 	 */
-	private final double distributionIndex;
+	private double distributionIndex;
 
 	/**
 	 * Enable randomly swapping decision variables between the parents.
 	 */
-	private final boolean swap;
+	private boolean swap;
 
 	/**
-	 * If {@code true}, use symmetric distributions; otherwise asymmetric
-	 * distributions are used.
+	 * If {@code true}, use symmetric distributions; otherwise asymmetric distributions are used.
 	 */
-	private final boolean symmetric;
+	private boolean symmetric;
 	
 	/**
-	 * Constructs a SBX operator with the specified probability and
-	 * distribution index.
+	 * Constructs a SBX operator with default settings.  This includes a probability of {@code 1.0} and a distribution
+	 * index of {@code 15.0}.
+	 */
+	public SBX() {
+		this(1.0, 15.0);
+	}
+	
+	/**
+	 * Constructs a SBX operator with the specified probability and distribution index.
 	 * 
-	 * @param probability the probability of applying this SBX operator to each
-	 *        variable
+	 * @param probability the probability of applying this SBX operator to each variable
 	 * @param distributionIndex the distribution index of this SBX operator
 	 */
 	public SBX(double probability, double distributionIndex) {
@@ -81,25 +89,26 @@ public class SBX implements Variation {
 	}
 
 	/**
-	 * Constructs a SBX operator with the specified probability and
-	 * distribution index.  Set {@code swap} to {@code true} to recreate the
-	 * traditional SBX operation; and to {@code false} to use the SBX variant
+	 * Constructs a SBX operator with the specified probability and distribution index.  Set {@code swap} to
+	 * {@code true} to recreate the traditional SBX operation; and to {@code false} to use the SBX variant
 	 * used by NSGA-III.
 	 * 
-	 * @param probability the probability of applying this SBX operator to each
-	 *        variable
+	 * @param probability the probability of applying this SBX operator to each variable
 	 * @param distributionIndex the distribution index of this SBX operator
-	 * @param swap if {@code true}, randomly swap the variables between the two
-	 *        parents
-	 * @param symmetric if {@code true}, symmetric distrubutions are used
+	 * @param swap if {@code true}, randomly swap the variables between the two parents
+	 * @param symmetric if {@code true}, symmetric distributions are used
 	 */
-	public SBX(double probability, double distributionIndex, boolean swap,
-			boolean symmetric) {
+	public SBX(double probability, double distributionIndex, boolean swap, boolean symmetric) {
 		super();
-		this.probability = probability;
-		this.distributionIndex = distributionIndex;
-		this.swap = swap;
-		this.symmetric = symmetric;
+		setProbability(probability);
+		setDistributionIndex(distributionIndex);
+		setSwap(swap);
+		setSymmetric(symmetric);
+	}
+	
+	@Override
+	public String getName() {
+		return "sbx";
 	}
 
 	/**
@@ -110,6 +119,17 @@ public class SBX implements Variation {
 	public double getProbability() {
 		return probability;
 	}
+	
+	/**
+	 * Sets the probability of applying this SBX operator to each variable.
+	 * 
+	 * @param probability the probability (0.0 - 1.0)
+	 */
+	@Property("rate")
+	public void setProbability(double probability) {
+		Validate.that("probability", probability).isProbability();
+		this.probability = probability;
+	}
 
 	/**
 	 * Returns the distribution index of this SBX operator.
@@ -119,28 +139,58 @@ public class SBX implements Variation {
 	public double getDistributionIndex() {
 		return distributionIndex;
 	}
+	
+	/**
+	 * Sets the distribution index of this SBX operator.
+	 * 
+	 * @param distributionIndex the distribution index
+	 */
+	@Property("distributionIndex")
+	public void setDistributionIndex(double distributionIndex) {
+		Validate.that("distributionIndex", distributionIndex).isGreaterThan(0.0);
+		this.distributionIndex = distributionIndex;
+	}
 
 	/**
-	 * Returns {@code true} if this SBX operator swaps variables between the
-	 * two parents.  Disabling this swapping produces offspring closer to the
-	 * two parents, which is beneficial for NSGA-III.
+	 * Returns {@code true} if this SBX operator swaps variables between the two parents.  Disabling this swapping
+	 * produces offspring closer to the two parents, which is beneficial for NSGA-III.
 	 * 
-	 * @return {@code true} if this SBX operator swaps variables between the
-	 *         two parents
+	 * @return {@code true} if this SBX operator swaps variables between the two parents
 	 */
 	public boolean isSwap() {
 		return swap;
 	}
+	
+	/**
+	 * Sets whether this SBX operator swaps variables between the two parents.
+	 * 
+	 * @param swap {@code true} if this SBX operator swaps variables between the two parents
+	 */
+	@Property
+	public void setSwap(boolean swap) {
+		this.swap = swap;
+	}
 
 	/**
-	 * Returns {@code true} if the offspring are distributed symmetrically; or
-	 * {@code false} if asymmetric distributions are used.
+	 * Returns {@code true} if the offspring are distributed symmetrically; or {@code false} if asymmetric
+	 * distributions are used.
 	 * 
-	 * @return {@code true} if the offspring are distributed symmetrically; or
-	 *         {@code false} if asymmetric distributions are used
+	 * @return {@code true} if the offspring are distributed symmetrically; or {@code false} if asymmetric
+	 *         distributions are used
 	 */
 	public boolean isSymmetric() {
 		return symmetric;
+	}
+	
+	/**
+	 * Sets if offspring are distributed symmetrically or asymmetrically.
+	 * 
+	 * @param symmetric {@code true} if the offspring are distributed symmetrically; or {@code false} if asymmetric
+	 *        distributions are used
+	 */
+	@Property
+	public void setSymmetric(boolean symmetric) {
+		this.symmetric = symmetric;
 	}
 
 	@Override
@@ -158,16 +208,20 @@ public class SBX implements Variation {
 				Variable variable1 = result1.getVariable(i);
 				Variable variable2 = result2.getVariable(i);
 
-				if (PRNG.nextBoolean() && (variable1 instanceof RealVariable)
-						&& (variable2 instanceof RealVariable)) {
-					if (symmetric) {
-						evolve_symmetric((RealVariable)variable1,
-								(RealVariable)variable2, distributionIndex,
-								swap);
-					} else {
-						evolve_asymmetric((RealVariable)variable1,
-								(RealVariable)variable2, distributionIndex,
-								swap);
+				if ((variable1 instanceof RealVariable realVariable1) &&
+						(variable2 instanceof RealVariable realVariable2)) {
+					if (PRNG.nextBoolean()) {
+						if (symmetric) {
+							evolve_symmetric(realVariable1, realVariable2, distributionIndex);
+						} else {
+							evolve_asymmetric(realVariable1, realVariable2, distributionIndex);
+						}
+					}
+					
+					// randomly swap the variables
+					if (swap && PRNG.nextBoolean()) {
+						result1.setVariable(i, variable2);
+						result2.setVariable(i, variable1);
 					}
 				}
 			}
@@ -176,35 +230,19 @@ public class SBX implements Variation {
 		return new Solution[] { result1, result2 };
 	}
 
-	/**
-	 * Evolves the specified variables using the SBX operator.
-	 * 
-	 * @param v1 the first variable
-	 * @param v2 the second variable
-	 * @param distributionIndex the distribution index of this SBX operator
-	 */
-	public static void evolve(RealVariable v1, RealVariable v2,
-			double distributionIndex) {
-		evolve_asymmetric(v1, v2, distributionIndex, true);
-	}
-
 	/*
-	 * The following code was provided by Haitham Seada on Dec 14, 2015.  This
-	 * replaces the old implementation based on PISA, which appears to have
-	 * some numerical issues, particularly on problems like DTLZ3.
+	 * The following code was provided by Haitham Seada on Dec 14, 2015.  This replaces the old implementation based
+	 * on PISA, which appears to have some numerical issues, particularly on problems like DTLZ3.
 	 */
 
 	/**
-	 * Evolves the specified variables using the SBX operator using symmetric
-	 * distributions.
+	 * Evolves the specified variables using the SBX operator using symmetric distributions.
 	 * 
 	 * @param v1 the first variable
 	 * @param v2 the second variable
 	 * @param distributionIndex the distribution index of this SBX operator
-	 * @param swap randomly swap the variable between the two parents
 	 */
-	public static void evolve_symmetric(RealVariable v1, RealVariable v2,
-			double distributionIndex, boolean swap) {
+	public static void evolve_symmetric(RealVariable v1, RealVariable v2, double distributionIndex) {
 		double y1, y2, betaq, beta, alpha, rand;
 		double x1 = v1.getValue();
 		double x2 = v2.getValue();
@@ -260,29 +298,19 @@ public class SBX implements Variation {
 				x2 = ub;
 			}
 			
-			// randomly swap the variables
-			if (swap && PRNG.nextBoolean()) {
-				double temp = x1;
-				x1 = x2;
-				x2 = temp;
-			}
-			
 			v1.setValue(x1);
 			v2.setValue(x2);
 		}
 	}
 	
 	/**
-	 * Evolves the specified variables using the SBX operator using asymmetric
-	 * distributions.
+	 * Evolves the specified variables using the SBX operator using asymmetric distributions.
 	 * 
 	 * @param v1 the first variable
 	 * @param v2 the second variable
 	 * @param distributionIndex the distribution index of this SBX operator
-	 * @param swap randomly swap the variable between the two parents
 	 */
-	public static void evolve_asymmetric(RealVariable v1, RealVariable v2,
-			double distributionIndex, boolean swap) {
+	public static void evolve_asymmetric(RealVariable v1, RealVariable v2, double distributionIndex) {
 		double y1, y2, betaq, beta, alpha, rand;
 		double x1 = v1.getValue();
 		double x2 = v2.getValue();
@@ -341,13 +369,6 @@ public class SBX implements Variation {
 				x2 = lb;
 			} else if (x2 > ub) {
 				x2 = ub;
-			}
-			
-			// randomly swap the variables
-			if (swap && PRNG.nextBoolean()) {
-				double temp = x1;
-				x1 = x2;
-				x2 = temp;
 			}
 			
 			v1.setValue(x1);

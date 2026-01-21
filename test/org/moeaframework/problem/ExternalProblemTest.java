@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,152 +17,81 @@
  */
 package org.moeaframework.problem;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PipedInputStream;
-import java.io.PipedOutputStream;
-import java.io.PrintStream;
+import java.util.function.Function;
 
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
-import org.moeaframework.core.Settings;
+import org.moeaframework.Assert;
+import org.moeaframework.CallCounter;
+import org.moeaframework.TestEnvironment;
+import org.moeaframework.core.FrameworkException;
 import org.moeaframework.core.Solution;
-import org.moeaframework.core.variable.BinaryVariable;
-import org.moeaframework.core.variable.Permutation;
-import org.moeaframework.core.variable.RealVariable;
+import org.moeaframework.mock.MockExternalProblem;
+import org.moeaframework.problem.ExternalProblem.Builder;
 
 /**
- * Tests the {@link ExternalProblem} class without the need for an external
- * executable.  No error conditions are tested.
+ * Tests basic functionality without requiring an executable.
  */
 public class ExternalProblemTest {
 	
-	private ExternalProblem problem;
-	
-	private PipedInputStream i1;
-	private PipedOutputStream o1;
-	
-	private PipedInputStream i2;
-	private PipedOutputStream o2;
-	
-	@Before
-	public void setUp() throws IOException {
-		i1 = new PipedInputStream();
-		o1 = new PipedOutputStream();
-		i1.connect(o1);
-		
-		i2 = new PipedInputStream();
-		o2 = new PipedOutputStream();
-		i2.connect(o2);
-		
-		problem = new ExternalProblem(i1, o2) {
-
-			@Override
-			public String getName() {
-				return "Test";
-			}
-
-			@Override
-			public int getNumberOfVariables() {
-				return 4;
-			}
-
-			@Override
-			public int getNumberOfObjectives() {
-				return 2;
-			}
-
-			@Override
-			public int getNumberOfConstraints() {
-				return 1;
-			}
-
-			@Override
-			public Solution newSolution() {
-				Solution solution = new Solution(4, 2, 1);
-				solution.setVariable(0, new RealVariable(0.5, 0.0, 1.0));
-				solution.setVariable(1, new RealVariable(0.5, 0.0, 1.0));
-				solution.setVariable(2, new BinaryVariable(5));
-				solution.setVariable(3, new Permutation(3));
-				return solution;
-			}
-			
-		};
-	}
-	
-	@After
-	public void tearDown() {
-		i1 = null;
-		o1 = null;
-		i2 = null;
-		o2 = null;
-		problem = null;
-	}
-	
 	@Test
-	public void testNormalUse() throws Exception {
-		run(new Thread() {
-			public void run() {
-				BufferedReader reader = null;
-				PrintStream writer = null;
-				
-				try {
-					String line = null;
-					reader = new BufferedReader(new InputStreamReader(i2));
-					writer = new PrintStream(o1);
+	public void testValidResponse() throws Exception {
+		test(s -> "0.2 0.8 0.5");
+	}
 	
-					while ((line = reader.readLine()) != null) {
-						String[] tokens = line.split("\\s+");
+	@Test(expected = ProblemException.class)
+	public void testTooFewResponses() throws Exception {
+		test(s -> "0.2 0.8");
+	}
 	
-						Assert.assertEquals(4, tokens.length);
+	@Test(expected = ProblemException.class)
+	public void testTooManyResponses() throws Exception {
+		test(s -> "0.2 0.8 0.5 0.1");
+	}
 	
-						writer.println("0.2 0.8 0.5");
-						writer.flush();
-					}
-				} catch (IOException e) {
-					throw new RuntimeException(e);
-				} finally {
-					try {
-						if (reader != null) {
-							reader.close();
-						}
-						
-						if (writer != null) {
-							writer.close();
-						}
-					} catch (IOException e) {
-						throw new RuntimeException(e);
-					}
-				}
-			}
+	@Test(expected = ProblemException.class)
+	public void testUnparseableResponse() throws Exception {
+		test(s -> "0.2 0.8foo 0.5");
+	}
+	
+	@Test(expected = ProblemException.class)
+	public void testEmptyResponse() throws Exception {
+		test(s -> "");
+	}
+	
+	@Test(expected = ProblemException.class)
+	public void testNoResponse() throws Exception {
+		test(s -> {
+			throw new FrameworkException("Test close with no response");
 		});
 	}
 	
-	public void run(Thread consumerThread) throws Exception {
-		Thread producerThread = new Thread() {
-			public void run() {
-				for (int i=0; i<100; i++) {
-					Solution solution = problem.newSolution();
-					problem.evaluate(solution);
-					Assert.assertEquals(0.2, solution.getObjective(0), Settings.EPS);
-					Assert.assertEquals(0.8, solution.getObjective(1), Settings.EPS);
-					Assert.assertEquals(0.5, solution.getConstraint(0), Settings.EPS);
-				}
-				
-				problem.close();
-			}
-		};
+	@Test
+	public void testBuilderCopy() {
+		Builder expected = new Builder()
+				.withCommand("foo", "bar")
+				.withSocket(ExternalProblem.DEFAULT_PORT)
+				.withDebugging();
 		
-		producerThread.start();
-		consumerThread.start();
+		Builder copy = expected.copy();
 		
-		Thread.sleep(5000);
-		
-		Assert.assertFalse(producerThread.isAlive());
-		Assert.assertFalse(consumerThread.isAlive());
+		Assert.assertCopy(expected, copy);
 	}
-
+	
+	private void test(final Function<String, String> callback) throws Exception {
+		CallCounter<Function<String, String>> counter = CallCounter.of(callback);
+		
+		try (MockExternalProblem problem = new MockExternalProblem(counter.getProxy())) {
+			for (int i=0; i<100; i++) {
+				Solution solution = problem.newSolution();
+				problem.evaluate(solution);
+				
+				Assert.assertEquals(0.2, solution.getObjectiveValue(0), TestEnvironment.HIGH_PRECISION);
+				Assert.assertEquals(0.8, solution.getObjectiveValue(1), TestEnvironment.HIGH_PRECISION);
+				Assert.assertEquals(0.5, solution.getConstraintValue(0), TestEnvironment.HIGH_PRECISION);
+			}
+			
+			Assert.assertEquals(100, counter.getTotalCallCount());
+		}
+	}
+	
 }

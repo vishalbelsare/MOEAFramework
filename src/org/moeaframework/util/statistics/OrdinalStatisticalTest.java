@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,36 +17,28 @@
  */
 package org.moeaframework.util.statistics;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
+import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
+import org.moeaframework.util.validate.Validate;
+
 /**
- * Abstract class for implementing ordinal (rank-based) statistical tests.
- * Methods are provided for storing {@link RankedObservation} objects and
- * updating their ranks.
+ * Abstract class for implementing ordinal (rank-based) statistical tests.  Methods are provided for storing
+ * {@link RankedObservation} objects and updating their ranks.
  */
 public abstract class OrdinalStatisticalTest implements StatisticalTest {
 
 	/**
 	 * Compares two {@code RankedObservation} objects based on their value.
 	 */
-	private static class ObservationComparator implements
-			Comparator<RankedObservation>, Serializable {
-
-		private static final long serialVersionUID = 284381611483212771L;
+	private static class ObservationComparator implements Comparator<RankedObservation> {
 
 		@Override
 		public int compare(RankedObservation o1, RankedObservation o2) {
-			if (o1.getValue() < o2.getValue()) {
-				return -1;
-			} else if (o1.getValue() > o2.getValue()) {
-				return 1;
-			} else {
-				return 0;
-			}
+			return Double.compare(o1.getValue(), o2.getValue());
 		}
 
 	}
@@ -67,8 +59,7 @@ public abstract class OrdinalStatisticalTest implements StatisticalTest {
 	protected final List<RankedObservation> data;
 
 	/**
-	 * Constructs a new ordinal (rank-based) statistical test for the specified
-	 * number of groups.
+	 * Constructs a new ordinal (rank-based) statistical test for the specified number of groups.
 	 * 
 	 * @param numberOfGroups the number of groups being tested
 	 */
@@ -77,19 +68,18 @@ public abstract class OrdinalStatisticalTest implements StatisticalTest {
 	}
 
 	/**
-	 * Constructs a new ordinal (rank-based) statistical test for the specified
-	 * number of groups and the comparator for ordering observations.
+	 * Constructs a new ordinal (rank-based) statistical test for the specified number of groups and the comparator
+	 * for ordering observations.
 	 * 
 	 * @param numberOfGroups the number of groups being tested
 	 * @param comparator the comparator for ordering observations
 	 */
-	public OrdinalStatisticalTest(int numberOfGroups,
-			Comparator<RankedObservation> comparator) {
+	public OrdinalStatisticalTest(int numberOfGroups, Comparator<RankedObservation> comparator) {
 		super();
 		this.numberOfGroups = numberOfGroups;
 		this.comparator = comparator;
 
-		data = new ArrayList<RankedObservation>();
+		data = new ArrayList<>();
 	}
 
 	/**
@@ -99,10 +89,7 @@ public abstract class OrdinalStatisticalTest implements StatisticalTest {
 	 * @param group the group to which the new observation belongs
 	 */
 	protected void add(double value, int group) {
-		if ((group < 0) || (group >= numberOfGroups)) {
-			throw new IllegalArgumentException();
-		}
-
+		Validate.that("group", group).isBetween(0, numberOfGroups-1);
 		data.add(new RankedObservation(value, group));
 	}
 	
@@ -129,8 +116,7 @@ public abstract class OrdinalStatisticalTest implements StatisticalTest {
 			int j = i + 1;
 			double rank = i + 1;
 
-			while ((j < data.size())
-					&& (data.get(i).getValue() == data.get(j).getValue())) {
+			while ((j < data.size()) && (data.get(i).getValue() == data.get(j).getValue())) {
 				rank += j + 1;
 				j++;
 			}
@@ -161,6 +147,24 @@ public abstract class OrdinalStatisticalTest implements StatisticalTest {
 	 */
 	public int getNumberOfGroups() {
 		return numberOfGroups;
+	}
+	
+	/**
+	 * Returns the descriptive statistics for the given group.
+	 * 
+	 * @param group the group
+	 * @return the descriptive statistics
+	 */
+	protected DescriptiveStatistics getStatistics(int group) {
+		DescriptiveStatistics statistics = new DescriptiveStatistics();
+		
+		for (RankedObservation observation : data) {
+			if (observation.getGroup() == group) {
+				statistics.addValue(observation.getValue());
+			}
+		}
+		
+		return statistics;
 	}
 
 	/**

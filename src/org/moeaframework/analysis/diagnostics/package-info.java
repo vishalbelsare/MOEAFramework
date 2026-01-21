@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,8 +17,6 @@
  */
 
 /**
- * Diagnostic tool for analyzing the runtime behavior of algorithms.  This tool
- * requires the <a href="http://www.jfree.org/jfreechart/">JFreeChart</a> 
- * library and its dependencies to be installed.
+ * Diagnostic tool for analyzing the runtime behavior of algorithms.
  */
 package org.moeaframework.analysis.diagnostics;

@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,41 +17,42 @@
  */
 package org.moeaframework.problem.misc;
 
-import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
-import org.moeaframework.TestUtils;
-import org.moeaframework.core.Problem;
-import org.moeaframework.core.Settings;
+import org.moeaframework.Assert;
+import org.moeaframework.TestEnvironment;
+import org.moeaframework.problem.Problem;
 import org.moeaframework.problem.ProblemTest;
 
 public class Osyczka2Test extends ProblemTest {
 
 	@Test
-	@Ignore("JMetal 5.9 modifies the constraint values causing a difference")
-	public void testJMetal() throws Exception {
-		test(new org.uma.jmetal.problem.multiobjective.Osyczka2(), new Osyczka2());
+	public void testJMetal() {
+		testAgainstJMetal("Osyczka2", false);
 	}
 	
 	@Test
 	public void test() {
 		Problem problem = new Osyczka2();
 		
-		Assert.assertArrayEquals(new double[] { -120.0, 2.0 }, 
-				TestUtils.evaluateAt(problem, 0.0, 0.0, 1.0, 0.0, 1.0, 0.0).getObjectives(),
-				Settings.EPS);
+		Assert.assertArrayEquals(new double[] { -120.0, 2.0 },
+				evaluateAt(problem, 0.0, 0.0, 1.0, 0.0, 1.0, 0.0).getObjectiveValues(),
+				TestEnvironment.HIGH_PRECISION);
 		
-		Assert.assertArrayEquals(new double[] { -2.0, 0.0, 0.0, 0.0, 0.0, 0.0 }, 
-				TestUtils.evaluateAt(problem, 0.0, 0.0, 1.0, 0.0, 1.0, 0.0).getConstraints(),
-				Settings.EPS);
+		Assert.assertArrayEquals(new double[] { -2.0, 6.0, 2.0, 2.0, 0.0, 0.0 },
+				evaluateAt(problem, 0.0, 0.0, 1.0, 0.0, 1.0, 0.0).getConstraintValues(),
+				TestEnvironment.HIGH_PRECISION);
 		
-		Assert.assertArrayEquals(new double[] { -1700.0, 386.0 }, 
-				TestUtils.evaluateAt(problem, 10.0, 10.0, 5.0, 6.0, 5.0, 10.0).getObjectives(),
-				Settings.EPS);
+		Assert.assertFalse(evaluateAt(problem, 0.0, 0.0, 1.0, 0.0, 1.0, 0.0).isFeasible());
 		
-		Assert.assertArrayEquals(new double[] { 0.0, -14.0, 0.0, 0.0, -6.0, 0.0 }, 
-				TestUtils.evaluateAt(problem, 10.0, 10.0, 5.0, 6.0, 5.0, 10.0).getConstraints(),
-				Settings.EPS);
+		Assert.assertArrayEquals(new double[] { -1700.0, 386.0 },
+				evaluateAt(problem, 10.0, 10.0, 5.0, 6.0, 5.0, 10.0).getObjectiveValues(),
+				TestEnvironment.HIGH_PRECISION);
+		
+		Assert.assertArrayEquals(new double[] { 18.0, -14.0, 2.0, 22.0, -6.0, 10.0 },
+				evaluateAt(problem, 10.0, 10.0, 5.0, 6.0, 5.0, 10.0).getConstraintValues(),
+				TestEnvironment.HIGH_PRECISION);
+		
+		Assert.assertFalse(evaluateAt(problem, 10.0, 10.0, 5.0, 6.0, 5.0, 10.0).isFeasible());
 	}
 
 }

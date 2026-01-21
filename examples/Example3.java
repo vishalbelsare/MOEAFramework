@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,44 +17,33 @@
  */
 import java.io.IOException;
 
-import org.moeaframework.Executor;
-import org.moeaframework.Instrumenter;
-import org.moeaframework.analysis.collector.Accumulator;
+import org.moeaframework.algorithm.NSGAII;
+import org.moeaframework.core.indicator.Indicators;
+import org.moeaframework.core.indicator.Indicators.IndicatorValues;
+import org.moeaframework.core.population.NondominatedPopulation;
+import org.moeaframework.problem.DTLZ.DTLZ2;
+import org.moeaframework.problem.Problem;
 
 /**
- * Demonstrates the use of the {@code Instrumenter} to collect run-time
- * dynamics.  The output lists the NFE, elapsed time and generational distance
- * throughout the run.
+ * Performance indicators are used to compare results between different algorithms.  Here, we calculate the indicators
+ * in relation to a known reference set. These reference sets contain optimal solutions to the problem.  Reference sets
+ * for most test problems can be found in the ./pf/ directory.
  */
 public class Example3 {
 
 	public static void main(String[] args) throws IOException {
-		// setup the instrumenter to record the generational distance metric
-		Instrumenter instrumenter = new Instrumenter()
-				.withProblem("UF1")
-				.withFrequency(100)
-				.attachElapsedTimeCollector()
-				.attachGenerationalDistanceCollector();
+		// solve the 2-D DTLZ2 problem
+		Problem problem = new DTLZ2(2);
 		
-		// use the executor to run the algorithm with the instrumenter
-		new Executor()
-				.withProblem("UF1")
-				.withAlgorithm("NSGAII")
-				.withMaxEvaluations(10000)
-				.withInstrumenter(instrumenter)
-				.run();
-		
-		Accumulator accumulator = instrumenter.getLastAccumulator();
-		
-		// print the runtime dynamics
-		System.out.format("  NFE    Time      Generational Distance%n");
-		
-		for (int i=0; i<accumulator.size("NFE"); i++) {
-			System.out.format("%5d    %-8.4f  %-8.4f%n",
-					accumulator.get("NFE", i),
-					accumulator.get("Elapsed Time", i),
-					accumulator.get("GenerationalDistance", i));
-		}
+		NSGAII algorithm = new NSGAII(problem);
+		algorithm.run(10000);
+				
+		// load the reference set and evaluate the quality indicators
+		NondominatedPopulation referenceSet = NondominatedPopulation.load("pf/DTLZ2.2D.pf");
+		Indicators indicators = Indicators.all(problem, referenceSet);
+
+		IndicatorValues indicatorValues = indicators.apply(algorithm.getResult());
+		indicatorValues.display();
 	}
 
 }

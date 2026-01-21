@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -15,112 +15,83 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with the MOEA Framework.  If not, see <http://www.gnu.org/licenses/>.
  */
-// TODO: These tests currently rely on classes available in JMetal 4.5 but not
-// in the version currently being used by the MOEA Framework.
+package org.moeaframework.core.fitness;
 
-//package org.moeaframework.core.fitness;
-//
-//import jmetal.util.Distance;
-//import jmetal.util.archive.Archive;
-//import jmetal.util.archive.CrowdingArchive;
-//
-//import org.junit.Assert;
-//import org.junit.Test;
-//import org.moeaframework.TestUtils;
-//import org.moeaframework.core.FitnessEvaluator;
-//import org.moeaframework.core.PRNG;
-//import org.moeaframework.core.Problem;
-//import org.moeaframework.problem.MockRealProblem;
-//
-//public class FitnessBasedArchiveTest {
-//	
-//	@Test
-//	public void testCrowding() {
-//		Problem problem = new MockRealProblem();
-//		
-//		for (int i = 0; i < 100; i++) {
-//			int count = PRNG.nextInt(2, 10);
-//			FitnessBasedArchive archive = new FitnessBasedArchive(new CrowdingDistanceFitnessEvaluator(), 100);
-//			CrowdingArchive jmetalArchive = new CrowdingArchive(100, 2);
-//		
-//			for (int j = 0; j < count; j++) {
-//				double o1 = PRNG.nextDouble();
-//				double o2 = PRNG.nextDouble();
-//				
-//				archive.add(TestUtils.newSolution(o1, o2));
-//				jmetalArchive.add(newJMetalSolution(o1, o2));
-//			}
-//			
-//			archive.update();
-//			new Distance().crowdingDistanceAssignment(jmetalArchive, problem.getNumberOfObjectives());
-//			
-//			compare(archive, jmetalArchive);
-//		}
-//	}
-//	
-//	@Test
-//	public void testHypervolume() {
-//		Problem problem = new MockRealProblem();
-//		
-//		for (int i = 0; i < 100; i++) {
-//			int count = PRNG.nextInt(2, 10);
-//			FitnessBasedArchive archive = new FitnessBasedArchive(new HypervolumeContributionFitnessEvaluator(problem, 100.0), 100);
-//			HypervolumeArchive jmetalArchive = new HypervolumeArchive(100, 2);
-//		
-//			for (int j = 0; j < count; j++) {
-//				double o1 = PRNG.nextGaussian();
-//				double o2 = PRNG.nextGaussian();
-//				
-//				archive.add(TestUtils.newSolution(o1, o2));
-//				jmetalArchive.add(newJMetalSolution(o1, o2));
-//			}
-//			
-//			archive.update();
-//			jmetalArchive.actualiseHVContribution();
-//			
-//			compare(archive, jmetalArchive);
-//		}
-//	}
-//	
-//	private jmetal.core.Solution newJMetalSolution(double... values) {
-//		jmetal.core.Solution solution = new jmetal.core.Solution(values.length);
-//		
-//		for (int i = 0; i < values.length; i++) {
-//			solution.setObjective(i, values[i]);
-//		}
-//		
-//		return solution;
-//		
-//	}
-//	
-//	/**
-//	 * Compare the fitness values of both archives.  Note that JMetal stores
-//	 * the values in the crowding distance field.  Here we are less concerned
-//	 * about having identical values, but ensuring the pairwise comparisons
-//	 * are consistent (i.e., scaling does not matter).
-//	 * 
-//	 * @param archive
-//	 * @param jmetalArchive
-//	 */
-//	private void compare(FitnessBasedArchive archive, Archive jmetalArchive) {
-//		Assert.assertEquals(jmetalArchive.size(), archive.size());
-//		
-//		for (int j = 0; j < archive.size()-1; j++) {
-//			for (int k = j+1; k < archive.size(); k++) {
-//				double v1 = (Double)archive.get(j).getAttribute(FitnessEvaluator.FITNESS_ATTRIBUTE);
-//				double v2 = (Double)archive.get(k).getAttribute(FitnessEvaluator.FITNESS_ATTRIBUTE);
-//				double v1j = jmetalArchive.get(j).getCrowdingDistance();
-//				double v2j = jmetalArchive.get(k).getCrowdingDistance();
-//				
-//				System.out.println(v1 + " " + v2 + " / " + v1j + " " + v2j);
-//				
-//				if (v1j < v2j) {
-//					Assert.assertTrue(v1 < v2);
-//				} else {
-//					Assert.assertTrue(v1 >= v2);
-//				}
-//			}
-//		}
-//	}
-//
-//}
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.moeaframework.Assert;
+import org.moeaframework.core.Solution;
+import org.moeaframework.core.attribute.Fitness;
+import org.moeaframework.core.population.Population;
+import org.moeaframework.core.variable.RealVariable;
+import org.moeaframework.mock.MockRealProblem;
+import org.moeaframework.mock.MockSolution;
+import org.moeaframework.problem.Problem;
+
+public class FitnessBasedArchiveTest {
+	
+	private Problem mockProblem;
+	private FitnessEvaluator mockEvaluator;
+	
+	@Before
+	public void setUp() {
+		mockProblem = new MockRealProblem(2);
+		
+		mockEvaluator = new FitnessEvaluator() {
+
+			@Override
+			public void evaluate(Population population) {
+				for (Solution solution : population) {
+					Fitness.setAttribute(solution, RealVariable.getReal(solution.getVariable(0)));
+				}
+			}
+
+			@Override
+			public boolean areLargerValuesPreferred() {
+				return true;
+			}
+			
+		};
+	}
+	
+	@After
+	public void tearDown() {
+		mockProblem = null;
+		mockEvaluator = null;
+	}
+	
+	@Test
+	public void test() {
+		FitnessBasedArchive archive = new FitnessBasedArchive(mockEvaluator, 1);
+		
+		Solution solution1 = MockSolution.of(mockProblem).at(0.25).withObjectives(0.5, 0.5);
+		Solution solution2 = MockSolution.of(mockProblem).at(0.75).withObjectives(0.0, 1.0);
+		Solution solution3 = MockSolution.of(mockProblem).at(0.5).withObjectives(1.0, 0.0);
+		Solution solution4 = MockSolution.of(mockProblem).at(1.0).withObjectives(2.0, 2.0);
+		
+		Assert.assertTrue(archive.add(solution1));
+		Assert.assertTrue(archive.add(solution2)); // non-dominated and better fitness
+		Assert.assertTrue(archive.add(solution3)); // non-dominated but has worse fitness
+		Assert.assertFalse(archive.add(solution4)); // dominated
+
+		Assert.assertEquals(1, archive.size());
+		Assert.assertEquals(solution2, archive.get(0));
+	}
+	
+	@Test
+	public void testCopy() {
+		FitnessBasedArchive archive = new FitnessBasedArchive(mockEvaluator, 1);
+		archive.add(MockSolution.of(mockProblem).at(0.75).withObjectives(0.0, 1.0));
+		archive.update();
+		
+		FitnessBasedArchive copy = archive.copy();
+		
+		Assert.assertNotSame(archive, copy);
+		Assert.assertSame(archive.fitnessEvaluator, copy.fitnessEvaluator);
+		Assert.assertSame(archive.getComparator(), copy.getComparator());
+		Assert.assertEquals(archive.getCapacity(), copy.getCapacity());
+		Assert.assertEquals(archive, copy, true);
+	}
+
+}

@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -18,71 +18,97 @@
 package org.moeaframework.algorithm;
 
 import java.io.IOException;
-import java.util.Properties;
 
-import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.moeaframework.Retryable;
+import org.moeaframework.Assert;
+import org.moeaframework.Assume;
 import org.moeaframework.CIRunner;
-import org.moeaframework.core.Problem;
+import org.moeaframework.Retryable;
+import org.moeaframework.core.TypedProperties;
 import org.moeaframework.core.spi.AlgorithmFactory;
-import org.moeaframework.problem.MockRealProblem;
+import org.moeaframework.mock.MockRealProblem;
+import org.moeaframework.problem.Problem;
 
-/**
- * Tests the {@link MOEAD} class.
- */
 @RunWith(CIRunner.class)
 @Retryable
-public class MOEADTest extends AlgorithmTest {
+public class MOEADTest extends JMetalAlgorithmTest {
 	
-	@Test
-	public void testDTLZ1() throws IOException {
-		test("DTLZ1_2", "MOEAD", "MOEAD-JMetal");
+	private boolean testDRA;
+	
+	public MOEADTest() {
+		super("MOEAD", true);
+	}
+	
+	@Before
+	public void setUp() {
+		testDRA = false;
+	}
+	
+	@Override
+	public void test(String problem, String algorithm1, String algorithm2, boolean allowBetterPerformance) {
+		TypedProperties properties1 = new TypedProperties();
+		
+		// Override JMetal's default neighborhoodSelectionProbability.  MOEADBuilder defaults to 0.1, which differs
+		// from Li and Zhang's original MOEA/D paper specifying a delta of 0.9 (see section IV.A.6).
+		TypedProperties properties2 = new TypedProperties();
+		properties2.setDouble("neighborhoodSelectionProbability", 0.9);
+		
+		if (testDRA) {
+			properties1.setInt("updateUtility", 30); // Match JMetal's hard-coded value
+			properties2.setString("variant", "MOEADDRA");
+		}
+		
+		test(problem, algorithm1, properties1, algorithm2, properties2,
+				allowBetterPerformance, AlgorithmFactory.getInstance());
 	}
 	
 	@Test
-	public void testDTLZ2() throws IOException {
-		test("DTLZ2_2", "MOEAD", "MOEAD-JMetal");
+	public void testDTLZ1_MOEADDRA() throws IOException {
+		Assume.assumeJMetalPlugin();
+		testDRA = true;
+		test("DTLZ1_2", algorithmName, algorithmName + "-JMetal", allowBetterPerformance);
 	}
 	
 	@Test
-	public void testDTLZ7() throws IOException {
-		test("DTLZ7_2", "MOEAD", "MOEAD-JMetal");
+	public void testDTLZ2_MOEADDRA() throws IOException {
+		Assume.assumeJMetalPlugin();
+		testDRA = true;
+		test("DTLZ2_2", algorithmName, algorithmName + "-JMetal", allowBetterPerformance);
 	}
 	
 	@Test
-	public void testUF1() throws IOException {
-		test("UF1", "MOEAD", "MOEAD-JMetal");
+	public void testDTLZ7_MOEADDRA() throws IOException {
+		Assume.assumeJMetalPlugin();
+		testDRA = true;
+		test("DTLZ7_2", algorithmName, algorithmName + "-JMetal", allowBetterPerformance);
+	}
+	
+	@Test
+	public void testUF1_MOEADDRA() throws IOException {
+		Assume.assumeJMetalPlugin();
+		testDRA = true;
+		test("UF1", algorithmName, algorithmName + "-JMetal", allowBetterPerformance);
 	}
 	
 	@Test
 	public void testSelection() {
-		org.moeaframework.algorithm.MOEAD moead = null;
-		
 		Problem problem = new MockRealProblem();
-		Properties properties = new Properties();
+		TypedProperties properties = new TypedProperties();
 		
 		//the default is de+pm
-		moead = (org.moeaframework.algorithm.MOEAD)AlgorithmFactory.getInstance()
-				.getAlgorithm("MOEA/D", properties, problem);
-		
+		MOEAD moead = (MOEAD)AlgorithmFactory.getInstance().getAlgorithm("MOEA/D", properties, problem);
 		Assert.assertTrue(moead.useDE);
 		
 		//test with just de
-		properties.setProperty("operator", "de");
-		
-		moead = (org.moeaframework.algorithm.MOEAD)AlgorithmFactory.getInstance()
-				.getAlgorithm("MOEA/D", properties, problem);
-		
+		properties.setString("operator", "de");
+		moead = (MOEAD)AlgorithmFactory.getInstance().getAlgorithm("MOEA/D", properties, problem);
 		Assert.assertTrue(moead.useDE);
 		
 		//test with a different operator
-		properties.setProperty("operator", "sbx+pm");
-		
-		moead = (org.moeaframework.algorithm.MOEAD)AlgorithmFactory.getInstance()
-				.getAlgorithm("MOEA/D", properties, problem);
-		
+		properties.setString("operator", "sbx+pm");
+		moead = (MOEAD)AlgorithmFactory.getInstance().getAlgorithm("MOEA/D", properties, problem);
 		Assert.assertFalse(moead.useDE);
 	}
 

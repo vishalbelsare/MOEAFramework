@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,36 +17,27 @@
  */
 package org.moeaframework.problem.misc;
 
-import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
-import org.moeaframework.TestUtils;
-import org.moeaframework.core.Problem;
+import org.moeaframework.Assert;
+import org.moeaframework.problem.Problem;
 import org.moeaframework.problem.ProblemTest;
 
 public class PoloniTest extends ProblemTest {
 
 	@Test
-	@Ignore("Problem no longer in JMetal 5.9")
-	public void testJMetal() throws Exception {
-		//test(new org.uma.jmetal.problem.multiobjective.Poloni(), new Poloni());
-	}
-	
-	@Test
 	public void test() {
 		Problem problem = new Poloni();
 		
-		// since this is a maximization problem, these values are negated
-		Assert.assertArrayEquals(new double[] { 38.1791, 10.0 }, 
-				TestUtils.evaluateAt(problem, 0.0, 0.0).getObjectives(),
+		Assert.assertArrayEquals(new double[] { -38.1791, -10.0 },
+				evaluateAt(problem, 0.0, 0.0).getObjectiveValues(),
 				0.0001);
 		
-		Assert.assertArrayEquals(new double[] { 9.4566, 54.8719 }, 
-				TestUtils.evaluateAt(problem, Math.PI, Math.PI).getObjectives(),
+		Assert.assertArrayEquals(new double[] { -9.4566, -54.8719 },
+				evaluateAt(problem, Math.PI, Math.PI).getObjectiveValues(),
 				0.0001);
 		
-		Assert.assertArrayEquals(new double[] { 9.4566, 4.6064 }, 
-				TestUtils.evaluateAt(problem, -Math.PI, -Math.PI).getObjectives(),
+		Assert.assertArrayEquals(new double[] { -9.4566, -4.6064 },
+				evaluateAt(problem, -Math.PI, -Math.PI).getObjectiveValues(),
 				0.0001);
 	}
 

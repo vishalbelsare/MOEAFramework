@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,40 +17,44 @@
  */
 package org.moeaframework.algorithm;
 
-import java.io.IOException;
-
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.moeaframework.Assert;
 import org.moeaframework.CIRunner;
-import org.moeaframework.Flaky;
 import org.moeaframework.Retryable;
+import org.moeaframework.core.TypedProperties;
+import org.moeaframework.core.configuration.ConfigurationException;
+import org.moeaframework.core.fitness.AdditiveEpsilonIndicatorFitnessEvaluator;
+import org.moeaframework.mock.MockRealProblem;
+import org.moeaframework.problem.Problem;
 
-/**
- * Tests the {@link IBEA} class.
- */
 @RunWith(CIRunner.class)
 @Retryable
-public class IBEATest extends AlgorithmTest {
+public class IBEATest extends JMetalAlgorithmTest {
 	
-	@Test
-	public void testDTLZ1() throws IOException {
-		test("DTLZ1_2", "IBEA", "IBEA-JMetal");
+	public IBEATest() {
+		super("IBEA", true);
 	}
 	
 	@Test
-	public void testDTLZ2() throws IOException {
-		test("DTLZ2_2", "IBEA", "IBEA-JMetal");
+	public void testConfiguration() {
+		Problem problem = new MockRealProblem();
+		IBEA algorithm = new IBEA(problem);
+		
+		Assert.assertEquals("hypervolume", algorithm.getConfiguration().getString("indicator"));
+		
+		algorithm.applyConfiguration(TypedProperties.of("indicator", "epsilon"));
+		
+		Assert.assertInstanceOf(AdditiveEpsilonIndicatorFitnessEvaluator.class, algorithm.getFitnessEvaluator());
+		Assert.assertEquals("epsilon", algorithm.getConfiguration().getString("indicator"));
 	}
 	
-	@Test
-	@Flaky("need to investigate - flaky after upgrading to JMetal 5.9")
-	public void testDTLZ7() throws IOException {
-		test("DTLZ7_2", "IBEA", "IBEA-JMetal");
-	}
-	
-	@Test
-	public void testUF1() throws IOException {
-		test("UF1", "IBEA", "IBEA-JMetal");
+	@Test(expected = ConfigurationException.class)
+	public void testConfigurationInvalidIndicator() {
+		Problem problem = new MockRealProblem();
+		IBEA algorithm = new IBEA(problem);
+		
+		algorithm.applyConfiguration(TypedProperties.of("indicator", "foo"));
 	}
 
 }

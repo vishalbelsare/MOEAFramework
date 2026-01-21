@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,35 +17,41 @@
  */
 package org.moeaframework.algorithm;
 
-import org.moeaframework.core.Initialization;
-import org.moeaframework.core.NondominatedPopulation;
-import org.moeaframework.core.Population;
-import org.moeaframework.core.Problem;
-import org.moeaframework.core.Selection;
+import org.moeaframework.core.Settings;
 import org.moeaframework.core.Solution;
-import org.moeaframework.core.Variation;
+import org.moeaframework.core.TypedProperties;
 import org.moeaframework.core.comparator.FitnessComparator;
+import org.moeaframework.core.configuration.ConfigurationException;
+import org.moeaframework.core.configuration.Property;
+import org.moeaframework.core.fitness.AdditiveEpsilonIndicatorFitnessEvaluator;
+import org.moeaframework.core.fitness.HypervolumeFitnessEvaluator;
 import org.moeaframework.core.fitness.IndicatorFitnessEvaluator;
-import org.moeaframework.core.operator.TournamentSelection;
+import org.moeaframework.core.initialization.Initialization;
+import org.moeaframework.core.initialization.RandomInitialization;
+import org.moeaframework.core.operator.Variation;
+import org.moeaframework.core.population.NondominatedPopulation;
+import org.moeaframework.core.population.Population;
+import org.moeaframework.core.selection.Selection;
+import org.moeaframework.core.selection.TournamentSelection;
+import org.moeaframework.core.spi.OperatorFactory;
+import org.moeaframework.problem.Problem;
+import org.moeaframework.util.validate.Validate;
 
 /**
- * Implementation of the Indicator-Based Evolutionary Algorithm (IBEA).  Instead
- * of using Pareto dominance to evaluate the quality of solutions, IBEA uses
- * an indicator function (typically hypervolume but other indicator functions
- * can be specified). 
+ * Implementation of the Indicator-Based Evolutionary Algorithm (IBEA).  Instead of using Pareto dominance to evaluate
+ * the quality of solutions, IBEA uses an indicator function (typically hypervolume but other indicator functions
+ * can be specified).
  * <p>
  * References:
  * <ol>
- *   <li>Zitzler, E. and S. Kunzli (2004).  Indicator-Based Selection in
- *       Multiobjective Search.  Parallel Problem Solving from Nature
- *       (PPSN VIII), pp. 832-842.
+ *   <li>Zitzler, E. and S. Kunzli (2004).  Indicator-Based Selection in Multiobjective Search.  Parallel Problem
+ *       Solving from Nature (PPSN VIII), pp. 832-842.
  * </ol>
  */
 public class IBEA extends AbstractEvolutionaryAlgorithm {
 	
 	/**
-	 * The indicator fitness evaluator to use (e.g., hypervolume or
-	 * additive-epsilon indicator).
+	 * The indicator fitness evaluator to use (e.g., hypervolume or additive-epsilon indicator).
 	 */
 	private IndicatorFitnessEvaluator fitnessEvaluator;
 	
@@ -60,48 +66,80 @@ public class IBEA extends AbstractEvolutionaryAlgorithm {
 	private Selection selection;
 	
 	/**
-	 * The variation operator.
+	 * Constructs a new IBEA instance with default settings.
+	 * 
+	 * @param problem the problem
 	 */
-	private Variation variation;
+	public IBEA(Problem problem) {
+		this(problem,
+				Settings.DEFAULT_POPULATION_SIZE,
+				null,
+				new RandomInitialization(problem),
+				OperatorFactory.getInstance().getVariation(problem),
+				new HypervolumeFitnessEvaluator(problem));
+	}
 
 	/**
 	 * Constructs a new IBEA instance.
 	 * 
 	 * @param problem the problem
-	 * @param archive the external archive; or {@code null} if no external
-	 *        archive is used
+	 * @param initialPopulationSize the initial population size
+	 * @param archive the external archive; or {@code null} if no external archive is used
 	 * @param initialization the initialization operator
 	 * @param variation the variation operator
-	 * @param fitnessEvaluator the indicator fitness evaluator to use (e.g.,
-	 *        hypervolume additive-epsilon indicator)
+	 * @param fitnessEvaluator the indicator fitness evaluator to use (e.g., hypervolume additive-epsilon indicator)
 	 */
-	public IBEA(Problem problem, NondominatedPopulation archive,
-			Initialization initialization, Variation variation,
-			IndicatorFitnessEvaluator fitnessEvaluator) {
-		super(problem, new Population(), archive, initialization);
-		this.variation = variation;
-		this.fitnessEvaluator = fitnessEvaluator;
+	public IBEA(Problem problem, int initialPopulationSize, NondominatedPopulation archive,
+			Initialization initialization, Variation variation, IndicatorFitnessEvaluator fitnessEvaluator) {
+		super(problem, initialPopulationSize, new Population(), archive, initialization, variation);
+		setFitnessEvaluator(fitnessEvaluator);
 		
-		fitnessComparator = new FitnessComparator(
-				fitnessEvaluator.areLargerValuesPreferred());
+		Validate.that("problem", problem).isUnconstrained();
+	}
+	
+	@Override
+	public String getName() {
+		return "IBEA";
+	}
+	
+	/**
+	 * Returns the indicator-based fitness evaluator.
+	 * 
+	 * @return the indicator-based fitness evaluator
+	 */
+	public IndicatorFitnessEvaluator getFitnessEvaluator() {
+		return fitnessEvaluator;
+	}
+	
+	/**
+	 * Sets the indicator-based fitness evaluator.  This value can not be {@code null}.
+	 * 
+	 * @param fitnessEvaluator the indicator-based fitness evaluator
+	 */
+	public void setFitnessEvaluator(IndicatorFitnessEvaluator fitnessEvaluator) {
+		Validate.that("fitnessEvaluator", fitnessEvaluator).isNotNull();
+		
+		this.fitnessEvaluator = fitnessEvaluator;
+		fitnessComparator = new FitnessComparator(fitnessEvaluator.areLargerValuesPreferred());
 		selection = new TournamentSelection(fitnessComparator);
 	}
 	
 	@Override
-	protected void initialize() {
+	public void initialize() {
 		super.initialize();
 		
-		fitnessEvaluator.evaluate(population);
+		fitnessEvaluator.evaluate(getPopulation());
 	}
 
 	@Override
 	protected void iterate() {
+		Population population = getPopulation();
+		Variation variation = getVariation();
 		Population offspring = new Population();
 		int populationSize = population.size();
 		
 		while (offspring.size() < populationSize) {
-			Solution[] parents = selection.select(variation.getArity(),
-					population);
+			Solution[] parents = selection.select(variation.getArity(), population);
 			Solution[] children = variation.evolve(parents);
 
 			offspring.addAll(children);
@@ -123,16 +161,59 @@ public class IBEA extends AbstractEvolutionaryAlgorithm {
 	 * @return the index of the solution with the worst fitness value
 	 */
 	private int findWorstIndex() {
+		Population population = getPopulation();
 		int worstIndex = 0;
 		
 		for (int i = 1; i < population.size(); i++) {
-			if (fitnessComparator.compare(population.get(worstIndex),
-					population.get(i)) == -1) {
+			if (fitnessComparator.compare(population.get(worstIndex), population.get(i)) < 0) {
 				worstIndex = i;
 			}
 		}
 		
 		return worstIndex;
+	}
+	
+	@Override
+	@Property("operator")
+	public void setVariation(Variation variation) {
+		super.setVariation(variation);
+	}
+	
+	@Override
+	@Property("populationSize")
+	public void setInitialPopulationSize(int initialPopulationSize) {
+		super.setInitialPopulationSize(initialPopulationSize);
+	}
+	
+	@Override
+	public void applyConfiguration(TypedProperties properties) {
+		if (properties.contains("indicator")) {
+			String indicator = properties.getString("indicator");
+			
+			if ("hypervolume".equalsIgnoreCase(indicator)) {
+				setFitnessEvaluator(new HypervolumeFitnessEvaluator(problem));
+			} else if ("epsilon".equalsIgnoreCase(indicator)) {
+				setFitnessEvaluator(new AdditiveEpsilonIndicatorFitnessEvaluator(problem));
+			} else {
+				throw new ConfigurationException("Invalid indicator: " + indicator);
+			}
+		}
+		
+		super.applyConfiguration(properties);
+		
+	}
+
+	@Override
+	public TypedProperties getConfiguration() {
+		TypedProperties properties = super.getConfiguration();
+		
+		if (fitnessEvaluator instanceof HypervolumeFitnessEvaluator) {
+			properties.setString("indicator", "hypervolume");
+		} else if (fitnessEvaluator instanceof AdditiveEpsilonIndicatorFitnessEvaluator) {
+			properties.setString("indicator", "epsilon");
+		}
+		
+		return properties;
 	}
 
 }

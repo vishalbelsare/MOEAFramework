@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,7 +17,7 @@
  */
 
 /**
- * Collection of statistical methods for determining certain properties of
- * collected samples.  Includes parametric and non-parametric techniques.
+ * Collection of statistical methods for determining certain properties of collected samples.  Includes parametric
+ * and non-parametric techniques.
  */
 package org.moeaframework.util.statistics;

@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,23 +17,22 @@
  */
 package org.moeaframework.core.variable;
 
-import java.text.MessageFormat;
+import java.util.BitSet;
 
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.moeaframework.core.Defined;
 import org.moeaframework.core.PRNG;
+import org.moeaframework.core.Solution;
+import org.moeaframework.util.validate.Validate;
 
 /**
- * Decision variable for integers encoded as a binary string.  Note that if
- * {@code upperBound-lowerBound} is not a power of 2, then some values will
- * occur more frequently after a variation operator.
+ * Decision variable for integers encoded as a binary string.  Note that if {@code upperBound-lowerBound} is not a
+ * power of 2, then some values will occur more frequently after a variation operator.
  */
 public class BinaryIntegerVariable extends BinaryVariable {
 
 	private static final long serialVersionUID = 5045946885389529638L;
-
-	private static final String VALUE_OUT_OF_BOUNDS = 
-			"value out of bounds (value: {0}, min: {1}, max: {2})";
 
 	/**
 	 * The lower bound of this decision variable.
@@ -46,79 +45,68 @@ public class BinaryIntegerVariable extends BinaryVariable {
 	private final int upperBound;
 	
 	/**
-	 * If {@code true}, the binary representation uses gray coding.  Gray
-	 * coding ensures that two successive values differ in only one bit.
+	 * If {@code true}, the binary representation uses gray coding.  Gray coding ensures that two successive values
+	 * differ in only one bit.
 	 */
 	private final boolean gray;
 	
 	/**
-	 * Constructs an integer-valued variable in the range
-	 * {@code lowerBound <= x <= upperBound} with an uninitialized value.
-	 * Uses gray coding by default.
+	 * Constructs an integer-valued variable in the range {@code lowerBound <= x <= upperBound}.  Uses gray coding by
+	 * default.
 	 * 
 	 * @param lowerBound the lower bound of this decision variable, inclusive
 	 * @param upperBound the upper bound of this decision variable, inclusive
 	 */
 	public BinaryIntegerVariable(int lowerBound, int upperBound) {
-		this(lowerBound, upperBound, true);
+		this(null, lowerBound, upperBound, true);
 	}
 	
 	/**
-	 * Constructs an integer-valued variable in the range
-	 * {@code lowerBound <= x <= upperBound} with the specified initial value.
+	 * Constructs an integer-valued variable in the range {@code lowerBound <= x <= upperBound} with the given name.
 	 * Uses gray coding by default.
 	 * 
-	 * @param value the initial value of this decision variable
+	 * @param name the name of this decision variable
 	 * @param lowerBound the lower bound of this decision variable, inclusive
 	 * @param upperBound the upper bound of this decision variable, inclusive
-	 * @throws IllegalArgumentException if the value is out of bounds
-	 *         {@code (value < lowerBound) || (value > upperBound)}
 	 */
-	public BinaryIntegerVariable(int value, int lowerBound, int upperBound) {
-		this(value, lowerBound, upperBound, true);
+	public BinaryIntegerVariable(String name, int lowerBound, int upperBound) {
+		this(name, lowerBound, upperBound, true);
 	}
 	
 	/**
-	 * Constructs an integer-valued variable in the range
-	 * {@code lowerBound <= x <= upperBound} with an uninitialized value.
+	 * Constructs an integer-valued variable in the range {@code lowerBound <= x <= upperBound}.
 	 * 
 	 * @param lowerBound the lower bound of this decision variable, inclusive
 	 * @param upperBound the upper bound of this decision variable, inclusive
 	 * @param gray if the binary representation uses gray coding
 	 */
 	public BinaryIntegerVariable(int lowerBound, int upperBound, boolean gray) {
-		super(getNumberOfBits(lowerBound, upperBound));
-		this.lowerBound = lowerBound;
-		this.upperBound = upperBound;
-		this.gray = gray;
+		this(null, lowerBound, upperBound, gray);
 	}
 	
 	/**
-	 * Constructs an integer-valued variable in the range
-	 * {@code lowerBound <= x <= upperBound} with the specified initial value.
-	 * Uses gray coding by default.
+	 * Constructs an integer-valued variable in the range {@code lowerBound <= x <= upperBound} with the given name.
 	 * 
-	 * @param value the initial value of this decision variable
+	 * @param name the name of this decision variable
 	 * @param lowerBound the lower bound of this decision variable, inclusive
 	 * @param upperBound the upper bound of this decision variable, inclusive
 	 * @param gray if the binary representation uses gray coding
-	 * @throws IllegalArgumentException if the value is out of bounds
-	 *         {@code (value < lowerBound) || (value > upperBound)}
 	 */
-	public BinaryIntegerVariable(int value, int lowerBound, int upperBound,
-			boolean gray) {
-		this(lowerBound, upperBound, gray);
-		setValue(value);
+	public BinaryIntegerVariable(String name, int lowerBound, int upperBound, boolean gray) {
+		super(name, getNumberOfBits(lowerBound, upperBound));
+		this.lowerBound = lowerBound;
+		this.upperBound = upperBound;
+		this.gray = gray;
+		
+		Validate.that("lowerBound", lowerBound).isLessThanOrEqualTo("upperBound", upperBound);
 	}
 	
 	/**
-	 * Returns the minimum number of bits required to represent an integer
-	 * within the given bounds.
+	 * Returns the minimum number of bits required to represent an integer within the given bounds.
 	 * 
 	 * @param lowerBound the lower bound
 	 * @param upperBound the upper bound
-	 * @return the minimum number of bits required to represent an integer
-	 *         within the given bounds
+	 * @return the minimum number of bits required to represent an integer within the given bounds
 	 */
 	public static final int getNumberOfBits(int lowerBound, int upperBound) {
 		return Integer.SIZE-Integer.numberOfLeadingZeros(upperBound-lowerBound);
@@ -130,18 +118,15 @@ public class BinaryIntegerVariable extends BinaryVariable {
 	 * @return the current value of this decision variable
 	 */
 	public int getValue() {
-		if (gray) {
-			EncodingUtils.grayToBinary(this);
-		}
-		
-		int value = (int)EncodingUtils.decode(this);
+		BitSet bits = getBitSet();
 		
 		if (gray) {
-			EncodingUtils.binaryToGray(this);
+			bits = grayToBinary(bits);
 		}
 		
-		// if difference is not a power of 2, then the decoded value may be
-		// larger than the difference
+		int value = (int)decode(bits);
+		
+		// if difference is not a power of 2, then the decoded value may be larger than the difference
 		if (value > upperBound - lowerBound) {
 			value -= upperBound - lowerBound;
 		}
@@ -157,24 +142,37 @@ public class BinaryIntegerVariable extends BinaryVariable {
 	 *         {@code (value < getLowerBound()) || (value > getUpperBound())}
 	 */
 	public void setValue(int value) {
-		if ((value < lowerBound) || (value > upperBound)) {
-			throw new IllegalArgumentException(MessageFormat.format(
-					VALUE_OUT_OF_BOUNDS, value, lowerBound, upperBound));
-		}
+		Validate.that("value", value).isBetween(lowerBound, upperBound);
+		BitSet bits = encode(value - lowerBound);
 
-		EncodingUtils.encode(value - lowerBound, this);
-		
 		if (gray) {
-			EncodingUtils.binaryToGray(this);
+			bits = binaryToGray(bits);
+		}
+		
+		for (int i = 0; i < getNumberOfBits(); i++) {
+			set(i, bits.get(i));
 		}
 	}
 	
 	/**
-	 * Returns {@code true} if the binary representation using gray coding.
-	 * Gray coding ensures that two successive values differ by only one bit.
+	 * Calls {@link #setValue(int)} and returns this instance, mainly allowing one to create and set the value of
+	 * a decision variable on one line.
 	 * 
-	 * @return {@code true} if the binary representation using gray coding;
-	 *         {@code false} otherwise
+	 * @param value the new value for this decision variable
+	 * @return this decision variable
+	 * @throws IllegalArgumentException if the value is out of bounds
+	 *         {@code (value < getLowerBound()) || (value > getUpperBound())}
+	 */
+	public BinaryIntegerVariable withValue(int value) {
+		setValue(value);
+		return this;
+	}
+	
+	/**
+	 * Returns {@code true} if the binary representation using gray coding.  Gray coding ensures that two successive
+	 * values differ by only one bit.
+	 * 
+	 * @return {@code true} if the binary representation using gray coding; {@code false} otherwise
 	 */
 	protected boolean isGray() {
 		return gray;
@@ -200,10 +198,9 @@ public class BinaryIntegerVariable extends BinaryVariable {
 	
 	@Override
 	public BinaryIntegerVariable copy() {
-		BinaryIntegerVariable result = new BinaryIntegerVariable(getValue(),
-				lowerBound, upperBound);
+		BinaryIntegerVariable result = new BinaryIntegerVariable(name, lowerBound, upperBound);
 	
-		// ensure the copy has the same internal binary string
+		// copy the bits instead of the value to ensure the clone has the same internal representation
 		for (int i = 0; i < result.getNumberOfBits(); i++) {
 			result.set(i, get(i));
 		}
@@ -212,8 +209,18 @@ public class BinaryIntegerVariable extends BinaryVariable {
 	}
 	
 	@Override
+	public String getDefinition() {
+		if (name == null) {
+			return Defined.createDefinition(Variable.class, BinaryIntegerVariable.class, lowerBound, upperBound);
+		} else {
+			return Defined.createDefinition(Variable.class, BinaryIntegerVariable.class, name, lowerBound, upperBound);
+		}
+	}
+	
+	@Override
 	public int hashCode() {
 		return new HashCodeBuilder()
+				.appendSuper(super.hashCode())
 				.append(lowerBound)
 				.append(upperBound)
 				.append(getValue())
@@ -230,13 +237,14 @@ public class BinaryIntegerVariable extends BinaryVariable {
 			BinaryIntegerVariable rhs = (BinaryIntegerVariable)obj;
 			
 			return new EqualsBuilder()
+					.appendSuper(super.equals(obj))
 					.append(lowerBound, rhs.lowerBound)
 					.append(upperBound, rhs.upperBound)
 					.append(getValue(), rhs.getValue())
 					.isEquals();
 		}
 	}
-
+	
 	@Override
 	public String toString() {
 		return Integer.toString(getValue());
@@ -245,6 +253,184 @@ public class BinaryIntegerVariable extends BinaryVariable {
 	@Override
 	public void randomize() {
 		setValue(PRNG.nextInt(lowerBound, upperBound));
+	}
+	
+	/**
+	 * Returns the value stored in an integer-valued decision variable.
+	 * 
+	 * @param variable the decision variable
+	 * @return the value stored in an integer-valued decision variable
+	 * @throws IllegalArgumentException if the decision variable is not convertible to an integer
+	 */
+	public static int getInt(Variable variable) {
+		BinaryIntegerVariable integer = Validate.that("variable", variable).isA(BinaryIntegerVariable.class);
+		return integer.getValue();
+	}
+	
+	/**
+	 * Returns the array of integer-valued decision variables stored in a solution.  The solution must contain only
+	 * integer-valued decision variables.
+	 * 
+	 * @param solution the solution
+	 * @return the array of integer-valued decision variables stored in a solution
+	 * @throws IllegalArgumentException if any decision variable contained in the solution is not of type
+	 *         {@link RealVariable}
+	 */
+	public static int[] getInt(Solution solution) {
+		return getInt(solution, 0, solution.getNumberOfVariables());
+	}
+	
+	/**
+	 * Returns the array of integer-valued decision variables stored in a solution between the specified indices.
+	 * The decision variables located between the start and end index must all be integer-valued decision variables.
+	 * 
+	 * @param solution the solution
+	 * @param startIndex the start index (inclusive)
+	 * @param endIndex the end index (exclusive)
+	 * @return the array of integer-valued decision variables stored in a solution between the specified indices
+	 * @throws IllegalArgumentException if any decision variable contained in the solution between the start and end
+	 *         index is not of type {@link RealVariable}
+	 */
+	public static int[] getInt(Solution solution, int startIndex, int endIndex) {
+		int[] result = new int[endIndex - startIndex];
+		
+		for (int i=startIndex; i<endIndex; i++) {
+			result[i-startIndex] = getInt(solution.getVariable(i));
+		}
+		
+		return result;
+	}
+	
+	/**
+	 * Sets the value of an integer-valued decision variable.
+	 * 
+	 * @param variable the decision variable
+	 * @param value the value to assign the integer-valued decision variable
+	 * @throws IllegalArgumentException if the decision variable is not convertible to an integer
+	 * @throws IllegalArgumentException if the value is out of bounds
+	 *         ({@code value < getLowerBound()) || (value > getUpperBound()})
+	 */
+	public static void setInt(Variable variable, int value) {
+		BinaryIntegerVariable integer = Validate.that("variable", variable).isA(BinaryIntegerVariable.class);
+		integer.setValue(value);
+	}
+	
+	/**
+	 * Sets the values of all integer-valued decision variables stored in the solution.  The solution must contain
+	 * only integer-valued decision variables.
+	 * 
+	 * @param solution the solution
+	 * @param values the array of integer values to assign the solution
+	 * @throws IllegalArgumentException if the decision variable is not convertible to an integer
+	 * @throws IllegalArgumentException if any of the values are out of bounds
+	 *         ({@code value < getLowerBound()) || (value > getUpperBound()})
+	 */
+	public static void setInt(Solution solution, int[] values) {
+		setInt(solution, 0, solution.getNumberOfVariables(), values);
+	}
+	
+	/**
+	 * Sets the values of the integer-valued decision variables stored in a solution between the specified indices.
+	 * The decision variables located between the start and end index must all be integer-valued decision variables.
+	 * 
+	 * @param solution the solution
+	 * @param startIndex the start index (inclusive)
+	 * @param endIndex the end index (exclusive)
+	 * @param values the array of floating-point values to assign the decision variables
+	 * @throws IllegalArgumentException if the decision variables are not convertible to an integer
+	 * @throws IllegalArgumentException if an invalid number of values are provided
+	 * @throws IllegalArgumentException if any of the values are out of bounds
+	 *         ({@code value < getLowerBound()) || (value > getUpperBound()})
+	 */
+	public static void setInt(Solution solution, int startIndex, int endIndex, int[] values) {
+		if (values.length != (endIndex - startIndex)) {
+			Validate.that("values", values).fails("The start / end index and array length are not compatible.");
+		}
+		
+		for (int i=startIndex; i<endIndex; i++) {
+			setInt(solution.getVariable(i), values[i-startIndex]);
+		}
+	}
+	
+	/**
+	 * Converts a binary string from binary code to gray code.  The gray code ensures two adjacent values have binary
+	 * representations differing in only one big (i.e., a Hamming distance of {@code 1}).
+	 * 
+	 * @param binary the binary code string
+	 * @return the gray code string
+	 */
+	static BitSet binaryToGray(BitSet binary) {
+		int n = binary.length();
+		BitSet gray = new BitSet();
+
+		if (n > 0) {
+			gray.set(n - 1, binary.get(n - 1));
+			for (int i = n - 2; i >= 0; i--) {
+				gray.set(i, binary.get(i + 1) ^ binary.get(i));
+			}
+		}
+		
+		return gray;
+	}
+
+	/**
+	 * Converts a binary string from gray code to binary code.
+	 * 
+	 * @param gray the gray code string
+	 * @return the binary code string
+	 */
+	static BitSet grayToBinary(BitSet gray) {
+		int n = gray.length();
+		BitSet binary = new BitSet();
+
+		if (n > 0) {
+			binary.set(n - 1, gray.get(n - 1));
+			for (int i = n - 2; i >= 0; i--) {
+				binary.set(i, binary.get(i + 1) ^ gray.get(i));
+			}
+		}
+		
+		return binary;
+	}
+	
+	/**
+	 * Converts the given long value into its binary string representation.
+	 * 
+	 * @param value the long value
+	 * @return the binary string representation
+	 */
+	static BitSet encode(long value) {
+		BitSet binary = new BitSet();
+
+		for (int i = 0; i < 64; i++) {
+			binary.set(i, (value & (1L << i)) != 0);
+		}
+		
+		return binary;
+	}
+	
+	/**
+	 * Converts the given binary string into its long value.
+	 * 
+	 * @param binary the binary string
+	 * @return the long value
+	 */
+	static long decode(BitSet binary) {
+		int numberOfBits = binary.length();
+
+		if (numberOfBits > 64) {
+			Validate.that("binary", binary).fails("Number of bits exceeds 64, the maximum size of a long.");
+		}
+
+		long value = 0;
+
+		for (int i = 0; i < numberOfBits; i++) {
+			if (binary.get(i)) {
+				value |= (1L << i);
+			}
+		}
+
+		return value;
 	}
 
 }

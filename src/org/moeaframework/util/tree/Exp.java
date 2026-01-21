@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -18,24 +18,24 @@
 package org.moeaframework.util.tree;
 
 /**
- * The node for calculating the result of Euler's number <i>e</i> raised to the
- * power of a number.  The inputs and outputs to this node are shown below:
+ * The node for calculating the result of Euler's number <i>e</i> raised to the power of a number.
  * 
- * <table border="1" cellpadding="3" cellspacing="0">
- *   <tr class="TableHeadingColor">
- *     <th width="25%" align="left">Name</th>
- *     <th width="25%" align="left">Type</th>
- *     <th width="50%" align="left">Description</th>
+ * <table style="margin-top: 1em; width: 100%">
+ *   <caption style="text-align: left">Node signature:</caption>
+ *   <tr>
+ *     <th style="width: 15%; text-align: left">Name</th>
+ *     <th style="width: 15%; text-align: left">Type</th>
+ *     <th style="width: 70%; text-align: left">Description</th>
  *   </tr>
  *   <tr>
  *     <td>Argument 1</td>
  *     <td>Number</td>
- *     <td>The number</td>
+ *     <td>The number {@code N} in {@code e^N}</td>
  *   </tr>
  *   <tr>
  *     <td>Return Value</td>
  *     <td>Number</td>
- *     <td>The exponential function value given the number</td>
+ *     <td>The computed value of {@code e^N}</td>
  *   </tr>
  * </table>
  * 
@@ -43,9 +43,10 @@ package org.moeaframework.util.tree;
  */
 public class Exp extends Node {
 	
+	private static final long serialVersionUID = 8894214131988919269L;
+
 	/**
-	 * Constructs a new node for calculating the result of Euler's number
-	 * <i>e</i> raised to the power of a number.
+	 * Constructs a new node for calculating the result of Euler's number <i>e</i> raised to the power of a number.
 	 */
 	public Exp() {
 		super(Number.class, Number.class);
@@ -58,8 +59,7 @@ public class Exp extends Node {
 	
 	@Override
 	public Number evaluate(Environment environment) {
-		return NumberArithmetic.exp(
-				(Number)getArgument(0).evaluate(environment));
+		return NumberArithmetic.exp((Number)getArgument(0).evaluate(environment));
 	}
 
 }

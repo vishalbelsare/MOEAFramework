@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,366 +17,43 @@
  */
 package org.moeaframework.problem.WFG;
 
-import org.junit.Test;
-import org.moeaframework.core.Problem;
+import org.junit.Ignore;
+import org.moeaframework.Assert;
+import org.moeaframework.Assume;
+import org.moeaframework.TestEnvironment;
+import org.moeaframework.core.population.NondominatedPopulation;
+import org.moeaframework.core.population.NondominatedPopulation.DuplicateMode;
+import org.moeaframework.core.spi.ProblemFactory;
 import org.moeaframework.problem.ProblemTest;
 
-public class WFGTest extends ProblemTest {
-
-	@Test
-	public void testWFG1_2D() throws Exception {
-		test("WFG1", 2);
-	}
-
-	@Test
-	public void testWFG1_3D() throws Exception {
-		test("WFG1", 3);
-	}
-
-	@Test
-	public void testWFG1_4D() throws Exception {
-		test("WFG1", 4);
-	}
-
-	@Test
-	public void testWFG1_5D() throws Exception {
-		test("WFG1", 5);
-	}
-
-	@Test
-	public void testWFG1_6D() throws Exception {
-		test("WFG1", 6);
-	}
-
-	@Test
-	public void testWFG1_7D() throws Exception {
-		test("WFG1", 7);
-	}
-
-	@Test
-	public void testWFG1_8D() throws Exception {
-		test("WFG1", 8);
-	}
-
-	@Test
-	public void testWFG2_2D() throws Exception {
-		test("WFG2", 2);
-	}
-
-	@Test
-	public void testWFG2_3D() throws Exception {
-		test("WFG2", 3);
-	}
-
-	@Test
-	public void testWFG2_4D() throws Exception {
-		test("WFG2", 4);
-	}
-
-	@Test
-	public void testWFG2_5D() throws Exception {
-		test("WFG2", 5);
-	}
-
-	@Test
-	public void testWFG2_6D() throws Exception {
-		test("WFG2", 6);
-	}
-
-	@Test
-	public void testWFG2_7D() throws Exception {
-		test("WFG2", 7);
-	}
-
-	@Test
-	public void testWFG2_8D() throws Exception {
-		test("WFG2", 8);
-	}
-
-	@Test
-	public void testWFG3_2D() throws Exception {
-		test("WFG3", 2);
-	}
-
-	@Test
-	public void testWFG3_3D() throws Exception {
-		test("WFG3", 3);
-	}
-
-	@Test
-	public void testWFG3_4D() throws Exception {
-		test("WFG3", 4);
-	}
-
-	@Test
-	public void testWFG3_5D() throws Exception {
-		test("WFG3", 5);
-	}
-
-	@Test
-	public void testWFG3_6D() throws Exception {
-		test("WFG3", 6);
-	}
-
-	@Test
-	public void testWFG3_7D() throws Exception {
-		test("WFG3", 7);
-	}
-
-	@Test
-	public void testWFG3_8D() throws Exception {
-		test("WFG3", 8);
-	}
-
-	@Test
-	public void testWFG4_2D() throws Exception {
-		test("WFG4", 2);
-	}
-
-	@Test
-	public void testWFG4_3D() throws Exception {
-		test("WFG4", 3);
-	}
-
-	@Test
-	public void testWFG4_4D() throws Exception {
-		test("WFG4", 4);
-	}
-
-	@Test
-	public void testWFG4_5D() throws Exception {
-		test("WFG4", 5);
-	}
-
-	@Test
-	public void testWFG4_6D() throws Exception {
-		test("WFG4", 6);
-	}
-
-	@Test
-	public void testWFG4_7D() throws Exception {
-		test("WFG4", 7);
-	}
-
-	@Test
-	public void testWFG4_8D() throws Exception {
-		test("WFG4", 8);
-	}
-
-	@Test
-	public void testWFG5_2D() throws Exception {
-		test("WFG5", 2);
-	}
-
-	@Test
-	public void testWFG5_3D() throws Exception {
-		test("WFG5", 3);
-	}
-
-	@Test
-	public void testWFG5_4D() throws Exception {
-		test("WFG5", 4);
-	}
-
-	@Test
-	public void testWFG5_5D() throws Exception {
-		test("WFG5", 5);
-	}
-
-	@Test
-	public void testWFG5_6D() throws Exception {
-		test("WFG5", 6);
-	}
-
-	@Test
-	public void testWFG5_7D() throws Exception {
-		test("WFG5", 7);
-	}
-
-	@Test
-	public void testWFG5_8D() throws Exception {
-		test("WFG5", 8);
-	}
-
-	@Test
-	public void testWFG6_2D() throws Exception {
-		test("WFG6", 2);
-	}
-
-	@Test
-	public void testWFG6_3D() throws Exception {
-		test("WFG6", 3);
-	}
-
-	@Test
-	public void testWFG6_4D() throws Exception {
-		test("WFG6", 4);
-	}
-
-	@Test
-	public void testWFG6_5D() throws Exception {
-		test("WFG6", 5);
-	}
-
-	@Test
-	public void testWFG6_6D() throws Exception {
-		test("WFG6", 6);
-	}
-
-	@Test
-	public void testWFG6_7D() throws Exception {
-		test("WFG6", 7);
-	}
-
-	@Test
-	public void testWFG6_8D() throws Exception {
-		test("WFG6", 8);
-	}
-
-	@Test
-	public void testWFG7_2D() throws Exception {
-		test("WFG7", 2);
-	}
-
-	@Test
-	public void testWFG7_3D() throws Exception {
-		test("WFG7", 3);
-	}
-
-	@Test
-	public void testWFG7_4D() throws Exception {
-		test("WFG7", 4);
-	}
-
-	@Test
-	public void testWFG7_5D() throws Exception {
-		test("WFG7", 5);
-	}
-
-	@Test
-	public void testWFG7_6D() throws Exception {
-		test("WFG7", 6);
-	}
-
-	@Test
-	public void testWFG7_7D() throws Exception {
-		test("WFG7", 7);
-	}
-
-	@Test
-	public void testWFG7_8D() throws Exception {
-		test("WFG7", 8);
-	}
-
-	@Test
-	public void testWFG8_2D() throws Exception {
-		test("WFG8", 2);
-	}
-
-	@Test
-	public void testWFG8_3D() throws Exception {
-		test("WFG8", 3);
-	}
-
-	@Test
-	public void testWFG8_4D() throws Exception {
-		test("WFG8", 4);
-	}
-
-	@Test
-	public void testWFG8_5D() throws Exception {
-		test("WFG8", 5);
-	}
-
-	@Test
-	public void testWFG8_6D() throws Exception {
-		test("WFG8", 6);
-	}
-
-	@Test
-	public void testWFG8_7D() throws Exception {
-		test("WFG8", 7);
-	}
-
-	@Test
-	public void testWFG8_8D() throws Exception {
-		test("WFG8", 8);
-	}
-
-	@Test
-	public void testWFG9_2D() throws Exception {
-		test("WFG9", 2);
-	}
-
-	@Test
-	public void testWFG9_3D() throws Exception {
-		test("WFG9", 3);
-	}
-
-	@Test
-	public void testWFG9_4D() throws Exception {
-		test("WFG9", 4);
-	}
-
-	@Test
-	public void testWFG9_5D() throws Exception {
-		test("WFG9", 5);
-	}
-
-	@Test
-	public void testWFG9_6D() throws Exception {
-		test("WFG9", 6);
-	}
-
-	@Test
-	public void testWFG9_7D() throws Exception {
-		test("WFG9", 7);
-	}
-
-	@Test
-	public void testWFG9_8D() throws Exception {
-		test("WFG9", 8);
-	}
-
-	public void test(String problem, int M) throws Exception {
-		org.uma.jmetal.problem.DoubleProblem problemA;
-		Problem problemB;
-
-		int k = M - 1;
-		int l = 10;
-
-		if (problem.equals("WFG1")) {
-			problemA = new org.uma.jmetal.problem.multiobjective.wfg.WFG1(k, l, M);
-			problemB = new org.moeaframework.problem.WFG.WFG1(k, l, M);
-		} else if (problem.equals("WFG2")) {
-			problemA = new org.uma.jmetal.problem.multiobjective.wfg.WFG2(k, l, M);
-			problemB = new org.moeaframework.problem.WFG.WFG2(k, l, M);
-		} else if (problem.equals("WFG3")) {
-			problemA = new org.uma.jmetal.problem.multiobjective.wfg.WFG3(k, l, M);
-			problemB = new org.moeaframework.problem.WFG.WFG3(k, l, M);
-		} else if (problem.equals("WFG4")) {
-			problemA = new org.uma.jmetal.problem.multiobjective.wfg.WFG4(k, l, M);
-			problemB = new org.moeaframework.problem.WFG.WFG4(k, l, M);
-		} else if (problem.equals("WFG5")) {
-			problemA = new org.uma.jmetal.problem.multiobjective.wfg.WFG5(k, l, M);
-			problemB = new org.moeaframework.problem.WFG.WFG5(k, l, M);
-		} else if (problem.equals("WFG6")) {
-			problemA = new org.uma.jmetal.problem.multiobjective.wfg.WFG6(k, l, M);
-			problemB = new org.moeaframework.problem.WFG.WFG6(k, l, M);
-		} else if (problem.equals("WFG7")) {
-			problemA = new org.uma.jmetal.problem.multiobjective.wfg.WFG7(k, l, M);
-			problemB = new org.moeaframework.problem.WFG.WFG7(k, l, M);
-		} else if (problem.equals("WFG8")) {
-			problemA = new org.uma.jmetal.problem.multiobjective.wfg.WFG8(k, l, M);
-			problemB = new org.moeaframework.problem.WFG.WFG8(k, l, M);
-		} else if (problem.equals("WFG9")) {
-			problemA = new org.uma.jmetal.problem.multiobjective.wfg.WFG9(k, l, M);
-			problemB = new org.moeaframework.problem.WFG.WFG9(k, l, M);
-		} else {
-			throw new IllegalArgumentException();
+@Ignore("Abstract test class")
+public abstract class WFGTest extends ProblemTest {
+	
+	protected void testGenerate(String problemName) {
+		WFG problem = (WFG)ProblemFactory.getInstance().getProblem(problemName);
+		NondominatedPopulation result = new NondominatedPopulation(DuplicateMode.ALLOW_DUPLICATES);
+
+		for (int i = 0; i < TestEnvironment.SAMPLES; i++) {
+			result.add(problem.generate());
 		}
-
-		test(problemA, problemB);
+		
+		if (problem instanceof WFG2) {
+			Assume.skip("WFG2 is disjoint and can generate dominated solutions");
+		} else if (problem instanceof WFG4) {
+			// WFG4 can occasionally produce dominated solutions, perhaps 1 in a million generated solutions.  In the
+			// example shown below, note the position parameters (l) are identical up to the displayed precision:
+			//
+			//     Solution 1 (dominated):
+			//         Variables: [0.7000017200470681, 3.9475224331698575, 2.0999999999999996, 2.8, 3.5, 4.199999999999999, 4.8999999999999995, 5.6, 6.3, 7.0, 7.699999999999999, 8.399999999999999]
+			//         Objectives: [8.089901123300647E-9, 4.671290871480589E-9, 6.0]
+			//
+			//     Solution 2 (dominating):
+			//         Variables: [0.6999996015780581, 0.4680639184448179, 2.0999999999999996, 2.8, 3.5, 4.199999999999999, 4.8999999999999995, 5.6, 6.3, 7.0, 7.699999999999999, 8.399999999999999]
+			//         Objectives: [1.0662790015989127E-9, 2.2724923884704508E-9, 6.0]
+			Assert.assertGreaterThanOrEqual(result.size(), TestEnvironment.SAMPLES - 1);
+		} else {
+			Assert.assertEquals(result.size(), TestEnvironment.SAMPLES);
+		}
 	}
 
 }

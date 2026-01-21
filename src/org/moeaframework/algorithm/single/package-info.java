@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,8 +17,7 @@
  */
 
 /**
- * Implementations of various single-objective optimization algorithms.  This
- * includes the Repeated Single Objective (RSO) algorithm, which runs many
- * different single-objective algorithms with different weight vectors.
+ * Implementations of various single-objective optimization algorithms.  This includes the Repeated Single Objective
+ * (RSO) algorithm, which runs many different single-objective algorithms with different weight vectors.
  */
 package org.moeaframework.algorithm.single;

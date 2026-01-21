@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -19,37 +19,63 @@ package org.moeaframework.core.operator;
 
 import org.moeaframework.core.PRNG;
 import org.moeaframework.core.Solution;
-import org.moeaframework.core.Variable;
-import org.moeaframework.core.Variation;
+import org.moeaframework.core.configuration.Prefix;
+import org.moeaframework.core.configuration.Property;
+import org.moeaframework.core.variable.Variable;
+import org.moeaframework.util.validate.Validate;
 
 /**
- * Crossover operator where each index is swapped with a specified probability.
+ * Crossover operator where each index is randomly swapped between the parents with a 50% chance.
  */
+@TypeSafe
+@Prefix("ux")
 public class UniformCrossover implements Variation {
 
 	/**
-	 * The probability an index is swapped between two solutions.
+	 * The probability of applying this operator to solutions.
 	 */
-	private final double probability;
-
+	private double probability;
+	
 	/**
-	 * Constructs a uniform crossover operator with the specified probability an
-	 * index is swapped between two solutions.
-	 * 
-	 * @param probability the probability an index is swapped between two
-	 *        solutions
+	 * Constructs a uniform crossover operator with a 100% probability of mutating the parents.
 	 */
-	public UniformCrossover(double probability) {
-		this.probability = probability;
+	public UniformCrossover() {
+		this(1.0);
 	}
 
 	/**
-	 * Returns the probability an index is swapped between two solutions.
+	 * Constructs a uniform crossover operator with the specified probability of applying this operator to solutions.
 	 * 
-	 * @return the probability an index is swapped between two solutions
+	 * @param probability the probability of applying this operator to solutions
+	 */
+	public UniformCrossover(double probability) {
+		super();
+		setProbability(probability);
+	}
+	
+	@Override
+	public String getName() {
+		return "ux";
+	}
+
+	/**
+	 * Returns the probability of applying this operator to solutions
+	 * 
+	 * @return the probability
 	 */
 	public double getProbability() {
 		return probability;
+	}
+	
+	/**
+	 * Sets the probability of applying this operator to solutions.
+	 * 
+	 * @param probability the probability between 0.0 and 1.0, inclusive
+	 */
+	@Property("rate")
+	public void setProbability(double probability) {
+		Validate.that("probability", probability).isProbability();
+		this.probability = probability;
 	}
 
 	@Override

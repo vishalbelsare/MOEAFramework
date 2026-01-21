@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,14 +17,14 @@
  */
 package org.moeaframework.core.fitness;
 
-import org.moeaframework.core.FastNondominatedSorting;
-import org.moeaframework.core.FitnessEvaluator;
-import org.moeaframework.core.Population;
 import org.moeaframework.core.Solution;
+import org.moeaframework.core.attribute.CrowdingDistance;
+import org.moeaframework.core.attribute.Fitness;
+import org.moeaframework.core.population.FastNondominatedSorting;
+import org.moeaframework.core.population.Population;
 
 /**
- * Assigns fitness values based on the crowding distance from fast
- * non-dominated sorting.
+ * Assigns fitness values based on the crowding distance from fast non-dominated sorting.
  */
 public class CrowdingDistanceFitnessEvaluator implements FitnessEvaluator {
 	
@@ -40,15 +40,13 @@ public class CrowdingDistanceFitnessEvaluator implements FitnessEvaluator {
 		new FastNondominatedSorting().updateCrowdingDistance(copy(population));
 		
 		for (Solution solution : population) {
-			solution.setAttribute(FITNESS_ATTRIBUTE,
-					(Double)solution.getAttribute(FastNondominatedSorting.CROWDING_ATTRIBUTE));
+			Fitness.setAttribute(solution, CrowdingDistance.getAttribute(solution));
 		}
 	}
 	
 	/**
-	 * Returns a copy of the population.  The fast non-dominated sorting
-	 * routine reorders solutions in the population, so creating a copy allows
-	 * the original population to remain unchanged.  
+	 * Returns a copy of the population.  The fast non-dominated sorting routine reorders solutions in the population,
+	 * so creating a copy allows the original population to remain unchanged.
 	 * 
 	 * @param population the original population
 	 * @return a copy of the population

@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -18,57 +18,48 @@
 package org.moeaframework.core.operator.permutation;
 
 import org.moeaframework.core.PRNG;
-import org.moeaframework.core.Solution;
-import org.moeaframework.core.Variable;
-import org.moeaframework.core.Variation;
+import org.moeaframework.core.configuration.Prefix;
+import org.moeaframework.core.operator.TypeSafe;
+import org.moeaframework.core.operator.TypeSafeMutation;
 import org.moeaframework.core.variable.Permutation;
 
 /**
- * Swap mutation operator. Randomly selects two entries in the permutation and
- * swaps their position.
+ * Swap mutation operator.  Randomly selects two entries in the permutation and swaps their position.
  * <p>
  * This operator is type-safe.
  */
-public class Swap implements Variation {
+@TypeSafe
+@Prefix("swap")
+public class Swap extends TypeSafeMutation<Permutation> {
 
 	/**
-	 * The probability of mutating a variable.
+	 * Constructs a swap mutation operator with the default settings.
 	 */
-	private final double probability;
+	public Swap() {
+		this(0.3);
+	}
 
 	/**
-	 * Constructs a swap mutation operator with the specified probability of 
-	 * mutating a variable.
+	 * Constructs a swap mutation operator with the specified probability of mutating a variable.
 	 * 
 	 * @param probability the probability of mutating a variable
 	 */
 	public Swap(double probability) {
-		super();
-		this.probability = probability;
+		super(Permutation.class, probability);
 	}
-
+	
 	@Override
-	public Solution[] evolve(Solution[] parents) {
-		Solution result = parents[0].copy();
-
-		for (int i = 0; i < result.getNumberOfVariables(); i++) {
-			Variable variable = result.getVariable(i);
-
-			if ((PRNG.nextDouble() <= probability)
-					&& (variable instanceof Permutation)) {
-				evolve((Permutation)variable);
-			}
-		}
-
-		return new Solution[] { result };
+	public String getName() {
+		return "swap";
 	}
 
 	/**
-	 * Evolves the specified permutation using the swap mutation operator.
+	 * Mutates the specified permutation using the swap mutation operator.
 	 * 
 	 * @param permutation the permutation to be mutated
 	 */
-	public static void evolve(Permutation permutation) {
+	@Override
+	public void mutate(Permutation permutation) {
 		int i = PRNG.nextInt(permutation.size());
 		int j = PRNG.nextInt(permutation.size() - 1);
 
@@ -77,11 +68,6 @@ public class Swap implements Variation {
 		}
 
 		permutation.swap(i, j);
-	}
-
-	@Override
-	public int getArity() {
-		return 1;
 	}
 
 }

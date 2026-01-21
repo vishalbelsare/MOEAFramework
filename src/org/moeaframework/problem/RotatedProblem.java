@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -18,32 +18,23 @@
 package org.moeaframework.problem;
 
 import org.apache.commons.math3.linear.RealMatrix;
-import org.moeaframework.core.Problem;
 import org.moeaframework.core.Solution;
-import org.moeaframework.core.variable.EncodingUtils;
 import org.moeaframework.core.variable.RealVariable;
 import org.moeaframework.util.RotationMatrixBuilder;
 import org.moeaframework.util.Vector;
+import org.moeaframework.util.validate.Validate;
 
 /**
- * Decorator to create rotated instances of test problems.  The rotation is
- * defined by a rotation matrix, which should be orthogonal and have a
- * determinant of 1.  See {@link RotationMatrixBuilder} for a utility to quickly
- * construct rotation matrices.
+ * Decorator to create rotated variants of test problems.  The rotation is defined by a rotation matrix, which should
+ * be orthogonal and have a determinant of 1.  See {@link RotationMatrixBuilder} for a utility to quickly construct
+ * rotation matrices.
  * <p>
- * Regardless of the rotation, all rotated instances use expanded lower and
- * upper bounds for the decision variables.  An additional constraint is added
- * to account for solutions existing in this expanded region, which are not in
- * the original unrotated problem.  This expansion is consistent across all
- * rotations, which ensures the volume of the constraint-violating expanded
- * region is constant across all instances of a problem.
+ * Regardless of the rotation, all rotated instances use expanded lower and upper bounds for the decision variables.
+ * An additional constraint is added to account for solutions existing in this expanded region, which are not in
+ * the original unrotated problem.  This expansion is consistent across all rotations, which ensures the volume of
+ * the constraint-violating expanded region is constant across all instances of a problem.
  */
-public class RotatedProblem implements Problem {
-	
-	/**
-	 * The original unrotated problem.
-	 */
-	private final Problem problem;
+public class RotatedProblem extends ProblemWrapper {
 	
 	/**
 	 * The rotation matrix.
@@ -66,16 +57,16 @@ public class RotatedProblem implements Problem {
 	private final double[] center;
 	
 	/**
-	 * Decorates the specified problem, creating a rotated instance using the
-	 * specified rotation matrix.
+	 * Decorates the specified problem, creating a rotated instance using the specified rotation matrix.
 	 * 
 	 * @param problem the original unrotated problem
 	 * @param rotation the rotation matrix
 	 */
 	public RotatedProblem(Problem problem, RealMatrix rotation) {
-		super();
-		this.problem = problem;
+		super(problem);
 		this.rotation = rotation;
+		
+		Validate.that("problem", problem).isType(RealVariable.class);
 		
 		//calculate the expanded lower and upper bounds
 		Solution solution = problem.newSolution();
@@ -87,28 +78,15 @@ public class RotatedProblem implements Problem {
 		for (int i = 0; i < getNumberOfVariables(); i++) {
 			RealVariable variable = (RealVariable)solution.getVariable(i);
 			
-			center[i] = (variable.getLowerBound() + variable.getUpperBound()) /
-					2.0;
-			lowerBounds[i] = Math.sqrt(2.0) *
-					(variable.getLowerBound() - center[i]);
-			upperBounds[i] = Math.sqrt(2.0) *
-					(variable.getUpperBound() - center[i]);
+			center[i] = (variable.getLowerBound() + variable.getUpperBound()) / 2.0;
+			lowerBounds[i] = Math.sqrt(2.0) * (variable.getLowerBound() - center[i]) + center[i];
+			upperBounds[i] = Math.sqrt(2.0) * (variable.getUpperBound() - center[i]) + center[i];
 		}
 	}
 
 	@Override
 	public String getName() {
 		return "Rotated " + problem.getName();
-	}
-
-	@Override
-	public int getNumberOfVariables() {
-		return problem.getNumberOfVariables();
-	}
-
-	@Override
-	public int getNumberOfObjectives() {
-		return problem.getNumberOfObjectives();
 	}
 
 	@Override
@@ -121,7 +99,8 @@ public class RotatedProblem implements Problem {
 		Solution temp = problem.newSolution();
 		
 		//apply the rotation
-		double[] x = EncodingUtils.getReal(solution);
+		double[] x = RealVariable.getReal(solution);
+		x = Vector.subtract(x, center);
 		x = rotation.operate(x);
 		x = Vector.add(x, center);
 		
@@ -146,33 +125,25 @@ public class RotatedProblem implements Problem {
 		problem.evaluate(temp);
 		
 		//extract the results
-		solution.setObjectives(temp.getObjectives());
+		solution.setObjectiveValues(temp.getObjectiveValues());
 		
 		for (int i = 0; i < problem.getNumberOfConstraints(); i++) {
-			solution.setConstraint(i, temp.getConstraint(i));
+			solution.setConstraintValue(i, temp.getConstraintValue(i));
 		}
 		
 		//set the bounds violation constraint
-		solution.setConstraint(problem.getNumberOfConstraints(), 
-				boundsViolation);
+		solution.setConstraintValue(problem.getNumberOfConstraints(), boundsViolation);
 	}
 
 	@Override
 	public Solution newSolution() {
-		Solution result = new Solution(getNumberOfVariables(), 
-				getNumberOfObjectives(), getNumberOfConstraints());
+		Solution result = new Solution(getNumberOfVariables(), getNumberOfObjectives(), getNumberOfConstraints());
 		
 		for (int i = 0; i < getNumberOfVariables(); i++) {
-			result.setVariable(i, new RealVariable(lowerBounds[i], 
-					upperBounds[i]));
+			result.setVariable(i, new RealVariable(lowerBounds[i], upperBounds[i]));
 		}
 		
 		return result;
-	}
-
-	@Override
-	public void close() {
-		problem.close();
 	}
 
 }

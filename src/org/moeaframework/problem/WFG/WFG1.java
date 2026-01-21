@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -18,17 +18,25 @@
 package org.moeaframework.problem.WFG;
 
 import org.moeaframework.core.Solution;
-import org.moeaframework.core.variable.EncodingUtils;
+import org.moeaframework.core.variable.RealVariable;
 
 /**
  * The WFG1 test problem.
  */
 public class WFG1 extends WFG {
+	
+	/**
+	 * Constructs a WFG1 problem instance with the specified number of objectives.
+	 * 
+	 * @param M the number of objectives for this problem
+	 */
+	public WFG1(int M) {
+		this(M - 1, 10, M);
+	}
 
 	/**
-	 * Constructs a WFG1 problem instance with the specified number of 
-	 * position-related and distance-related variables and the specified number
-	 * of objectives.
+	 * Constructs a WFG1 problem instance with the specified number of position-related and distance-related variables
+	 * and the specified number of objectives.
 	 * 
 	 * @param k the number of position-related variables for this problem
 	 * @param l the number of distance-related variables for this problem
@@ -40,15 +48,15 @@ public class WFG1 extends WFG {
 
 	@Override
 	public void evaluate(Solution solution) {
-		double[] v = EncodingUtils.getReal(solution);
+		double[] v = RealVariable.getReal(solution);
 		double[] f = Problems.WFG1(v, k, M);
-		solution.setObjectives(f);
+		solution.setObjectiveValues(f);
 	}
 
 	@Override
 	public Solution generate() {
 		Solution solution = newSolution();
-		EncodingUtils.setReal(solution, Solutions.WFG_1_random_soln(k, l));
+		RealVariable.setReal(solution, Solutions.WFG_1_random_soln(k, l));
 		evaluate(solution);
 		return solution;
 	}

@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,13 +17,10 @@
  */
 package org.moeaframework.util.statistics;
 
-import org.junit.Assert;
 import org.junit.Test;
-import org.moeaframework.TestThresholds;
+import org.moeaframework.Assert;
+import org.moeaframework.TestEnvironment;
 
-/**
- * Tests the {@link KruskalWallisTest} class.
- */
 public class KruskalWallisTestTest {
 	
 	@Test(expected = IllegalArgumentException.class)
@@ -37,116 +34,44 @@ public class KruskalWallisTestTest {
 	@Test
 	public void testExample1() {
 		KruskalWallisTest kw = new KruskalWallisTest(3);
-		kw.add(10, 0);
-		kw.add(11, 0);
-		kw.add(12, 0);
-		kw.add(13, 0);
-		kw.add(14, 0);
-		kw.add(15, 0);
-		kw.add(16, 1);
-		kw.add(17, 1);
-		kw.add(18, 1);
-		kw.add(19, 1);
-		kw.add(20, 1);
-		kw.add(21, 1);
-		kw.add(12, 2);
-		kw.add(13, 2);
-		kw.add(14, 2);
-		kw.add(15, 2);
-		kw.add(16, 2);
-		kw.add(17, 2);
+		kw.addAll(new double[] { 10, 11, 12, 13, 14, 15 }, 0);
+		kw.addAll(new double[] { 16, 17, 18, 19, 20, 21 }, 1);
+		kw.addAll(new double[] { 12, 13, 14, 15, 16, 17 }, 2);
 
 		Assert.assertTrue(kw.test(0.05));
-		Assert.assertEquals(11.56, kw.H(), TestThresholds.STATISTICS_EPS);
+		Assert.assertEquals(11.56, kw.H(), TestEnvironment.LOW_PRECISION);
 	}
 
 	/**
-	 * Daily bottle-cap production of three machines from Kruskal and Wallis
-	 * (1952). This example demonstrates the test without ties.
+	 * Daily bottle-cap production of three machines from Kruskal and Wallis (1952). This example demonstrates the test
+	 * without ties.
 	 */
 	@Test
 	public void testExample2() {
 		KruskalWallisTest kw = new KruskalWallisTest(3);
-		kw.add(340, 0);
-		kw.add(345, 0);
-		kw.add(330, 0);
-		kw.add(342, 0);
-		kw.add(338, 0);
-		kw.add(339, 1);
-		kw.add(333, 1);
-		kw.add(344, 1);
-		kw.add(347, 2);
-		kw.add(343, 2);
-		kw.add(349, 2);
-		kw.add(355, 2);
+		kw.addAll(new double[] { 340, 345, 330, 342, 338 }, 0);
+		kw.addAll(new double[] { 339, 333, 344 }, 1);
+		kw.addAll(new double[] { 347, 343, 349, 355 }, 2);
 
 		Assert.assertFalse(kw.test(0.05));
 		Assert.assertEquals(5.656, kw.H(), 0.001);
 	}
 
 	/**
-	 * Birth weights of eight litters of pigs example from Kruskal and Wallis
-	 * (1952). This example demonstrates the test with ties.
+	 * Birth weights of eight litters of pigs example from Kruskal and Wallis (1952). This example demonstrates the
+	 * test with ties.
 	 */
 	@Test
 	public void testExample3() {
 		KruskalWallisTest kw = new KruskalWallisTest(8);
-		kw.add(2.0, 0);
-		kw.add(2.8, 0);
-		kw.add(3.3, 0);
-		kw.add(3.2, 0);
-		kw.add(4.4, 0);
-		kw.add(3.6, 0);
-		kw.add(1.9, 0);
-		kw.add(3.3, 0);
-		kw.add(2.8, 0);
-		kw.add(1.1, 0);
-		kw.add(3.5, 1);
-		kw.add(2.8, 1);
-		kw.add(3.2, 1);
-		kw.add(3.5, 1);
-		kw.add(2.3, 1);
-		kw.add(2.4, 1);
-		kw.add(2.0, 1);
-		kw.add(1.6, 1);
-		kw.add(3.3, 2);
-		kw.add(3.6, 2);
-		kw.add(2.6, 2);
-		kw.add(3.1, 2);
-		kw.add(3.2, 2);
-		kw.add(3.3, 2);
-		kw.add(2.9, 2);
-		kw.add(3.4, 2);
-		kw.add(3.2, 2);
-		kw.add(3.2, 2);
-		kw.add(3.2, 3);
-		kw.add(3.3, 3);
-		kw.add(3.2, 3);
-		kw.add(2.9, 3);
-		kw.add(3.3, 3);
-		kw.add(2.5, 3);
-		kw.add(2.6, 3);
-		kw.add(2.8, 3);
-		kw.add(2.6, 4);
-		kw.add(2.6, 4);
-		kw.add(2.9, 4);
-		kw.add(2.0, 4);
-		kw.add(2.0, 4);
-		kw.add(2.1, 4);
-		kw.add(3.1, 5);
-		kw.add(2.9, 5);
-		kw.add(3.1, 5);
-		kw.add(2.5, 5);
-		kw.add(2.6, 6);
-		kw.add(2.2, 6);
-		kw.add(2.2, 6);
-		kw.add(2.5, 6);
-		kw.add(1.2, 6);
-		kw.add(1.2, 6);
-		kw.add(2.5, 7);
-		kw.add(2.4, 7);
-		kw.add(3.0, 7);
-		kw.add(1.4, 7);
+		kw.addAll(new double[] { 2.0, 2.8, 3.3, 3.2, 4.4, 3.6, 1.9, 3.3, 2.8, 1.1 }, 0);
+		kw.addAll(new double[] { 3.5, 2.8, 3.2, 3.5, 2.3, 2.4, 2.0, 1.6 }, 1);
+		kw.addAll(new double[] { 3.3, 3.6, 2.6, 3.1, 3.2, 3.3, 2.9, 3.4, 3.2, 3.2 }, 2);
+		kw.addAll(new double[] { 3.2, 3.3, 3.2, 2.9, 3.3, 2.5, 2.6, 2.8 }, 3);
+		kw.addAll(new double[] { 2.6, 2.6, 2.9, 2.0, 2.0, 2.1 }, 4);
+		kw.addAll(new double[] { 3.1, 2.9, 3.1, 2.5 }, 5);
+		kw.addAll(new double[] { 2.6, 2.2, 2.2, 2.5, 1.2, 1.2 }, 6);
+		kw.addAll(new double[] { 2.5, 2.4, 3.0, 1.4 }, 7);
 
 		Assert.assertTrue(kw.test(0.01));
 		Assert.assertEquals(18.464, kw.H(), 0.001);

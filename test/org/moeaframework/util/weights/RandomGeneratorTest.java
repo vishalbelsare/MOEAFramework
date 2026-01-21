@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,18 +17,16 @@
  */
 package org.moeaframework.util.weights;
 
-import org.junit.Test;
-
-/**
- * Tests the {@link RandomGenerator} class.
- */
-public class RandomGeneratorTest extends WeightGeneratorTest {
+public class RandomGeneratorTest extends AbstractWeightGeneratorTest<RandomGenerator> {
 	
-	@Test
-	public void test() {
-		test(new RandomGenerator(3, 100), 3);
-		test(new RandomGenerator(5, 100), 5);
-		test(new RandomGenerator(10, 100), 10);
+	@Override
+	public RandomGenerator createInstance(int numberOfObjectives) {
+		return new RandomGenerator(numberOfObjectives, SAMPLES);
+	}
+	
+	@Override
+	public int getExpectedNumberOfSamples(int numberOfObjectives) {
+		return SAMPLES;
 	}
 
 }

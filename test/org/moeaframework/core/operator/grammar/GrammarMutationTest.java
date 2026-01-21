@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,31 +17,20 @@
  */
 package org.moeaframework.core.operator.grammar;
 
-import org.junit.Assert;
 import org.junit.Test;
-import org.moeaframework.TestThresholds;
+import org.moeaframework.Assert;
+import org.moeaframework.TestEnvironment;
 import org.moeaframework.core.Solution;
-import org.moeaframework.core.operator.ParentImmutabilityTest;
-import org.moeaframework.core.operator.TypeSafetyTest;
+import org.moeaframework.core.operator.AbstractGrammarOperatorTest;
 import org.moeaframework.core.variable.Grammar;
 
-/**
- * Tests the {@link GrammarMutation} class.
- */
-public class GrammarMutationTest {
+public class GrammarMutationTest extends AbstractGrammarOperatorTest<GrammarMutation> {
 
-	/**
-	 * Tests if the grammar mutation operator is type-safe.
-	 */
-	@Test
-	public void testTypeSafety() {
-		TypeSafetyTest.testTypeSafety(new GrammarMutation(1.0));
+	@Override
+	public GrammarMutation createInstance() {
+		return new GrammarMutation(1.0);
 	}
 
-	/**
-	 * Tests various probabilities to ensure the {@code GrammarMutation} mutates
-	 * the expected number of codons.
-	 */
 	@Test
 	public void testProbabilities() {
 		testProbability(0.0);
@@ -50,8 +39,7 @@ public class GrammarMutationTest {
 	}
 
 	/**
-	 * Tests if the {@code GrammarMutation} mutates codons with the specified
-	 * probability.
+	 * Tests if the {@code GrammarMutation} mutates codons with the specified probability.
 	 * 
 	 * @param probability the expected probability of mutation
 	 */
@@ -59,23 +47,24 @@ public class GrammarMutationTest {
 		GrammarMutation mutation = new GrammarMutation(probability);
 		int count = 0;
 
-		for (int i = 0; i < TestThresholds.SAMPLES; i++) {
+		for (int i = 0; i < TestEnvironment.SAMPLES; i++) {
 			Solution original = new Solution(1, 0);
-			original.setVariable(0, new Grammar(new int[] { 0, 1, 2, 3, 4 }));
+			
+			Grammar grammar = new Grammar(5);
+			grammar.fromArray(new int[] { 0, 1, 2, 3, 4 });
+			
+			original.setVariable(0, grammar);
 
 			Solution mutated = mutation.evolve(new Solution[] { original })[0];
 
-			count += check((Grammar)original.getVariable(0), (Grammar)mutated
-					.getVariable(0));
+			count += check((Grammar)original.getVariable(0), (Grammar)mutated.getVariable(0));
 		}
 
-		Assert.assertEquals((double)count / (5 * TestThresholds.SAMPLES),
-				probability, TestThresholds.VARIATION_EPS);
+		Assert.assertEquals((double)count / (5 * TestEnvironment.SAMPLES), probability, TestEnvironment.LOW_PRECISION);
 	}
 
 	/**
-	 * Checks if the two grammars are mutations of one another, returning the
-	 * number of mutated codons.
+	 * Checks if the two grammars are mutations of one another, returning the number of mutated codons.
 	 * 
 	 * @param g1 the first grammar
 	 * @param g2 the second grammar
@@ -92,21 +81,6 @@ public class GrammarMutationTest {
 		}
 
 		return count;
-	}
-
-	/**
-	 * Tests if the parents remain unchanged during variation.
-	 */
-	@Test
-	public void testParentImmutability() {
-		GrammarMutation gm = new GrammarMutation(1.0);
-
-		Solution solution = new Solution(1, 0);
-		solution.setVariable(0, new Grammar(new int[] { 0, 1, 2, 3, 4 }));
-
-		Solution[] parents = new Solution[] { solution };
-
-		ParentImmutabilityTest.test(parents, gm);
 	}
 
 }

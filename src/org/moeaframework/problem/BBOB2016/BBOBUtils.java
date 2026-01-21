@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -19,53 +19,52 @@ package org.moeaframework.problem.BBOB2016;
 
 import org.moeaframework.core.variable.RealVariable;
 
-/* 
- * The following source code is derived from the Coco Framework available at
- * <https://github.com/numbbo/coco> under the 3-clause BSD license. The
- * original code is copyright 2013 by the NumBBO/CoCO team.  See the AUTHORS
- * file located in the Coco Framework repository for more details.
+/*
+ * The following source code is derived from the Coco Framework available at <https://github.com/numbbo/coco> under the
+ * 3-clause BSD license.  The original code is copyright 2013 by the NumBBO/CoCO team.  See the AUTHORS file located in
+ * the Coco Framework repository for more details.
  */
 
-public class BBOBUtils {
+class BBOBUtils {
 	
 	/**
 	 * The lower bound returned by {@link #createTransformedVariable()}.
 	 */
-	private static double LOWER_BOUND = -100000.0;
+	private static double lowerBound = -100000.0;
 	
 	/**
 	 * The upper bound returned by {@link #createTransformedVariable()}.
 	 */
-	private static double UPPER_BOUND = 100000.0;
+	private static double upperBound = 100000.0;
+	
+	private BBOBUtils() {
+		super();
+	}
 	
 	/**
-	 * Overrides the lower and upper bounds returned by
-	 * {@link #createTransformedVariable()}.  The bounds must be sufficiently
-	 * large, otherwise an exception may be thrown.
+	 * Overrides the lower and upper bounds returned by {@link #createTransformedVariable()}.  The bounds must be
+	 * sufficiently large, otherwise an exception may be thrown.
 	 * 
 	 * @param lower the new lower bounds
 	 * @param upper the new upper bounds
 	 */
 	public static void setBounds(double lower, double upper) {
-		LOWER_BOUND = lower;
-		UPPER_BOUND = upper;
+		lowerBound = lower;
+		upperBound = upper;
 	}
 	
 	/**
-	 * All BBOB problems are defined with the domain [-5, 5], but the inner,
-	 * transformed functions are defined over the entire real domain.  This
-	 * method returns a real decision variable bounded from
-	 * [@value LOWER_BOUNDS, @value UPPER_BOUNDS], which practically covers the
-	 * entire real domain.
+	 * All BBOB problems are defined with the domain {@code [-5, 5]}, but the inner, transformed functions are defined
+	 * over the entire real domain.  This method returns a real decision variable bounded from
+	 * {@code [LOWER_BOUNDS, UPPER_BOUNDS]}, which practically covers the entire real domain.
 	 * 
 	 * @return a real decision variable used by the BBOB inner functions
 	 */
 	public static RealVariable createTransformedVariable() {
-		return new RealVariable(LOWER_BOUND, UPPER_BOUND);
+		return new RealVariable(lowerBound, upperBound);
 	}
 
 	public static double[] uniform(int N, long inseed) {
-		/* generates N uniform numbers with starting seed */
 		long aktseed;
 		int tmp;
 		long[] rgrand = new long[32];
@@ -133,33 +132,21 @@ public class BBOBUtils {
 	}
 
 	public static double computeFOpt(int function, int instance) {
-		int rseed, rrseed;
+		long rseed, rrseed;
 
-		if (function == 4) {
-			rseed = 3;
-		} else if (function == 18) {
-			rseed = 17;
-		} else if (function == 101 || function == 102 || function == 103 || function == 107
-				|| function == 108 || function == 109) {
-			rseed = 1;
-		} else if (function == 104 || function == 105 || function == 106 || function == 110
-				|| function == 111 || function == 112) {
-			rseed = 8;
-		} else if (function == 113 || function == 114 || function == 115) {
-			rseed = 7;
-		} else if (function == 116 || function == 117 || function == 118) {
-			rseed = 10;
-		} else if (function == 119 || function == 120 || function == 121) {
-			rseed = 14;
-		} else if (function == 122 || function == 123 || function == 124) {
-			rseed = 17;
-		} else if (function == 125 || function == 126 || function == 127) {
-			rseed = 19;
-		} else if (function == 128 || function == 129 || function == 130) {
-			rseed = 21;
-		} else {
-			rseed = function;
-		}
+		rseed = switch (function) {
+			case 4 -> 3;
+			case 18 -> 17;
+			case 101, 102, 103, 107, 108, 109 -> 1;
+			case 104, 105, 106, 110, 111, 112 -> 8;
+			case 113, 114, 115 -> 7;
+			case 116, 117, 118 -> 10;
+			case 119, 120, 121 -> 14;
+			case 122, 123, 124 -> 17;
+			case 125, 126, 127 -> 19;
+			case 128, 129, 130 -> 21;
+			default -> function;
+		};
 
 		rrseed = rseed + (10000 * instance);
 		double gval = gauss(1, rrseed)[0];

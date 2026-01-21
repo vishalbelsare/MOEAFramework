@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,29 +17,29 @@
  */
 package org.moeaframework.problem.misc;
 
-import org.junit.Assert;
 import org.junit.Test;
-import org.moeaframework.TestUtils;
-import org.moeaframework.core.Problem;
-import org.moeaframework.core.Settings;
+import org.moeaframework.Assert;
+import org.moeaframework.TestEnvironment;
+import org.moeaframework.problem.Problem;
+import org.moeaframework.problem.ProblemTest;
 
-public class BinhTest {
+public class BinhTest extends ProblemTest {
 	
 	@Test
 	public void test() {
 		Problem problem = new Binh();
 		
-		Assert.assertArrayEquals(new double[] { 0.0, 50.0 }, 
-				TestUtils.evaluateAt(problem, 0.0, 0.0).getObjectives(),
-				Settings.EPS);
+		Assert.assertArrayEquals(new double[] { 0.0, 50.0 },
+				evaluateAt(problem, 0.0, 0.0).getObjectiveValues(),
+				TestEnvironment.HIGH_PRECISION);
 		
-		Assert.assertArrayEquals(new double[] { 50.0, 200.0 }, 
-				TestUtils.evaluateAt(problem, -5.0, -5.0).getObjectives(),
-				Settings.EPS);
+		Assert.assertArrayEquals(new double[] { 50.0, 200.0 },
+				evaluateAt(problem, -5.0, -5.0).getObjectiveValues(),
+				TestEnvironment.HIGH_PRECISION);
 		
-		Assert.assertArrayEquals(new double[] { 200.0, 50.0 }, 
-				TestUtils.evaluateAt(problem, 10.0, 10.0).getObjectives(),
-				Settings.EPS);
+		Assert.assertArrayEquals(new double[] { 200.0, 50.0 },
+				evaluateAt(problem, 10.0, 10.0).getObjectiveValues(),
+				TestEnvironment.HIGH_PRECISION);
 	}
 
 }

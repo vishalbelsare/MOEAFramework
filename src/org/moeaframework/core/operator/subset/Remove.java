@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,10 +17,9 @@
  */
 package org.moeaframework.core.operator.subset;
 
-import org.moeaframework.core.PRNG;
-import org.moeaframework.core.Solution;
-import org.moeaframework.core.Variable;
-import org.moeaframework.core.Variation;
+import org.moeaframework.core.configuration.Prefix;
+import org.moeaframework.core.operator.TypeSafe;
+import org.moeaframework.core.operator.TypeSafeMutation;
 import org.moeaframework.core.variable.Subset;
 
 /**
@@ -28,54 +27,41 @@ import org.moeaframework.core.variable.Subset;
  * <p>
  * This operator is type-safe.
  */
-public class Remove implements Variation {
-
+@TypeSafe
+@Prefix("remove")
+public class Remove extends TypeSafeMutation<Subset> {
+	
 	/**
-	 * The probability of mutating a variable.
+	 * Constructs a remove mutation operator with the default settings.
 	 */
-	private final double probability;
+	public Remove() {
+		this(0.1);
+	}
 
 	/**
-	 * Constructs a remove mutation operator with the specified
-	 * probability of mutating a variable.
+	 * Constructs a remove mutation operator with the specified probability of mutating a variable.
 	 * 
 	 * @param probability the probability of mutating a variable
 	 */
 	public Remove(double probability) {
-		super();
-		this.probability = probability;
+		super(Subset.class, probability);
 	}
-
+	
 	@Override
-	public Solution[] evolve(Solution[] parents) {
-		Solution result = parents[0].copy();
-
-		for (int i = 0; i < result.getNumberOfVariables(); i++) {
-			Variable variable = result.getVariable(i);
-
-			if ((PRNG.nextDouble() <= probability)
-					&& (variable instanceof Subset)) {
-				evolve((Subset)variable);
-			}
-		}
-
-		return new Solution[] { result };
+	public String getName() {
+		return "remove";
 	}
 
 	/**
-	 * Evolves the specified subset using the remove mutation operator.
+	 * Mutates the specified subset using the remove mutation operator.
 	 * 
 	 * @param subset the subset to be mutated
 	 */
-	public static void evolve(Subset subset) {
+	@Override
+	public void mutate(Subset subset) {
 		if (subset.size() > subset.getL()) {
 			subset.remove(subset.randomMember());
 		}
-	}
-
-	@Override
-	public int getArity() {
-		return 1;
 	}
 
 }

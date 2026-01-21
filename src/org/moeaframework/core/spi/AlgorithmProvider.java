@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,33 +17,28 @@
  */
 package org.moeaframework.core.spi;
 
-import java.util.Properties;
+import java.util.HashSet;
+import java.util.Set;
 
-import org.moeaframework.core.Algorithm;
-import org.moeaframework.core.Problem;
+import org.moeaframework.algorithm.Algorithm;
+import org.moeaframework.core.TypedProperties;
+import org.moeaframework.problem.Problem;
 
 /**
- * Defines an SPI for algorithms. Algorithms are identified by a unique name and
- * may be given optional {@link Properties}. The methods of the provider must
- * return {@code null} if the algorithm is not supported by the provider.
+ * Defines a SPI for algorithms.
  * <p>
- * If the provider can supply the algorithm but an error occurred during
- * instantiation, the provider may throw a {@link ProviderNotFoundException}
- * along with the details causing the exception.
+ * To create a custom {@code AlgorithmProvider}:
+ * <ol>
+ *   <li>Extend this class and implement the abstract methods.
+ *   <li>Create the file {@code META-INF/services/org.moeaframework.core.spi.AlgorithmProvider} with a line identifying
+ *       the fully-qualified class name of the custom provider.
+ *   <li>Compile and bundle the {@code .class} file(s) along with the {@code META-INF} folder into a JAR.
+ *   <li>Include this JAR on the classpath.
+ * </ol>
+ * Providers can also be registered directly with {@link AlgorithmFactory}.
  * <p>
- * To provide a custom {@code AlgorithmProvider}, first extend this class and
- * implement the abstract method. Next, build a JAR file containing the custom
- * provider. Within the JAR file, create the file
- * {@code META-INF/services/org.moeaframework.core.spi.AlgorithmProvider}
- * containing on a single line the class name of the custom provider. Lastly,
- * add this JAR file to the classpath. Once these steps are completed, the
- * algorithms(s) are now accessible via the
- * {@link AlgorithmFactory#getAlgorithm} methods.
- * <p>
- * As algorithm names are often used in file names, it is best to avoid
- * characters which are not compatible with the file system.  It is suggested
- * that names match the following regular expression:  
- * {@code ^[a-zA-Z0-9()\-,]+$}.
+ * As algorithm names are often used in file names, it is best to avoid characters which are not compatible with the
+ * file system.  It is suggested that names match the following regular expression: {@code ^[a-zA-Z0-9()\-,]+$}.
  */
 public abstract class AlgorithmProvider {
 
@@ -53,20 +48,28 @@ public abstract class AlgorithmProvider {
 	public AlgorithmProvider() {
 		super();
 	}
+	
+	/**
+	 * Returns the algorithms names to appear in the diagnostic tool.  If there are multiple aliases for the same
+	 * algorithm, provide only the canonical name.
+	 * 
+	 * @return the algorithm names
+	 */
+	public Set<String> getDiagnosticToolAlgorithms() {
+		return new HashSet<>();
+	}
 
 	/**
-	 * Returns the algorithm with the specified name, or {@code null} if this
-	 * provider does not support the algorithm. An optional set of properties
-	 * may be provided to further define the algorithm; however, the provider is
+	 * Returns the algorithm with the specified name, or {@code null} if this provider does not support the algorithm.
+	 * An optional set of properties may be provided to further define the algorithm; however, the provider is
 	 * expected to supply default properties if none are provided.
 	 * 
 	 * @param name the algorithm name
 	 * @param properties optional properties for the algorithm
 	 * @param problem the problem
-	 * @return the algorithm with the specified name, or {@code null} if this
-	 *         provider does not support the algorithm
+	 * @return the algorithm instance or {@code null}
+	 * @throws ProviderException if the creation of the algorithm failed for any reason
 	 */
-	public abstract Algorithm getAlgorithm(String name, Properties properties,
-			Problem problem);
+	public abstract Algorithm getAlgorithm(String name, TypedProperties properties, Problem problem);
 
 }

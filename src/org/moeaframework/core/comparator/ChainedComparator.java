@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,44 +17,38 @@
  */
 package org.moeaframework.core.comparator;
 
-import java.io.Serializable;
-
 import org.moeaframework.core.Solution;
 
 /**
- * Applies any number of comparators in succession, returning the result from
- * the first comparator producing a non-zero return value. If no comparators
- * produce a non-zero return value, {@code 0} is returned.
+ * Applies any number of comparators in succession, returning the result from the first comparator producing a non-zero
+ * return value.  If no comparators produce a non-zero return value, {@code 0} is returned.
  * <p>
  * For example, the following:
  * <pre>
- * Comparator comparator = new ChainedComparator(comparator1, comparator2); 
- * return comparator.compare(s1, s2);
+ *   Comparator comparator = new ChainedComparator(comparator1, comparator2);
+ *   return comparator.compare(s1, s2);
  * </pre>
  * is equivalent to
  * <pre>
- * int flag1 = comparator1.compare(s1, s2);
- * if (flag1 == 0) {
- *   return comparator2.compare(s1, s2);
- * } else {
- *   return flag1;
- * }
+ *   int flag1 = comparator1.compare(s1, s2);
+ *   if (flag1 == 0) {
+ *     return comparator2.compare(s1, s2);
+ *   } else {
+ *     return flag1;
+ *   }
  * </pre>
  */
-public class ChainedComparator implements DominanceComparator, Serializable {
-
-	private static final long serialVersionUID = 4907755397965363873L;
+public class ChainedComparator implements DominanceComparator {
 
 	/**
 	 * The comparators in the order they are to be applied.
 	 */
-	private DominanceComparator[] comparators;
+	protected DominanceComparator[] comparators;
 
 	/**
-	 * Constructs a chained comparator for applying the specified comparators in
-	 * order, returning the result from the first comparator producing a 
-	 * non-zero return value. If no comparators produce a non-zero return value,
-	 * {@code 0} is returned.
+	 * Constructs a chained comparator for applying the specified comparators in order, returning the result from the
+	 * first comparator producing a non-zero return value.  If no comparators produce a non-zero return value, {@code 0}
+	 * is returned.
 	 * 
 	 * @param comparators the comparators in the order they are to be applied
 	 */

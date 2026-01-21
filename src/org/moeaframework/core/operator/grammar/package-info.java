@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,14 +17,12 @@
  */
 
 /**
- * Collection of operators for grammars for use with Grammatical Evolution
- * (GE).
+ * Collection of operators for grammars for use with Grammatical Evolution (GE).
  * <p>
  * References:
  * <ol>
- *   <li>Ryan, C., Collins, J.J., and O'Neill, M.  "Grammatical Evolution:
- *       Evolving Programs for an Arbitrary Language."  Lecture Notes in
- *       Computer Science, Proceedings of the First European Workshop on
+ *   <li>Ryan, C., Collins, J.J., and O'Neill, M.  "Grammatical Evolution: Evolving Programs for an Arbitrary
+ *       Language."  Lecture Notes in Computer Science, Proceedings of the First European Workshop on
  *       Genetic Programming, pp. 82-95, 1998.
  * </ol>
  */

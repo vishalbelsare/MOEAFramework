@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,42 +17,38 @@
  */
 package org.moeaframework.core.fitness;
 
-import org.moeaframework.core.FitnessEvaluator;
-import org.moeaframework.core.NondominatedPopulation;
 import org.moeaframework.core.Solution;
 import org.moeaframework.core.comparator.DominanceComparator;
 import org.moeaframework.core.comparator.FitnessComparator;
 import org.moeaframework.core.comparator.ParetoDominanceComparator;
+import org.moeaframework.core.population.NondominatedPopulation;
 
 /**
- * Maintains a non-dominated archive of solutions with a maximum capacity.
- * If the size exceeds the capacity, one or more solutions are pruned based on
- * the fitness calculation.  The fitness calculation only occurs when the
- * addition of a solution exceeds the capacity.  The fitness can be manually
- * calculated by calling {@link #update()}.
+ * Maintains a non-dominated archive of solutions with a maximum capacity.  If the size exceeds the capacity, one or
+ * more solutions are pruned based on the fitness calculation.  The fitness calculation only occurs when the
+ * addition of a solution exceeds the capacity.  The fitness can be manually calculated by calling {@link #update()}.
  */
 public class FitnessBasedArchive extends NondominatedPopulation {
 	
 	/**
 	 * The maximum capacity of this archive.
 	 */
-	private final int capacity;
+	protected final int capacity;
 	
 	/**
 	 * The fitness evaluator for computing the fitness of solutions.
 	 */
-	private final FitnessEvaluator fitnessEvaluator;
+	protected final FitnessEvaluator fitnessEvaluator;
 	
 	/**
 	 * The fitness comparator for comparing fitness values.
 	 */
-	private final FitnessComparator fitnessComparator;
+	protected final FitnessComparator fitnessComparator;
 
 	/**
 	 * Constructs an empty fitness-based archive.
 	 * 
-	 * @param evaluator the fitness evaluator for computing the fitness of
-	 *        solutions
+	 * @param evaluator the fitness evaluator for computing the fitness of solutions
 	 * @param capacity the maximum capacity of this archive
 	 */
 	public FitnessBasedArchive(FitnessEvaluator evaluator, int capacity) {
@@ -62,50 +58,50 @@ public class FitnessBasedArchive extends NondominatedPopulation {
 	/**
 	 * Constructs an empty fitness-based archive.
 	 * 
-	 * @param evaluator the fitness evaluator for computing the fitness of
-	 *        solutions
+	 * @param evaluator the fitness evaluator for computing the fitness of solutions
 	 * @param capacity the maximum capacity of this archive
 	 * @param comparator the dominance comparator
 	 */
-	public FitnessBasedArchive(FitnessEvaluator evaluator, int capacity,
-			DominanceComparator comparator) {
+	public FitnessBasedArchive(FitnessEvaluator evaluator, int capacity, DominanceComparator comparator) {
 		super(comparator);
 		this.fitnessEvaluator = evaluator;
 		this.capacity = capacity;
 		
-		fitnessComparator = new FitnessComparator(
-				evaluator.areLargerValuesPreferred());
+		fitnessComparator = new FitnessComparator(evaluator.areLargerValuesPreferred());
 	}
 
 	/**
-	 * Constructs a fitness-based archive initialized with the specified
-	 * solutions.
+	 * Constructs a fitness-based archive initialized with the specified solutions.
 	 * 
-	 * @param evaluator the fitness evaluator for computing the fitness of
-	 *        solutions
+	 * @param evaluator the fitness evaluator for computing the fitness of solutions
 	 * @param capacity the maximum capacity of this archive
 	 * @param comparator the dominance comparator
 	 * @param iterable the solutions used to initialize this population
 	 */
-	public FitnessBasedArchive(FitnessEvaluator evaluator, int capacity,
-			DominanceComparator comparator,
+	public FitnessBasedArchive(FitnessEvaluator evaluator, int capacity, DominanceComparator comparator,
 			Iterable<? extends Solution> iterable) {
 		this(evaluator, capacity, comparator);
 		addAll(iterable);
 	}
 
 	/**
-	 * Constructs a fitness-based archive initialized with the specified
-	 * solutions.
+	 * Constructs a fitness-based archive initialized with the specified solutions.
 	 * 
-	 * @param evaluator the fitness evaluator for computing the fitness of
-	 *        solutions
+	 * @param evaluator the fitness evaluator for computing the fitness of solutions
 	 * @param capacity the maximum capacity of this archive
 	 * @param iterable the solutions used to initialize this population
 	 */
-	public FitnessBasedArchive(FitnessEvaluator evaluator, int capacity,
-			Iterable<? extends Solution> iterable) {
+	public FitnessBasedArchive(FitnessEvaluator evaluator, int capacity, Iterable<? extends Solution> iterable) {
 		this(evaluator, capacity, new ParetoDominanceComparator(), iterable);
+	}
+	
+	/**
+	 * Returns the maximum number of solutions stored in this archive.
+	 * 
+	 * @return the maximum number of solutions stored in this archive
+	 */
+	public int getCapacity() {
+		return capacity;
 	}
 
 	@Override
@@ -127,6 +123,18 @@ public class FitnessBasedArchive extends NondominatedPopulation {
 	 */
 	public void update() {
 		fitnessEvaluator.evaluate(this);
+	}
+	
+	@Override
+	public FitnessBasedArchive copy() {
+		FitnessBasedArchive result = new FitnessBasedArchive(fitnessEvaluator, capacity, getComparator());
+		
+		for (Solution solution : this) {
+			result.forceAddWithoutCheck(solution.copy());
+		}
+		
+		result.update();
+		return result;
 	}
 
 }

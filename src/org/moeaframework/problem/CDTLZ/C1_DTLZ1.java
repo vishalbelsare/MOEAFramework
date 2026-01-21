@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -18,6 +18,7 @@
 package org.moeaframework.problem.CDTLZ;
 
 import org.moeaframework.core.Solution;
+import org.moeaframework.core.constraint.GreaterThanOrEqual;
 import org.moeaframework.core.variable.RealVariable;
 import org.moeaframework.problem.DTLZ.DTLZ1;
 
@@ -27,8 +28,7 @@ import org.moeaframework.problem.DTLZ.DTLZ1;
 public class C1_DTLZ1 extends DTLZ1 {
 
 	/**
-	 * Constructs a C1-DTLZ1 test problem with the specified number of variables
-	 * and objectives.
+	 * Constructs a C1-DTLZ1 test problem with the specified number of variables and objectives.
 	 * 
 	 * @param numberOfVariables the number of variables for this problem
 	 * @param numberOfObjectives the number of objectives for this problem
@@ -38,8 +38,7 @@ public class C1_DTLZ1 extends DTLZ1 {
 	}
 
 	/**
-	 * Constructs a C1-DTLZ1 test problem with the specified number of
-	 * objectives.  This is equivalent to calling
+	 * Constructs a C1-DTLZ1 test problem with the specified number of objectives.  This is equivalent to calling
 	 * {@code new DTLZ1(numberOfObjectives+4, numberOfObjectives)}.
 	 * 
 	 * @param numberOfObjectives the number of objectives for this problem
@@ -57,23 +56,24 @@ public class C1_DTLZ1 extends DTLZ1 {
 	public void evaluate(Solution solution) {
 		super.evaluate(solution);
 		
-		double c = 1.0 - solution.getObjective(numberOfObjectives-1) / 0.6;
+		double c = 1.0 - solution.getObjectiveValue(numberOfObjectives-1) / 0.6;
 		
 		for (int i = 0; i < numberOfObjectives-2; i++) {
-			c -= solution.getObjective(i) / 0.5;
+			c -= solution.getObjectiveValue(i) / 0.5;
 		}
 		
-		solution.setConstraint(0, c >= 0.0 ? 0.0 : c);
+		solution.setConstraintValue(0, c);
 	}
 
 	@Override
 	public Solution newSolution() {
-		Solution solution = new Solution(numberOfVariables, numberOfObjectives,
-				1);
+		Solution solution = new Solution(numberOfVariables, numberOfObjectives, 1);
 
 		for (int i = 0; i < numberOfVariables; i++) {
 			solution.setVariable(i, new RealVariable(0.0, 1.0));
 		}
+		
+		solution.setConstraint(0, GreaterThanOrEqual.to(0.0));
 
 		return solution;
 	}

@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -18,14 +18,15 @@
 package org.moeaframework.util.tree;
 
 /**
- * The node for defining a callable, named function.  Once a named function is
- * defined, it can be invoked using {@link Call}.  The behavior (body) of this
- * function can be mutated.  For immutable functions, see {@link Lambda}.
+ * The node for defining a callable, named function.  Once a named function is defined, it can be invoked using
+ * {@link Call}.  The behavior (body) of this function can be mutated.  For immutable functions, see {@link Lambda}.
  * 
  * @see Call
  */
 public class Define extends Node {
 	
+	private static final long serialVersionUID = 8909211647443245077L;
+
 	/**
 	 * The name of this function.
 	 */
@@ -59,10 +60,8 @@ public class Define extends Node {
 	 * @param variableName the name of the argument
 	 * @param variableType the type of the argument
 	 */
-	public Define(String functionName, Class<?> returnType, String variableName,
-			Class<?> variableType) {
-		this(functionName, returnType, new String[] { variableName },
-				new Class<?>[] { variableType });
+	public Define(String functionName, Class<?> returnType, String variableName, Class<?> variableType) {
+		this(functionName, returnType, new String[] { variableName }, new Class<?>[] { variableType });
 	}
 	
 	/**
@@ -75,23 +74,20 @@ public class Define extends Node {
 	 * @param name2 the name of the second argument
 	 * @param type2 the type of the second argument
 	 */
-	public Define(String functionName, Class<?> returnType, String name1,
-			Class<?> type1, String name2, Class<?> type2) {
-		this(functionName, returnType, new String[] { name1, name2 },
-				new Class<?>[] { type1, type2 });
+	public Define(String functionName, Class<?> returnType, String name1, Class<?> type1, String name2,
+			Class<?> type2) {
+		this(functionName, returnType, new String[] { name1, name2 }, new Class<?>[] { type1, type2 });
 	}
 	
 	/**
-	 * Constructs a new node for defining a function that takes a
-	 * user-defined number of arguments.
+	 * Constructs a new node for defining a function that takes a user-defined number of arguments.
 	 * 
 	 * @param functionName the name of the function
 	 * @param returnType the return type of the function
 	 * @param variableNames the names of the arguments to the function
 	 * @param variableTypes the types of the arguments to the function
 	 */
-	public Define(String functionName, Class<?> returnType,
-			String[] variableNames, Class<?>[] variableTypes) {
+	public Define(String functionName, Class<?> returnType, String[] variableNames, Class<?>[] variableTypes) {
 		super(Void.class, returnType);
 		this.functionName = functionName;
 		this.variableNames = variableNames;
@@ -127,8 +123,7 @@ public class Define extends Node {
 
 	@Override
 	public Node copyNode() {
-		return new Define(functionName, getArgumentType(0), variableNames,
-				variableTypes);
+		return new Define(functionName, getArgumentType(0), variableNames, variableTypes);
 	}
 
 	@Override
@@ -141,7 +136,7 @@ public class Define extends Node {
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
 		sb.append('(');
-		sb.append(getClass().getSimpleName());
+		sb.append(getName());
 		sb.append(' ');
 		sb.append(getFunctionName());
 		sb.append(" (");

@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -18,23 +18,38 @@
 package org.moeaframework.core.variable;
 
 import java.util.Arrays;
+import java.util.BitSet;
 
-import org.junit.Assert;
+import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.junit.Test;
-import org.moeaframework.TestThresholds;
+import org.junit.runner.RunWith;
+import org.moeaframework.Assert;
+import org.moeaframework.CIRunner;
+import org.moeaframework.Retryable;
+import org.moeaframework.TestEnvironment;
 import org.moeaframework.core.FrameworkException;
-import org.moeaframework.core.PRNG;
 
-/**
- * Tests the {@link Subset} class.
- */
+@RunWith(CIRunner.class)
 public class SubsetTest {
+	
+	@Test
+	public void testDefaultValue() {
+		Assert.assertEquals(0, new Subset(0, 10).size());
+		Assert.assertEquals(5, new Subset(5, 10).size());
+		Assert.assertEquals(2, new Subset(2, 5, 10).size());
+	}
+	
+	@Test
+	public void testName() {
+		Assert.assertNull(new Subset(5, 10).getName());
+		Assert.assertEquals("foo", new Subset("foo", 5, 10).getName());
+	}
 	
 	@Test
 	public void testFixedSizeSubsetConstructor() {
 		// Test the constructor
 		Subset subset = new Subset(5, 10);
-		subset.validate();
+		Assert.assertTrue(subset.isValid());
 		
 		Assert.assertEquals(5, subset.getL());
 		Assert.assertEquals(5, subset.getU());
@@ -45,7 +60,7 @@ public class SubsetTest {
 	@Test
 	public void testVariableSizeSubsetConstructor() {
 		Subset subset = new Subset(0, 10, 10);
-		subset.validate();
+		Assert.assertTrue(subset.isValid());
 		
 		Assert.assertEquals(0, subset.getL());
 		Assert.assertEquals(10, subset.getU());
@@ -92,11 +107,11 @@ public class SubsetTest {
 		Assert.assertNotEquals(subset.hashCode(), subset2.hashCode());
 	}
 	
-	@Test(expected = FrameworkException.class)
-	public void testAddException() {
+	@Test
+	public void testAddNotValid() {
 		Subset subset = new Subset(5, 10);
 		subset.add(subset.randomNonmember());
-		subset.validate();
+		Assert.assertFalse(subset.isValid());
 	}
 	
 	@Test
@@ -105,7 +120,7 @@ public class SubsetTest {
 		
 		Subset subset2 = subset.copy();
 		subset2.replace(subset.randomMember(), subset.randomNonmember());
-		subset2.validate();
+		Assert.assertTrue(subset2.isValid());
 		
 		Assert.assertEquals(subset.size(), subset2.size());
 		Assert.assertFalse(subset.equals(subset2));
@@ -128,11 +143,11 @@ public class SubsetTest {
 		}
 	}
 	
-	@Test(expected = FrameworkException.class)
-	public void testRemoveException() {
+	@Test
+	public void testRemoveNotValid() {
 		Subset subset = new Subset(5, 10);
 		subset.remove(subset.randomMember());
-		subset.validate();
+		Assert.assertFalse(subset.isValid());
 	}
 
 	@Test
@@ -144,57 +159,53 @@ public class SubsetTest {
 		Assert.assertFalse(subset.equals(new Subset(5, 15)));
 		Assert.assertFalse(subset.equals(new Subset(7, 10)));
 		
-		Subset randomSet = subset.copy();
-		randomSet.randomize();
-		Assert.assertFalse(subset.equals(randomSet));
+		Subset otherSubset = subset.copy();
+		subset.fromArray(new int[] { 0, 1, 2, 3, 4 });
+		otherSubset.fromArray(new int[] { 0, 1, 2, 3, 4 });
+		Assert.assertTrue(subset.equals(otherSubset));
 		
-		Subset reorderedSet = subset.copy();
-		int[] values = reorderedSet.toArray();
-		PRNG.shuffle(values);
-		reorderedSet.fromArray(values);
-		Assert.assertTrue(subset.equals(reorderedSet));
+		otherSubset.fromArray(new int[] { 4, 0, 1, 2, 3 });
+		Assert.assertTrue(subset.equals(otherSubset));
+		
+		otherSubset.fromArray(new int[] { 0, 1, 2, 3, 5 });
+		Assert.assertFalse(subset.equals(otherSubset));
 	}
 	
 	@Test
 	public void testHashCode() {
 		Subset subset = new Subset(5, 10);
 		Assert.assertEquals(subset.hashCode(), subset.hashCode());
-		Assert.assertEquals(subset.hashCode(), new Subset(5, 10).hashCode());
+		Assert.assertEquals(subset.hashCode(), subset.copy().hashCode());
 		
-		Subset reorderedSet = subset.copy();
-		int[] values = reorderedSet.toArray();
-		PRNG.shuffle(values);
-		reorderedSet.fromArray(values);
-		Assert.assertEquals(subset.hashCode(), reorderedSet.hashCode());
+		Subset otherSubset = subset.copy();
+		subset.fromArray(new int[] { 0, 1, 2, 3, 4 });
+		otherSubset.fromArray(new int[] { 0, 1, 2, 3, 4 });
+		Assert.assertEquals(subset.hashCode(), otherSubset.hashCode());
+		
+		otherSubset.fromArray(new int[] { 4, 0, 1, 2, 3 });
+		Assert.assertEquals(subset.hashCode(), otherSubset.hashCode());
+		
+		otherSubset.fromArray(new int[] { 0, 1, 2, 3, 5 });
+		Assert.assertNotEquals(subset.hashCode(), otherSubset.hashCode());
 	}
 	
 	@Test
 	public void testCopy() {
 		Subset subset = new Subset(5, 10);
 		Subset copy = subset.copy();
-		Assert.assertTrue(copy.equals(subset));
+		Assert.assertNotSame(subset, copy);
+		Assert.assertEquals(subset, copy);
 
 		// Modify the copy and make sure the original is unchanged
 		copy.replace(copy.randomMember(), copy.randomNonmember());
-		Assert.assertFalse(copy.equals(subset));
-		Assert.assertFalse(subset.equals(copy));
-	}
-	
-	@Test
-	public void testRandomize() {
-		Subset subset = new Subset(5, 10);
-		
-		for (int i = 0; i < TestThresholds.SAMPLES; i++) {
-			subset.randomize();
-			subset.validate();
-		}
+		Assert.assertNotEquals(subset, copy);
 	}
 	
 	@Test
 	public void testRandomNonmember() {
 		Subset subset = new Subset(5, 10);
 		
-		for (int i = 0; i < TestThresholds.SAMPLES; i++) {
+		for (int i = 0; i < TestEnvironment.SAMPLES; i++) {
 			int nonmember = subset.randomNonmember();
 			Assert.assertFalse(subset.getSet().contains(nonmember));
 		}
@@ -210,9 +221,9 @@ public class SubsetTest {
 	public void testRandomMember() {
 		Subset subset = new Subset(5, 10);
 		
-		for (int i = 0; i < TestThresholds.SAMPLES; i++) {
+		for (int i = 0; i < TestEnvironment.SAMPLES; i++) {
 			int member = subset.randomMember();
-			Assert.assertTrue(subset.getSet().contains(member));
+			Assert.assertContains(subset.getSet(), member);
 		}
 	}
 	
@@ -221,6 +232,157 @@ public class SubsetTest {
 		Subset subset = new Subset(0, 10, 10);
 		subset.fromArray(new int[0]);
 		subset.randomMember();
+	}
+	
+	@Test
+	public void testToString() {
+		Subset subset = new Subset(5, 10);
+		subset.fromArray(new int[] { 9, 3, 5, 7, 1 });
+		Assert.assertEquals("{1,3,5,7,9}", subset.toString());
+	}
+	
+	@Test
+	public void testEncodeDecode() {
+		int[] content = new int[] {3, 5, 9};
+		
+		Subset subset = new Subset(0, 10, 10);
+		subset.fromArray(content);
+		
+		Subset newSubset = new Subset(0, 10, 10);
+		newSubset.decode(subset.encode());
+		Assert.assertArrayEquals(subset.toArray(), newSubset.toArray());
+	}
+	
+	@Test
+	public void testDecodeWithoutBraces() {
+		Subset subset = new Subset(0, 10, 10);
+		subset.decode("3,5,9");
+		
+		Assert.assertArrayEquals(new int[] {3, 5, 9}, subset.toArray());
+	}
+	
+	@Test
+	@Retryable
+	public void testRandomize() {
+		Subset subset = new Subset(2, 10);
+		DescriptiveStatistics[] valueStats = new DescriptiveStatistics[subset.getN()];
+		
+		for (int j = 0; j < subset.getN(); j++) {
+			valueStats[j] = new DescriptiveStatistics();
+		}
+		
+		for (int i = 0; i < TestEnvironment.SAMPLES; i++) {
+			subset.randomize();
+			Assert.assertTrue(subset.isValid());
+						
+			for (int j = 0; j < subset.getN(); j++) {
+				valueStats[j].addValue(subset.contains(j) ? 1 : 0);
+			}
+		}
+		
+		for (int j = 0; j < subset.getL(); j++) {
+			Assert.assertEquals(0.2, valueStats[j].getMean(), TestEnvironment.LOW_PRECISION);
+		}
+	}
+	
+	@Test
+	public void testEncodingAsBinary() {
+		Variable variable = new Subset(5, 10);
+		boolean[] values = new boolean[] { false, false, true, true, false, true, false, true, true, false};
+		
+		Subset.setSubset(variable, values);
+		Assert.assertArrayEquals(new int[] { 2, 3, 5, 7, 8 }, Subset.getSubset(variable));
+		
+		Assert.assertArrayEquals(values, Subset.getSubsetAsBinary(variable));
+	}
+	
+	@Test
+	public void testEncodingAsBitSet() {
+		Variable variable = new Subset(5, 10);
+		
+		BitSet bitSet = new BitSet(10);
+		bitSet.set(2);
+		bitSet.set(3);
+		bitSet.set(5);
+		bitSet.set(7);
+		bitSet.set(8);
+		
+		Subset.setSubset(variable, bitSet);
+		Assert.assertArrayEquals(new int[] { 2, 3, 5, 7, 8 }, Subset.getSubset(variable));
+		Assert.assertEquals(bitSet, Subset.getSubsetAsBitSet(variable));
+	}
+	
+	@Test(expected = IllegalArgumentException.class)
+	public void testSetInvalidType() {
+		Subset.setSubset(new BinaryVariable(3), new int[] { 1, 3, 5, 6, 7 });
+	}
+	
+	@Test(expected = IllegalArgumentException.class)
+	public void testGetInvalidType() {
+		Subset.getSubset(new BinaryVariable(3));
+	}
+	
+	@Test(expected = IllegalArgumentException.class)
+	public void testTooFewValues() {
+		Subset subset = new Subset(5, 10);
+		Subset.setSubset(subset, new int[] { 2, 4 });
+	}
+	
+	@Test(expected = IllegalArgumentException.class)
+	public void testTooFewValuesBinaryArray() {
+		Subset subset = new Subset(5, 10);
+		Subset.setSubset(subset, new boolean[] { false, false, true, true, false });
+	}
+	
+	@Test(expected = IllegalArgumentException.class)
+	public void testTooFewValuesBitSet() {
+		Subset subset = new Subset(5, 10);
+		
+		BitSet bitSet = new BitSet(5);
+		bitSet.set(2);
+		bitSet.set(3);
+		
+		Subset.setSubset(subset, bitSet);
+	}
+	
+	@Test(expected = IllegalArgumentException.class)
+	public void testInvalidIntegerArrayValues1() {
+		Subset subset = new Subset(5, 10);
+		Subset.setSubset(subset, new int[] { 0, 1, 2, 3, 10 });
+	}
+	
+	@Test(expected = IllegalArgumentException.class)
+	public void testInvalidIntegerArrayValues2() {
+		Subset subset = new Subset(5, 10);
+		Subset.setSubset(subset, new int[] { -1, 0, 1, 2, 3 });
+	}
+	
+	@Test(expected = IllegalArgumentException.class)
+	public void testTooManyValuesBinaryArray() {
+		Subset subset = new Subset(5, 10);
+		Subset.setSubset(subset, new boolean[] { false, false, true, true, true, true, false, false, false, false, true });
+	}
+	
+	@Test(expected = IllegalArgumentException.class)
+	public void testInvalidValueBitSet() {
+		Subset subset = new Subset(5, 10);
+		
+		BitSet bitSet = new BitSet(5);
+		bitSet.set(2);
+		bitSet.set(3);
+		bitSet.set(4);
+		bitSet.set(5);
+		bitSet.set(10);
+		
+		Subset.setSubset(subset, bitSet);
+	}
+	
+	@Test
+	public void testDefinition() {
+		Assert.assertEquals("Subset(5,5,10)", new Subset(5, 10).getDefinition());
+		Assert.assertEquals("Subset(5,7,10)", new Subset(5, 7, 10).getDefinition());
+		Assert.assertEquals("Subset(\"foo\",5,5,10)", new Subset("foo", 5, 10).getDefinition());
+		Assert.assertEquals("Subset(\"foo\",5,7,10)", new Subset("foo", 5, 7, 10).getDefinition());
 	}
 	
 }

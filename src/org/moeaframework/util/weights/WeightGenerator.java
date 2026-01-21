@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -20,9 +20,11 @@ package org.moeaframework.util.weights;
 import java.util.List;
 
 /**
- * Interface for generating a sequence of weights.  The nature of the weights
- * depends on the specific implementation.  The only requirement is that the
- * sum of each component in a weight vector be 1.
+ * Interface for generating a sequence of weights.  A weight generator must satisfy these conditions:
+ * <ol>
+ *   <li>Each individual weight is {@code 0.0 <= w[i] <= 1.0}.
+ *   <li>The sum of all weights must be exactly {@code 1.0}.
+ * </ol>
  */
 public interface WeightGenerator {
 	
@@ -36,7 +38,7 @@ public interface WeightGenerator {
 	/**
 	 * Returns the generated weights.
 	 * 
-	 * @return the genreated weights
+	 * @return the generated weights
 	 */
 	public List<double[]> generate();
 

@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,31 +17,20 @@
  */
 package org.moeaframework.core.operator.permutation;
 
-import org.junit.Assert;
 import org.junit.Test;
-import org.moeaframework.TestThresholds;
+import org.moeaframework.Assert;
+import org.moeaframework.TestEnvironment;
 import org.moeaframework.core.Solution;
-import org.moeaframework.core.operator.ParentImmutabilityTest;
-import org.moeaframework.core.operator.TypeSafetyTest;
+import org.moeaframework.core.operator.AbstractPermutationOperatorTest;
 import org.moeaframework.core.variable.Permutation;
 
-/**
- * Tests for {@link Insertion} mutation.
- */
-public class InsertionTest {
-
-	/**
-	 * Tests if the insertion mutation operator is type-safe.
-	 */
-	@Test
-	public void testTypeSafety() {
-		TypeSafetyTest.testTypeSafety(new Insertion(1.0));
+public class InsertionTest extends AbstractPermutationOperatorTest<Insertion> {
+	
+	@Override
+	public Insertion createInstance() {
+		return new Insertion(1.0);
 	}
 
-	/**
-	 * Tests various probabilities to ensure insertion mutation is applied the
-	 * correct number of times on average.
-	 */
 	@Test
 	public void testProbabilities() {
 		testProbability(0.0);
@@ -58,30 +47,26 @@ public class InsertionTest {
 		Insertion insertion = new Insertion(probability);
 		int count = 0;
 
-		for (int i = 0; i < TestThresholds.SAMPLES; i++) {
+		for (int i = 0; i < TestEnvironment.SAMPLES; i++) {
 			Solution original = new Solution(1, 0);
 			original.setVariable(0, new Permutation(100));
 
 			Solution mutated = insertion.evolve(new Solution[] { original })[0];
 
-			if (testInsertion((Permutation)original.getVariable(0),
-					(Permutation)mutated.getVariable(0))) {
+			if (testInsertion((Permutation)original.getVariable(0), (Permutation)mutated.getVariable(0))) {
 				count++;
 			}
 		}
 
-		Assert.assertEquals((double)count / TestThresholds.SAMPLES,
-				probability, TestThresholds.VARIATION_EPS);
+		Assert.assertEquals((double)count / TestEnvironment.SAMPLES, probability, TestEnvironment.LOW_PRECISION);
 	}
 
 	/**
-	 * Returns {@code true} if the result is a valid insertion; {@code false}
-	 * otherwise.
+	 * Returns {@code true} if the result is a valid insertion; {@code false} otherwise.
 	 * 
 	 * @param v1 the first permutation
 	 * @param v2 the second permutation
-	 * @return {@code true} if the result is a valid insertion; {@code false}
-	 *         otherwise
+	 * @return {@code true} if the result is a valid insertion; {@code false} otherwise
 	 */
 	protected boolean testInsertion(Permutation v1, Permutation v2) {
 		// find first index where permutations differ
@@ -129,21 +114,6 @@ public class InsertionTest {
 		}
 
 		return true;
-	}
-
-	/**
-	 * Tests if the parents remain unchanged during variation.
-	 */
-	@Test
-	public void testParentImmutability() {
-		Insertion ins = new Insertion(1.0);
-
-		Solution solution = new Solution(1, 0);
-		solution.setVariable(0, new Permutation(100));
-
-		Solution[] parents = new Solution[] { solution };
-
-		ParentImmutabilityTest.test(parents, ins);
 	}
 
 }

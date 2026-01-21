@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -35,13 +35,12 @@ public class Production {
 	private final List<Symbol> symbols;
 
 	/**
-	 * Constructs an empty production. At least one symbol must be
-	 * provided through the {@link #add(Symbol)} method.
+	 * Constructs an empty production.  At least one symbol must be provided through the {@link #add(Symbol)} method.
 	 */
 	public Production() {
 		super();
 
-		symbols = new ArrayList<Symbol>();
+		symbols = new ArrayList<>();
 	}
 
 	/**

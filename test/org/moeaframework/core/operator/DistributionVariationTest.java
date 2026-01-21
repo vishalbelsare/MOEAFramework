@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,21 +17,28 @@
  */
 package org.moeaframework.core.operator;
 
+import org.junit.Ignore;
 import org.moeaframework.core.Solution;
-import org.moeaframework.core.variable.EncodingUtils;
 import org.moeaframework.core.variable.RealVariable;
 import org.moeaframework.util.Vector;
 
-public abstract class DistributionVariationTest {
+@Ignore("Abstract test class")
+public abstract class DistributionVariationTest<T extends Variation> extends AbstractOperatorTest<T, RealVariable> {
 
-	protected abstract void check(Solution[] parents, Solution[] offspring);
+	protected abstract void checkDistribution(Solution[] parents, Solution[] offspring);
+	
+	@Override
+	public RealVariable createTestVariable() {
+		RealVariable variable = new RealVariable(-10.0, 10.0);
+		variable.randomize();
+		return variable;
+	}
 
 	protected Solution newSolution(double... variables) {
 		Solution solution = new Solution(variables.length, 0);
 
 		for (int i = 0; i < variables.length; i++) {
-			solution.setVariable(i, new RealVariable(variables[i],
-					Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY));
+			solution.setVariable(i, new RealVariable(Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY).withValue(variables[i]));
 		}
 
 		return solution;
@@ -41,7 +48,7 @@ public abstract class DistributionVariationTest {
 		double[] average = new double[solutions[0].getNumberOfVariables()];
 
 		for (Solution solution : solutions) {
-			average = Vector.add(average, EncodingUtils.getReal(solution));
+			average = Vector.add(average, RealVariable.getReal(solution));
 		}
 
 		return Vector.divide(average, solutions.length);

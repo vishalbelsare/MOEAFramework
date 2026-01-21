@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -18,6 +18,8 @@
 package org.moeaframework.problem.misc;
 
 import org.moeaframework.core.Solution;
+import org.moeaframework.core.constraint.LessThanOrEqual;
+import org.moeaframework.core.objective.Maximize;
 import org.moeaframework.core.variable.RealVariable;
 import org.moeaframework.problem.AbstractProblem;
 
@@ -29,18 +31,15 @@ import org.moeaframework.problem.AbstractProblem;
  *   <li>Disconnected Pareto set
  *   <li>Disconnected and concave Pareto front
  *   <li>Constrained
- *   <li>Maximization (objectives are negated)
+ *   <li>Maximized
  * </ul>
  * <p>
  * References:
  * <ol>
- *   <li>Kita, H., et al. (1996).  "Multi-Objective Optimization by Means of
- *       the Thermodynamical Genetic Algorithm."  Parallel Problem Solving from
- *       Nature — PPSN IV, Lecture Notes in Computer Science, Springer,
- *       pp. 504-512.
- *   <li>Van Veldhuizen, D. A (1999).  "Multiobjective Evolutionary Algorithms: 
- *       Classifications, Analyses, and New Innovations."  Air Force Institute
- *       of Technology, Ph.D. Thesis, Appendix B.
+ *   <li>Kita, H., et al. (1996).  "Multi-Objective Optimization by Means of the Thermodynamical Genetic Algorithm."
+ *       Parallel Problem Solving from Nature — PPSN IV, Lecture Notes in Computer Science, Springer, pp. 504-512.
+ *   <li>Van Veldhuizen, D. A (1999).  "Multiobjective Evolutionary Algorithms: Classifications, Analyses, and New
+ *       Innovations."  Air Force Institute of Technology, Ph.D. Thesis, Appendix B.
  * </ol>
  */
 public class Kita extends AbstractProblem {
@@ -62,11 +61,11 @@ public class Kita extends AbstractProblem {
 		double c2 = 0.5*x + y - 15.0/2.0;
 		double c3 = 5.0*x + y - 30.0;
 		
-		solution.setObjective(0, -f1);
-		solution.setObjective(1, -f2);
-		solution.setConstraint(0, c1 <= 0.0 ? 0.0 : c1);
-		solution.setConstraint(1, c2 <= 0.0 ? 0.0 : c2);
-		solution.setConstraint(2, c3 <= 0.0 ? 0.0 : c3);
+		solution.setObjectiveValue(0, f1);
+		solution.setObjectiveValue(1, f2);
+		solution.setConstraintValue(0, c1);
+		solution.setConstraintValue(1, c2);
+		solution.setConstraintValue(2, c3);
 	}
 
 	@Override
@@ -75,6 +74,13 @@ public class Kita extends AbstractProblem {
 		
 		solution.setVariable(0, new RealVariable(0.0, 7.0));
 		solution.setVariable(1, new RealVariable(0.0, 7.0));
+		
+		solution.setObjective(0, new Maximize());
+		solution.setObjective(1, new Maximize());
+		
+		solution.setConstraint(0, LessThanOrEqual.to(0.0));
+		solution.setConstraint(1, LessThanOrEqual.to(0.0));
+		solution.setConstraint(2, LessThanOrEqual.to(0.0));
 		
 		return solution;
 	}

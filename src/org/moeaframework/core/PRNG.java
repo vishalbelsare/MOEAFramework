@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -18,21 +18,19 @@
 package org.moeaframework.core;
 
 import java.util.Collections;
+import java.util.ConcurrentModificationException;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
 
-import org.apache.commons.math3.random.MersenneTwister;
-import org.apache.commons.math3.random.RandomAdaptor;
+import org.moeaframework.parallel.util.ThreadLocalMersenneTwister;
 
 /**
- * Static methods for generating random or pseudo-random numbers. Any source of
- * randomness implementing the {@link Random} interface can be used as the
- * random source.
+ * Static methods for generating random or pseudo-random numbers.  Any source of randomness implementing the
+ * {@link Random} interface can be used as the random source.
  * <p>
- * {@code PRNG} relies on an underlying source of randomness, and inherits
- * thread safety from the underlying implementation.  Unless the underlying
- * implementation is known to be thread-safe, assume that {@code PRNG} is not
+ * {@code PRNG} relies on an underlying source of randomness, and inherits thread safety from the underlying
+ * implementation.  Unless the underlying implementation is known to be thread-safe, assume that {@code PRNG} is not
  * thread-safe.
  */
 public class PRNG {
@@ -42,11 +40,12 @@ public class PRNG {
 	 */
 	private static Random random;
 
-	/**
-	 * Initialize the static variables.
-	 */
 	static {
-		random = new RandomAdaptor(new MersenneTwister());
+		random = ThreadLocalMersenneTwister.getInstance();
+		
+		if (Settings.PROPERTIES.contains(Settings.KEY_PRNG_SEED)) {
+			setSeed(Settings.PROPERTIES.getLong(Settings.KEY_PRNG_SEED));
+		}
 	}
 
 	/**
@@ -57,10 +56,8 @@ public class PRNG {
 	}
 
 	/**
-	 * While the preferred method for seeding PRNGs is through the
-	 * {@code setRandom} method since methods providing more entropy may be
-	 * available
-	 * to specific implementations, this method is intended to provide a uniform
+	 * While the preferred method for seeding PRNGs is through the {@code setRandom} method since methods providing
+	 * more entropy may be available to specific implementations, this method is intended to provide a uniform
 	 * interface for setting the seed.
 	 * 
 	 * @param seed the new seed
@@ -88,77 +85,76 @@ public class PRNG {
 	}
 
 	/**
-	 * Returns the next random, uniformly distributed {@code float} value
-	 * between 0.0 and 1.0.
+	 * Returns the next random, uniformly distributed {@code float} value between 0.0 and 1.0.
 	 * 
-	 * @return the next random, uniformly distributed {@code float} value
-	 *         between 0.0 and 1.0
+	 * @return the next random, uniformly distributed {@code float} value between 0.0 and 1.0
 	 */
 	public static float nextFloat() {
 		return random.nextFloat();
 	}
 
 	/**
-	 * Returns the next random, uniformly distributed {@code float} value
-	 * between {@code min} and {@code max}.
+	 * Returns the next random, uniformly distributed {@code float} value between {@code min} and {@code max}.
 	 * 
-	 * @return the next random, uniformly distributed {@code float} value
-	 *         between {@code min} and {@code max}
+	 * @param min the minimum value (inclusive)
+	 * @param max the maximum value (exclusive)
+	 * @return the next random, uniformly distributed {@code float} value between {@code min} and {@code max}
 	 */
 	public static float nextFloat(float min, float max) {
 		return min + random.nextFloat() * (max - min);
 	}
 
 	/**
-	 * Returns the next random, uniformly distributed {@code double} value
-	 * between 0.0 and 1.0.
+	 * Returns the next random, uniformly distributed {@code double} value between 0.0 and 1.0.
 	 * 
-	 * @return the next random, uniformly distributed {@code double} value
-	 *         between 0.0 and 1.0
+	 * @return the next random, uniformly distributed {@code double} value between 0.0 and 1.0
 	 */
 	public static double nextDouble() {
 		return random.nextDouble();
 	}
 
 	/**
-	 * Returns the next random, uniformly distributed {@code double} value
-	 * between {@code min} and {@code max}.
+	 * Returns the next random, uniformly distributed {@code double} value between {@code min} and {@code max}.
 	 * 
-	 * @return the next random, uniformly distributed {@code double} value
-	 *         between {@code min} and {@code max}
+	 * @param min the minimum value (inclusive)
+	 * @param max the maximum value (exclusive)
+	 * @return the next random, uniformly distributed {@code double} value between {@code min} and {@code max}
 	 */
 	public static double nextDouble(double min, double max) {
 		return min + random.nextDouble() * (max - min);
 	}
 
 	/**
-	 * Returns the next random, uniformly distributed {@code int} value between
-	 * {@code Integer.MIN_VALUE} and {@code Integer.MAX_VALUE} .
+	 * Returns the next random, uniformly distributed {@code int} value between {@code Integer.MIN_VALUE} and
+	 * {@code Integer.MAX_VALUE} .
 	 * 
-	 * @return the next random, uniformly distributed {@code int} value between
-	 *         {@code Integer.MIN_VALUE} and {@code Integer.MAX_VALUE}.
+	 * @return the next random, uniformly distributed {@code int} value between {@code Integer.MIN_VALUE} and
+	 *         {@code Integer.MAX_VALUE}.
 	 */
 	public static int nextInt() {
 		return random.nextInt();
 	}
 
 	/**
-	 * Returns the next random, uniformly distributed {@code int} value between
-	 * {@code 0} (inclusive) and {@code n} (exclusive).
+	 * Returns the next random, uniformly distributed {@code int} value between {@code 0} (inclusive) and {@code n}
+	 * (exclusive).
 	 * 
-	 * @return the next random, uniformly distributed {@code int} value between
-	 *         {@code 0} (inclusive) and {@code n} (exclusive).
+	 * @param n the maximum value (exclusive)
+	 * @return the next random, uniformly distributed {@code int} value between {@code 0} (inclusive) and {@code n}
+	 *         (exclusive).
 	 */
 	public static int nextInt(int n) {
 		return random.nextInt(n);
 	}
 
 	/**
-	 * Returns the next random, uniformly distributed {@code int} value between
-	 * {@code min} and {@code max} (both inclusive).
+	 * Returns the next random, uniformly distributed {@code int} value between {@code min} and {@code max}
+	 * (both inclusive).
 	 * 
-	 * @return the next random, uniformly distributed {@code int} value between
-	 *         {@code min} and {@code max} (both inclusive).
+	 * @param min the minimum value (inclusive)
+	 * @param max the maximum value (inclusive)
+	 * @return the next random, uniformly distributed {@code int} value between {@code min} and {@code max}
+	 *         (both inclusive).
 	 */
 	public static int nextInt(int min, int max) {
 		return min + random.nextInt(max - min + 1);
@@ -174,30 +170,31 @@ public class PRNG {
 	}
 
 	/**
-	 * Returns the next random, Gaussian distributed {@code double} value with
-	 * mean {@code 0.0} and standard deviation {@code 1.0}.
+	 * Returns the next random, Gaussian distributed {@code double} value with mean {@code 0.0} and standard deviation
+	 * {@code 1.0}.
 	 * 
-	 * @return the next random, Gaussian distributed {@code double} value with
-	 *         mean {@code 0.0} and standard deviation {@code 1.0}.
+	 * @return the next random, Gaussian distributed {@code double} value with mean {@code 0.0} and standard deviation
+	 *         {@code 1.0}.
 	 */
 	public static double nextGaussian() {
 		return random.nextGaussian();
 	}
 
 	/**
-	 * Returns the next random, Gaussian distributed {@code double} value with
-	 * mean {@code mean} and standard deviation {@code stdev}.
+	 * Returns the next random, Gaussian distributed {@code double} value with mean {@code mean} and standard deviation
+	 * {@code stdev}.
 	 * 
-	 * @return the next random, Gaussian distributed {@code double} value with
-	 *         mean {@code mean} and standard deviation {@code stdev}.
+	 * @param mean the mean
+	 * @param stdev the standard deviation
+	 * @return the next random, Gaussian distributed {@code double} value with mean {@code mean} and standard deviation
+	 *         {@code stdev}.
 	 */
 	public static double nextGaussian(double mean, double stdev) {
 		return stdev * random.nextGaussian() + mean;
 	}
 
 	/**
-	 * Shuffles the elements of the specified array using the same algorithm as
-	 * {@link Collections#shuffle}.
+	 * Shuffles the elements of the specified array using the same algorithm as {@link Collections#shuffle}.
 	 * 
 	 * @param <T> the type of element stored in the array
 	 * @param array the array to be shuffled
@@ -215,8 +212,7 @@ public class PRNG {
 	}
 
 	/**
-	 * Shuffles the elements of the specified array using the same algorithm as
-	 * {@link Collections#shuffle}.
+	 * Shuffles the elements of the specified array using the same algorithm as {@link Collections#shuffle}.
 	 * 
 	 * @param array the array to be shuffled
 	 */
@@ -233,8 +229,7 @@ public class PRNG {
 	}
 
 	/**
-	 * Shuffles the elements of the specified array using the same algorithm as
-	 * {@link Collections#shuffle}.
+	 * Shuffles the elements of the specified array using the same algorithm as {@link Collections#shuffle}.
 	 * 
 	 * @param array the array to be shuffled
 	 */
@@ -251,8 +246,7 @@ public class PRNG {
 	}
 
 	/**
-	 * Shuffles the elements of the specified array using the same algorithm as
-	 * {@link Collections#shuffle}.
+	 * Shuffles the elements of the specified array using the same algorithm as {@link Collections#shuffle}.
 	 * 
 	 * @param array the array to be shuffled
 	 */
@@ -269,8 +263,7 @@ public class PRNG {
 	}
 
 	/**
-	 * Shuffles the elements of the specified array using the same algorithm as
-	 * {@link Collections#shuffle}.
+	 * Shuffles the elements of the specified array using the same algorithm as {@link Collections#shuffle}.
 	 * 
 	 * @param array the array to be shuffled
 	 */
@@ -287,8 +280,7 @@ public class PRNG {
 	}
 
 	/**
-	 * Shuffles the elements of the specified array using the same algorithm as
-	 * {@link Collections#shuffle}.
+	 * Shuffles the elements of the specified array using the same algorithm as {@link Collections#shuffle}.
 	 * 
 	 * @param array the array to be shuffled
 	 */
@@ -305,8 +297,7 @@ public class PRNG {
 	}
 
 	/**
-	 * Shuffles the elements of the specified array using the same algorithm as
-	 * {@link Collections#shuffle}.
+	 * Shuffles the elements of the specified array using the same algorithm as {@link Collections#shuffle}.
 	 * 
 	 * @param array the array to be shuffled
 	 */
@@ -323,8 +314,7 @@ public class PRNG {
 	}
 
 	/**
-	 * Shuffles the elements of the specified array using the same algorithm as
-	 * {@link Collections#shuffle}.
+	 * Shuffles the elements of the specified array using the same algorithm as {@link Collections#shuffle}.
 	 * 
 	 * @param array the array to be shuffled
 	 */
@@ -341,9 +331,8 @@ public class PRNG {
 	}
 
 	/**
-	 * Shuffles the elements of the specified list by invoking the
-	 * {@link Collections#shuffle} method with the internal {@link Random} in
-	 * this PRNG.
+	 * Shuffles the elements of the specified list by invoking the {@link Collections#shuffle} method with the
+	 * internal {@link Random} in this PRNG.
 	 * 
 	 * @param <T> the type of elements stored in the list
 	 * @param list the list to be shuffled
@@ -382,7 +371,7 @@ public class PRNG {
 			count++;
 		}
 		
-		throw new IllegalStateException();
+		throw new ConcurrentModificationException("Set modified while selecting item");
 	}
 
 }

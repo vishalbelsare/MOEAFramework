@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -18,13 +18,11 @@
 package org.moeaframework.problem.CEC2009;
 
 import org.moeaframework.core.Solution;
-import org.moeaframework.core.variable.EncodingUtils;
 import org.moeaframework.core.variable.RealVariable;
 import org.moeaframework.problem.AbstractProblem;
 
 /**
- * The unconstrained UF8 test problem from the CEC 2009 special session and
- * competition.
+ * The unconstrained UF8 test problem from the CEC 2009 special session and competition.
  */
 public class UF8 extends AbstractProblem {
 
@@ -36,8 +34,7 @@ public class UF8 extends AbstractProblem {
 	}
 
 	/**
-	 * Constructs a UF8 test problem with the specified number of decision
-	 * variables.
+	 * Constructs a UF8 test problem with the specified number of decision variables.
 	 * 
 	 * @param numberOfVariables the number of decision variables
 	 */
@@ -47,12 +44,12 @@ public class UF8 extends AbstractProblem {
 
 	@Override
 	public void evaluate(Solution solution) {
-		double[] x = EncodingUtils.getReal(solution);
+		double[] x = RealVariable.getReal(solution);
 		double[] f = new double[3];
 
 		CEC2009.UF8(x, f, numberOfVariables);
 
-		solution.setObjectives(f);
+		solution.setObjectiveValues(f);
 	}
 
 	@Override

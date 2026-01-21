@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -18,8 +18,7 @@
 package org.moeaframework.problem.LZ;
 
 /**
- * The F3 problem from the complicated Pareto sets test suite by Hui Li and
- * Qingfu Zhang.
+ * The F3 problem from the complicated Pareto sets test suite by Hui Li and Qingfu Zhang.
  */
 public class LZ3 extends LZ {
 

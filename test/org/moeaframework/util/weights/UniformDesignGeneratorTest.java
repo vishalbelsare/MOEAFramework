@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -18,29 +18,40 @@
 package org.moeaframework.util.weights;
 
 import org.apache.commons.math3.primes.Primes;
-import org.junit.Assert;
 import org.junit.Test;
+import org.moeaframework.Assert;
 
-/**
- * Tests the {@link UniformDesignGenerator} class.
- */
-public class UniformDesignGeneratorTest extends WeightGeneratorTest {
+public class UniformDesignGeneratorTest extends AbstractWeightGeneratorTest<UniformDesignGenerator> {
+	
+	@Override
+	public UniformDesignGenerator createInstance(int numberOfObjectives) {
+		return new UniformDesignGenerator(numberOfObjectives, SAMPLES);
+	}
+	
+	@Override
+	public int getExpectedNumberOfSamples(int numberOfObjectives) {
+		return SAMPLES;
+	}
+	
+	@Test(expected = IllegalArgumentException.class)
+	@Override
+	public void test2D() {
+		createInstance(2);
+	}
 	
 	@Test
 	public void testPrimes() {
-		int[] primes = new UniformDesignGenerator(3, 100)
-				.generateFirstKPrimes(10);
+		int[] primes = createInstance(3).generateFirstKPrimes(10);
 		
 		for (int prime : primes) {
 			Assert.assertTrue(Primes.isPrime(prime));
 		}
-	}
-	
-	@Test
-	public void test() {
-		test(new UniformDesignGenerator(3, 100), 3);
-		test(new UniformDesignGenerator(5, 100), 5);
-		test(new UniformDesignGenerator(10, 100), 10);
+
+		int[] expected = new int[] {
+			2, 3, 5, 7, 11, 13, 17, 19, 23, 29
+		};
+		
+		Assert.assertArrayEquals(expected, primes);
 	}
 
 }

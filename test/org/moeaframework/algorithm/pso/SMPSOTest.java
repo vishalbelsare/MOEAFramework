@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,39 +17,17 @@
  */
 package org.moeaframework.algorithm.pso;
 
-import java.io.IOException;
-
-import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.moeaframework.Retryable;
 import org.moeaframework.CIRunner;
-import org.moeaframework.algorithm.AlgorithmTest;
+import org.moeaframework.Retryable;
+import org.moeaframework.algorithm.JMetalAlgorithmTest;
 
-/**
- * Tests the {@link SMPSO} class.
- */
 @RunWith(CIRunner.class)
 @Retryable
-public class SMPSOTest extends AlgorithmTest {
+public class SMPSOTest extends JMetalAlgorithmTest {
 	
-	@Test
-	public void testDTLZ1() throws IOException {
-		test("DTLZ1_2", "SMPSO", "SMPSO-JMetal");
-	}
-	
-	@Test
-	public void testDTLZ2() throws IOException {
-		test("DTLZ2_2", "SMPSO", "SMPSO-JMetal");
-	}
-	
-	@Test
-	public void testDTLZ7() throws IOException {
-		test("DTLZ7_2", "SMPSO", "SMPSO-JMetal");
-	}
-	
-	@Test
-	public void testUF1() throws IOException {
-		test("UF1", "SMPSO", "SMPSO-JMetal");
+	public SMPSOTest() {
+		super("SMPSO");
 	}
 
 }

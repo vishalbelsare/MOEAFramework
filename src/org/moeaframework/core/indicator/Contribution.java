@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,13 +17,13 @@
  */
 package org.moeaframework.core.indicator;
 
-import org.apache.commons.math3.util.MathArrays;
-import org.moeaframework.core.EpsilonBoxDominanceArchive;
-import org.moeaframework.core.Indicator;
-import org.moeaframework.core.NondominatedPopulation;
+import org.moeaframework.core.Epsilons;
 import org.moeaframework.core.Settings;
 import org.moeaframework.core.Solution;
 import org.moeaframework.core.comparator.EpsilonBoxDominanceComparator;
+import org.moeaframework.core.population.EpsilonBoxDominanceArchive;
+import org.moeaframework.core.population.NondominatedPopulation;
+import org.moeaframework.util.validate.Validate;
 
 /**
  * Measures the contribution of the approximation set to the reference set.
@@ -36,15 +36,13 @@ public class Contribution implements Indicator {
 	private final NondominatedPopulation referenceSet;
 
 	/**
-	 * The &epsilon;-box dominance comparator used to determine if solutions in
-	 * the reference set are covered by solutions in the approximation set; or 
-	 * {@code null} if exact matching is used.
+	 * The &epsilon;-box dominance comparator used to determine if solutions in the reference set are covered by
+	 * solutions in the approximation set; or {@code null} if exact matching is used.
 	 */
 	private final EpsilonBoxDominanceComparator comparator;
 	
 	/**
-	 * Constructs the contribution indicator using the specified reference set.
-	 * Exact matching is used.
+	 * Constructs the contribution indicator using the specified reference set.  Exact matching is used.
 	 * 
 	 * @param referenceSet the reference set
 	 * @throws IllegalArgumentException if the reference set is empty
@@ -54,9 +52,8 @@ public class Contribution implements Indicator {
 	}
 	
 	/**
-	 * Constructs the contribution indicator using the specified reference set
-	 * and &epsilon; value.  Solutions residing in the same &epsilon;-box are
-	 * considered to be equivalent.
+	 * Constructs the contribution indicator using the specified reference set and &epsilon; value.  Solutions
+	 * residing in the same &epsilon;-box are considered to be equivalent.
 	 * 
 	 * @param referenceSet the reference set
 	 * @param epsilon the &epsilon; value
@@ -67,45 +64,37 @@ public class Contribution implements Indicator {
 	}
 	
 	/**
-	 * Constructs the contribution indicator using the specified reference set
-	 * and &epsilon; values.  Solutions residing in the same &epsilon;-box are
-	 * considered to be equivalent.
+	 * Constructs the contribution indicator using the specified reference set and &epsilon; values.  Solutions
+	 * residing in the same &epsilon;-box are considered to be equivalent.
 	 * 
 	 * @param referenceSet the reference set
-	 * @param epsilon the &epsilon; values
+	 * @param epsilons the &epsilon; values
 	 * @throws IllegalArgumentException if the reference set is empty
 	 */
-	public Contribution(NondominatedPopulation referenceSet, double[] epsilon) {
-		this(referenceSet, new EpsilonBoxDominanceComparator(epsilon));
+	public Contribution(NondominatedPopulation referenceSet, Epsilons epsilons) {
+		this(referenceSet, new EpsilonBoxDominanceComparator(epsilons));
 	}
 	
 	/**
-	 * Constructs the contribution indicator using the specified reference set
-	 * and &epsilon;-box dominance comparator.  Solutions residing in the same 
-	 * &epsilon;-box are considered to be equivalent.If the comparator is 
-	 * {@code null}, exact matching is used.
+	 * Constructs the contribution indicator using the specified reference set and &epsilon;-box dominance comparator.
+	 * Solutions residing in the same &epsilon;-box are considered to be equivalent.If the comparator is {@code null},
+	 * exact matching is used.
 	 * 
 	 * @param referenceSet the reference set
-	 * @param comparator the &epsilon;-box dominance comparator used to 
-	 *        determine if solutions in the reference set are covered by 
-	 *        solutions in the approximation set; or {@code null} if exact
-	 *        matching is used
+	 * @param comparator the &epsilon;-box dominance comparator used to determine if solutions in the reference set
+	 *        are covered by solutions in the approximation set; or {@code null} if exact matching is used
 	 * @throws IllegalArgumentException if the reference set is empty
 	 */
-	public Contribution(NondominatedPopulation referenceSet, 
-			EpsilonBoxDominanceComparator comparator) {
+	public Contribution(NondominatedPopulation referenceSet, EpsilonBoxDominanceComparator comparator) {
 		super();
 		this.comparator = comparator;
 		
-		if (referenceSet.isEmpty()) {
-			throw new IllegalArgumentException("reference set is empty");
-		}
+		Validate.that("referenceSet", referenceSet).isNotEmpty();
 		
 		if (comparator == null) {
 			this.referenceSet = referenceSet;
 		} else {
-			this.referenceSet = new EpsilonBoxDominanceArchive(comparator, 
-					referenceSet);
+			this.referenceSet = new EpsilonBoxDominanceArchive(comparator, referenceSet);
 		}
 	}
 
@@ -118,9 +107,7 @@ public class Contribution implements Indicator {
 			
 			for (Solution solution2 : approximationSet) {
 				if (comparator == null) {
-					double distance = MathArrays.distance(
-							solution1.getObjectives(), 
-							solution2.getObjectives());
+					double distance = solution1.euclideanDistance(solution2);
 					
 					if (distance < Settings.EPS) {
 						match = true;

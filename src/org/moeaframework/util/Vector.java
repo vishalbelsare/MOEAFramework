@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,7 +17,9 @@
  */
 package org.moeaframework.util;
 
+import org.moeaframework.core.PRNG;
 import org.moeaframework.core.Settings;
+import org.moeaframework.util.validate.Validate;
 
 /**
  * Mathematical operators for manipulating vectors (double arrays).
@@ -30,6 +32,48 @@ public class Vector {
 	private Vector() {
 		super();
 	}
+	
+	/**
+	 * Returns a vector filled with the given value.
+	 * 
+	 * @param n the length of the vector
+	 * @param v the fill value
+	 * @return the vector containing the given fill value
+	 */
+	public static double[] of(int n, double v) {
+		double[] w = new double[n];
+		
+		for (int i = 0; i < n; i++) {
+			w[i] = v;
+		}
+		
+		return w;
+	}
+	
+	/**
+	 * Returns a vector filled with randomly generated numbers that sum to {@code 1.0}.  Usage of this method is
+	 * generally fine if only a small number of random vectors is needed, as the generated vectors are biased towards
+	 * the center and less likely near the boundaries.  If needing many vectors that are uniformly distributed in
+	 * space, prefer using {@link org.moeaframework.util.weights.WeightGenerator}.
+	 * 
+	 * @param n the length of the vector
+	 * @return the generated vector
+	 */
+	public static double[] uniform(int n) {
+		double[] w = new double[n];
+		double sum = 0.0;
+		
+		for (int i = 0; i < n; i++) {
+			w[i] = PRNG.nextDouble();
+			sum += w[i];
+		}
+		
+		for (int i = 0; i < n; i++) {
+			w[i] /= sum;
+		}
+		
+		return w;
+	}
 
 	/**
 	 * Returns the length of the two specified vectors.
@@ -39,17 +83,14 @@ public class Vector {
 	 * @return the length of the two specified vectors
 	 * @throws IllegalArgumentException if the two vectors are not the same length
 	 */
-	private static int length(double[] u, double[] v) {
-		if (u.length != v.length) {
-			throw new IllegalArgumentException("vectors must have same length");
-		}
-
+	static int length(double[] u, double[] v) {
+		Validate.that("u.length", u.length).isEqualTo("v.length", v.length);
 		return u.length;
 	}
 
 	/**
-	 * Returns the difference between the two specified vectors, {@code u - v}.
-	 * The two vectors must be of the same length.
+	 * Returns the difference between the two specified vectors, {@code u - v}.  The two vectors must be of the same
+	 * length.
 	 * 
 	 * @param u the first vector
 	 * @param v the second vector
@@ -68,8 +109,7 @@ public class Vector {
 	}
 
 	/**
-	 * Returns the sum of the two specified vectors, {@code u + v}. The two
-	 * vectors must be of the same length.
+	 * Returns the sum of the two specified vectors, {@code u + v}.  The two vectors must be of the same length.
 	 * 
 	 * @param u the first vector
 	 * @param v the second vector
@@ -106,17 +146,6 @@ public class Vector {
 	}
 
 	/**
-	 * Returns the negation of the specified vector, {@code -u}. This is
-	 * equivalent to calling {@code multiply(-1, u)}.
-	 * 
-	 * @param u the vector
-	 * @return the negation of the specified vector, {@code -u}
-	 */
-	public static double[] negate(double[] u) {
-		return multiply(-1.0, u);
-	}
-
-	/**
 	 * Returns the scalar division of the specified vector, {@code u / a}.
 	 * 
 	 * @param u the vector
@@ -128,8 +157,7 @@ public class Vector {
 	}
 
 	/**
-	 * Returns the dot (inner) product of the two specified vectors. The two
-	 * vectors must be the same length.
+	 * Returns the dot (inner) product of the two specified vectors.  The two vectors must be the same length.
 	 * 
 	 * @param u the first vector
 	 * @param v the second vector
@@ -158,9 +186,8 @@ public class Vector {
 	}
 
 	/**
-	 * Returns the specified vector normalized to have a magnitude of 1. The
-	 * specified vector must contain at least one non-zero component; otherwise
-	 * an exception is thrown.
+	 * Returns the specified vector normalized to have a magnitude of 1.  The specified vector must contain at least
+	 * one non-zero component; otherwise an exception is thrown.
 	 * 
 	 * @param u the vector
 	 * @return the specified vector normalized to have a magnitude of 1
@@ -168,29 +195,26 @@ public class Vector {
 	 */
 	public static double[] normalize(double[] u) {
 		if (isZero(u)) {
-			throw new IllegalArgumentException("can not normalize zero vector");
+			Validate.that("u", u).fails("Can not normalize a vector of zeros");
 		}
 
 		return multiply(1.0 / magnitude(u), u);
 	}
 
 	/**
-	 * Returns the projection of {@code u} onto {@code v}. The two vectors must
-	 * be the same length.
+	 * Returns the projection of {@code u} onto {@code v}.  The two vectors must be the same length.
 	 * 
 	 * @param u the vector being projected
 	 * @param v the vector onto which {@code u} is being projected
 	 * @return the projection of {@code u} onto {@code v}
-	 * @throws IllegalArgumentException if the two vectors are not the same 
-	 *         length
+	 * @throws IllegalArgumentException if the two vectors are not the same length
 	 */
 	public static double[] project(double[] u, double[] v) {
 		return multiply(dot(u, v) / dot(v, v), v);
 	}
 
 	/**
-	 * Returns the orthogonal basis for the specified vectors using the
-	 * Gram-Schmidt process.
+	 * Returns the orthogonal basis for the specified vectors using the Gram-Schmidt process.
 	 * 
 	 * @param vs the vectors to be orthogonalized
 	 * @return the orthogonal basis
@@ -208,22 +232,19 @@ public class Vector {
 	}
 
 	/**
-	 * Returns the vector {@code u} orthogonal to the already orthogonalized
-	 * vectors {@code vs}. This method is provided to allow incremental
-	 * construction of the orthogonal basis:
-	 * 
+	 * Returns the vector {@code u} orthogonal to the already orthogonalized vectors {@code vs}.  This method is
+	 * provided to allow incremental construction of the orthogonal basis:
 	 * <pre>
-	 * List&lt;double[]&gt; basis = new ArrayList&lt;double[]&gt;();
-	 * for (double[] v : vectors) {
-	 * 	double[] e = orthogonalize(v, basis);
-	 * 	basis.add(e);
-	 * }
+	 *   List&lt;double[]&gt; basis = new ArrayList&lt;double[]&gt;();
+	 *   for (double[] v : vectors) {
+	 * 	  double[] e = orthogonalize(v, basis);
+	 * 	  basis.add(e);
+	 *   }
 	 * </pre>
 	 * 
 	 * @param u the vector
 	 * @param vs the already orthogonalized vectors
-	 * @return the vector {@code u} orthogonal to the already orthogonalized
-	 *         vectors {@code vs}
+	 * @return the vector {@code u} orthogonal to the already orthogonalized vectors {@code vs}
 	 */
 	public static double[] orthogonalize(double[] u, Iterable<double[]> vs) {
 		for (double[] v : vs) {
@@ -241,12 +262,9 @@ public class Vector {
 	 * @throws IllegalArgumentException if the specified vectors is empty
 	 */
 	public static double[] mean(double[][] vs) {
+		Validate.that("vs.length", vs.length).isGreaterThan(0);
+
 		int k = vs.length;
-
-		if (k == 0) {
-			throw new IllegalArgumentException("empty vector");
-		}
-
 		int n = vs[0].length;
 		double[] mean = new double[n];
 
@@ -262,12 +280,10 @@ public class Vector {
 	}
 
 	/**
-	 * Returns {@code true} if the specified vector contains all zeros;
-	 * {@code false} otherwise.
+	 * Returns {@code true} if the specified vector contains all zeros; {@code false} otherwise.
 	 * 
 	 * @param u the vector
-	 * @return {@code true} if the specified vector contains all zeros;
-	 *         {@code false} otherwise
+	 * @return {@code true} if the specified vector contains all zeros; {@code false} otherwise
 	 */
 	public static boolean isZero(double[] u) {
 		for (int i = 0; i < u.length; i++) {
@@ -277,6 +293,18 @@ public class Vector {
 		}
 
 		return true;
+	}
+	
+	/**
+	 * Returns the perpendicular distance between a point and a line passing through the origin {@code (0, ..., 0)}.
+	 * 
+	 * @param point the point
+	 * @param line the line
+	 * @return the minimum distance
+	 */
+	public static double pointLineDistance(double[] point, double[] line) {
+		return Vector.magnitude(
+				Vector.subtract(Vector.multiply(Vector.dot(line, point) / Vector.dot(line, line), line), point));
 	}
 
 }

@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,7 +17,6 @@
  */
 package org.moeaframework.core.comparator;
 
-import java.io.Serializable;
 import java.util.Comparator;
 
 import org.moeaframework.core.Solution;
@@ -25,10 +24,7 @@ import org.moeaframework.core.Solution;
 /**
  * Compares solutions lexicographically.
  */
-public class LexicographicalComparator implements Comparator<Solution>,
-Serializable {
-
-	private static final long serialVersionUID = 2303639747960671103L;
+public class LexicographicalComparator implements Comparator<Solution> {
 
 	/**
 	 * Constructs a comparator for comparing solutions lexicographically.
@@ -40,7 +36,7 @@ Serializable {
 	@Override
 	public int compare(Solution a, Solution b) {
 		for (int i = 0; i < a.getNumberOfObjectives(); i++) {
-			int flag = Double.compare(a.getObjective(i), b.getObjective(i));
+			int flag = a.getObjective(i).compareTo(b.getObjective(i));
 			
 			if (flag != 0) {
 				return flag;

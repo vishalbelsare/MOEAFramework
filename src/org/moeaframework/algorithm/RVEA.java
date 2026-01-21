@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,99 +17,132 @@
  */
 package org.moeaframework.algorithm;
 
-import java.io.NotSerializableException;
-import java.io.Serializable;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.moeaframework.algorithm.ReferenceVectorGuidedPopulation.ReferenceVectorGuidedPopulationState;
-import org.moeaframework.core.FrameworkException;
-import org.moeaframework.core.Initialization;
 import org.moeaframework.core.PRNG;
-import org.moeaframework.core.Population;
-import org.moeaframework.core.Problem;
+import org.moeaframework.core.Settings;
 import org.moeaframework.core.Solution;
-import org.moeaframework.core.Variation;
+import org.moeaframework.core.TypedProperties;
+import org.moeaframework.core.configuration.Property;
+import org.moeaframework.core.initialization.Initialization;
+import org.moeaframework.core.initialization.RandomInitialization;
+import org.moeaframework.core.operator.Variation;
+import org.moeaframework.core.population.Population;
+import org.moeaframework.core.population.ReferenceVectorGuidedPopulation;
+import org.moeaframework.core.spi.OperatorFactory;
+import org.moeaframework.core.termination.MaxFunctionEvaluations;
+import org.moeaframework.core.termination.TerminationCondition;
+import org.moeaframework.problem.Problem;
+import org.moeaframework.util.validate.Validate;
+import org.moeaframework.util.weights.NormalBoundaryDivisions;
 
 /**
- * Implementation of the Reference Vector Guided Evolutionary Algorithm (RVEA).
- * This version does not include the reference vector regeneration method
- * proposed by the authors.
+ * Implementation of the Reference Vector Guided Evolutionary Algorithm (RVEA).  This version does not include the
+ * reference vector regeneration method proposed by the authors.
  * <p>
- * RVEA is similar in concept to NSGA-III, but replaces NSGA-III's
- * dominance-based selection with an angle-penalized distance function.
- * Additionally, whereas NSGA-III renormalizes the objectives every iteration,
- * RVEA periodically scales the reference vectors, potentially reducing
- * algorithm overhead.
+ * RVEA is similar in concept to NSGA-III, but replaces NSGA-III's dominance-based selection with an angle-penalized
+ * distance function.  Additionally, whereas NSGA-III renormalizes the objectives every iteration, RVEA periodically
+ * scales the reference vectors, potentially reducing algorithm overhead.
  * <p>
  * References:
  * <ol>
- *   <li>R. Cheng, Y. Jin, M. Olhofer, and B. Sendhoff.  "A Reference Vector
- *       Guided Evolutionary Algorithm for Many-objective Optimization."
- *       IEEE Transactions on Evolutionary Computation, Issue 99, 2016.
+ *   <li>R. Cheng, Y. Jin, M. Olhofer, and B. Sendhoff.  "A Reference Vector Guided Evolutionary Algorithm for
+ *       Many-objective Optimization."  IEEE Transactions on Evolutionary Computation, Issue 99, 2016.
  * </ol>
  */
 public class RVEA extends AbstractEvolutionaryAlgorithm {
+		
+	/**
+	 * The current iteration;
+	 */
+	private int iteration;
 	
 	/**
-	 * The variation operator.
+	 * The maximum number of iterations for the angle-penalized distance to transition between convergence and
+	 * diversity.
 	 */
-	private final Variation variation;
+	private int maxIterations;
 	
 	/**
-	 * The current generation;
+	 * The frequency, in iterations, that the reference vectors are normalized.
 	 */
-	private int generation;
+	private int adaptFrequency;
 	
 	/**
-	 * The maximum number of generations for the angle-penalized distance to
-	 * transition between convergence and diversity.
+	 * Constructs a new instance of RVEA with default settings.
+	 * 
+	 * @param problem the problem being solved
 	 */
-	private int maxGeneration = 1000;
+	public RVEA(Problem problem) {
+		this(problem, NormalBoundaryDivisions.forProblem(problem));
+
+	}
 	
 	/**
-	 * The frequency, in generations, that the reference vectors are normalized.
+	 * Constructs a new instance of RVEA with default settings.
+	 * 
+	 * @param problem the problem being solved
+	 * @param divisions the number of divisions used by the reference vector guided population
 	 */
-	private int adaptFrequency = maxGeneration / 10;
+	RVEA(Problem problem, NormalBoundaryDivisions divisions) {
+		this(problem,
+				divisions.getNumberOfReferencePoints(problem),
+				new ReferenceVectorGuidedPopulation(problem.getNumberOfObjectives(), divisions),
+				OperatorFactory.getInstance().getVariation(problem),
+				new RandomInitialization(problem),
+				-1,
+				10);
+	}
 
 	/**
 	 * Constructs a new instance of the RVEA algorithm.
 	 * 
 	 * @param problem the problem being solved
+	 * @param initialPopulationSize the initial population size
 	 * @param population the population used to store solutions
 	 * @param variation the variation operator
 	 * @param initialization the initialization method
-	 * @param maxGeneration the maximum number of generations for the
-	 *        angle-penalized distance to transition between convergence and
-	 *        diversity
-	 * @param adaptFrequency the frequency, in generations, that the reference
-	 *        vectors are normalized.
+	 * @param maxIterations the maximum number of iterations for the angle-penalized distance to transition
+	 *        between convergence and diversity, set to {@code -1} to derive the value from {@code maxEvaluations}
+	 * @param adaptFrequency the frequency, in iterations, that the reference vectors are normalized
 	 */
-	public RVEA(Problem problem, ReferenceVectorGuidedPopulation population,
-			Variation variation, Initialization initialization,
-			int maxGeneration, int adaptFrequency) {
-		super(problem, population, null, initialization);
-		this.variation = variation;
+	public RVEA(Problem problem, int initialPopulationSize, ReferenceVectorGuidedPopulation population,
+			Variation variation, Initialization initialization, int maxIterations, int adaptFrequency) {
+		super(problem, initialPopulationSize, population, null, initialization, variation);
+		this.maxIterations = maxIterations;
+		this.adaptFrequency = adaptFrequency;
 		
 		// catch potential errors
-		if (variation.getArity() != 2) {
-			throw new FrameworkException(
-					"RVEA only supports operators requiring 2 parents");
-		}
+		Validate.that("variation.getArity()", variation.getArity()).isEqualTo(2);
+		Validate.that("problem.getNumberOfObjectives()", problem.getNumberOfObjectives()).isGreaterThanOrEqualTo(2);
+	}
+	
+	@Override
+	public String getName() {
+		return "RVEA";
 	}
 
 	@Override
 	protected void iterate() {
 		ReferenceVectorGuidedPopulation population = getPopulation();
+		Variation variation = getVariation();
 		Population offspring = new Population();
 		int populationSize = population.size();
 		
 		// update the scaling factor for computing the angle-penalized distance
-		population.setScalingFactor(Math.min(generation / (double)maxGeneration,
-				1.0));
+		if (maxIterations < 0) {
+			maxIterations = Settings.DEFAULT_MAX_ITERATIONS;
+			System.err.println("WARNING: maxIterations not configured for RVEA, defaulting to " + maxIterations);
+		}
+		
+		population.setScalingFactor(Math.min(iteration / (double)maxIterations, 1.0));
 		
 		// create a random permutation of the population indices
-		List<Integer> indices = new ArrayList<Integer>();
+		List<Integer> indices = new ArrayList<>();
 		
 		for (int i = 0; i < populationSize; i++) {
 			indices.add(i);
@@ -137,11 +170,52 @@ public class RVEA extends AbstractEvolutionaryAlgorithm {
 		population.truncate();
 		
 		// periodically normalize the reference vectors
-		if ((generation > 0) && (generation % adaptFrequency == 0)) {
+		if ((iteration > 0) && (iteration % adaptFrequency == 0)) {
 			population.adapt();
 		}
 		
-		generation++;
+		iteration++;
+	}
+	
+	/**
+	 * Returns the frequency, in iterations, that the reference vectors are normalized.
+	 * 
+	 * @return the frequency, in iterations
+	 */
+	public int getAdaptFrequency() {
+		return adaptFrequency;
+	}
+	
+	/**
+	 * Sets the frequency, in iterations, that the reference vectors are normalized.
+	 * 
+	 * @param adaptFrequency the frequency, in iterations
+	 */
+	@Property
+	public void setAdaptFrequency(int adaptFrequency) {
+		Validate.that("adaptFrequency", adaptFrequency).isGreaterThan(0);
+		this.adaptFrequency = adaptFrequency;
+	}
+	
+	/**
+	 * Returns the maximum number of iterations for the angle-penalized distance to transition between convergence and
+	 * diversity.
+	 * 
+	 * @return the maximum number of iterations
+	 */
+	public int getMaxIterations() {
+		return maxIterations;
+	}
+	
+	/**
+	 * Sets the maximum number of iterations for the angle-penalized distance to transition between convergence and
+	 * diversity.  If set to {@code -1}, the max iterations will be derived from {@link #run(int)}.
+	 * 
+	 * @param maxIterations the maximum number of iterations
+	 */
+	@Property
+	public void setMaxIterations(int maxIterations) {
+		this.maxIterations = maxIterations;
 	}
 	
 	@Override
@@ -150,95 +224,75 @@ public class RVEA extends AbstractEvolutionaryAlgorithm {
 	}
 	
 	@Override
-	public Serializable getState() throws NotSerializableException {
-		if (!isInitialized()) {
-			throw new AlgorithmInitializationException(this, 
-					"algorithm not initialized");
+	@Property("operator")
+	public void setVariation(Variation variation) {
+		super.setVariation(variation);
+	}
+	
+	@Override
+	@Property("populationSize")
+	public void setInitialPopulationSize(int initialPopulationSize) {
+		super.setInitialPopulationSize(initialPopulationSize);
+	}
+	
+	@Override
+	public void run(TerminationCondition terminationCondition) {
+		if (maxIterations < 0) {
+			int maxFunctionEvaluations = MaxFunctionEvaluations.derive(terminationCondition);
+			
+			if (maxFunctionEvaluations >= 0) {
+				maxIterations = maxFunctionEvaluations / getInitialPopulationSize();
+			}
 		}
-
-		return new RVEAState(getNumberOfEvaluations(), generation,
-				getPopulation().getState());
+		
+		super.run(terminationCondition);
 	}
 
 	@Override
-	public void setState(Object objState) throws NotSerializableException {
-		RVEAState state = (RVEAState)objState;
-
-		initialized = true;
-		numberOfEvaluations = state.getNumberOfEvaluations();
-		generation = state.getGeneration();
-		getPopulation().setState(state.getPopulationState());
+	public void applyConfiguration(TypedProperties properties) {
+		NormalBoundaryDivisions divisions = getPopulation().getDivisions();
+		double alpha = getPopulation().getAlpha();
+		boolean changed = false;
+		
+		NormalBoundaryDivisions newDivisions = NormalBoundaryDivisions.tryFromProperties(properties);
+		
+		if (newDivisions != null) {
+			divisions = newDivisions;
+			changed = true;
+		}
+		
+		if (properties.contains("alpha")) {
+			alpha = properties.getDouble("alpha");
+			changed = true;
+		}
+		
+		if (changed) {
+			setPopulation(new ReferenceVectorGuidedPopulation(problem.getNumberOfObjectives(), divisions, alpha));
+		}
+		
+		super.applyConfiguration(properties);
 	}
 
-	/**
-	 * Proxy for serializing and deserializing the state of an
-	 * {@code RVEA} instance. This proxy supports saving
-	 * the {@code numberOfEvaluations}, {@code generation}, {@code population}
-	 * and {@code archive}.
-	 */
-	private static class RVEAState implements Serializable {
+	@Override
+	public TypedProperties getConfiguration() {
+		TypedProperties properties = super.getConfiguration();
+		properties.addAll(getPopulation().getDivisions().toProperties());
+		properties.setDouble("alpha", getPopulation().getAlpha());
+		return properties;
+	}
+	
+	@Override
+	public void saveState(ObjectOutputStream stream) throws IOException {
+		super.saveState(stream);
+		stream.writeInt(iteration);
+		getPopulation().saveState(stream);
+	}
 
-		private static final long serialVersionUID = 5341464818762163296L;
-
-		/**
-		 * The number of objective function evaluations.
-		 */
-		private final int numberOfEvaluations;
-		
-		/**
-		 * The current generation.
-		 */
-		private final int generation;
-
-		/**
-		 * The population stored in a serializable list.
-		 */
-		private final ReferenceVectorGuidedPopulationState populationState;
-
-		/**
-		 * Constructs a proxy to serialize and deserialize the state of an 
-		 * {@code RVEA} instance.
-		 * 
-		 * @param numberOfEvaluations the number of objective function
-		 *        evaluations
-		 * @param generation the current generation
-		 * @param population the population stored in a serializable object
-		 */
-		public RVEAState(int numberOfEvaluations, int generation,
-				ReferenceVectorGuidedPopulationState populationState) {
-			super();
-			this.numberOfEvaluations = numberOfEvaluations;
-			this.generation = generation;
-			this.populationState = populationState;
-		}
-
-		/**
-		 * Returns the number of objective function evaluations.
-		 * 
-		 * @return the number of objective function evaluations
-		 */
-		public int getNumberOfEvaluations() {
-			return numberOfEvaluations;
-		}
-
-		/**
-		 * Returns the current generation.
-		 * 
-		 * @return the current generation
-		 */
-		public int getGeneration() {
-			return generation;
-		}
-
-		/**
-		 * Returns the population stored in a serializable object.
-		 * 
-		 * @return the population stored in a serializable object
-		 */
-		public ReferenceVectorGuidedPopulationState getPopulationState() {
-			return populationState;
-		}
-
+	@Override
+	public void loadState(ObjectInputStream stream) throws IOException, ClassNotFoundException {
+		super.loadState(stream);
+		iteration = stream.readInt();
+		getPopulation().loadState(stream);
 	}
 
 }

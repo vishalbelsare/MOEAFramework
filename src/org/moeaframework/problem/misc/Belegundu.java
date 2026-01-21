@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -18,6 +18,7 @@
 package org.moeaframework.problem.misc;
 
 import org.moeaframework.core.Solution;
+import org.moeaframework.core.constraint.LessThanOrEqual;
 import org.moeaframework.core.variable.RealVariable;
 import org.moeaframework.problem.AbstractProblem;
 
@@ -33,13 +34,11 @@ import org.moeaframework.problem.AbstractProblem;
  * <p>
  * References:
  * <ol>
- *   <li>Belegundu, A. D., et al (1994).  "Multi-Objective Optimization of
- *       Laminated Ceramic Composites Using Genetic Algorithms."  Proceedings
- *       of the 5th AIAA/NASA/USAF/ISSMO Symposium on Multidisciplinary
- *       Analysis and Optimization, Washington, D.C., pp. 1015-1022.
- *   <li>Van Veldhuizen, D. A (1999).  "Multiobjective Evolutionary Algorithms: 
- *       Classifications, Analyses, and New Innovations."  Air Force Institute
- *       of Technology, Ph.D. Thesis, Appendix B.
+ *   <li>Belegundu, A. D., et al (1994).  "Multi-Objective Optimization of Laminated Ceramic Composites Using Genetic
+ *       Algorithms."  Proceedings of the 5th AIAA/NASA/USAF/ISSMO Symposium on Multidisciplinary Analysis and
+ *       Optimization, Washington, D.C., pp. 1015-1022.
+ *   <li>Van Veldhuizen, D. A (1999).  "Multiobjective Evolutionary Algorithms: Classifications, Analyses, and New
+ *       Innovations."  Air Force Institute of Technology, Ph.D. Thesis, Appendix B.
  * </ol>
  */
 public class Belegundu extends AbstractProblem {
@@ -60,10 +59,10 @@ public class Belegundu extends AbstractProblem {
 		double c1 = -x + y - 1.0;
 		double c2 = x + y - 7.0;
 		
-		solution.setObjective(0, f1);
-		solution.setObjective(1, f2);
-		solution.setConstraint(0, c1 <= 0.0 ? 0.0 : c1);
-		solution.setConstraint(1, c2 <= 0.0 ? 0.0 : c2);
+		solution.setObjectiveValue(0, f1);
+		solution.setObjectiveValue(1, f2);
+		solution.setConstraintValue(0, c1);
+		solution.setConstraintValue(1, c2);
 	}
 
 	@Override
@@ -72,6 +71,9 @@ public class Belegundu extends AbstractProblem {
 		
 		solution.setVariable(0, new RealVariable(0.0, 5.0));
 		solution.setVariable(1, new RealVariable(0.0, 3.0));
+		
+		solution.setConstraint(0, LessThanOrEqual.to(0.0));
+		solution.setConstraint(1, LessThanOrEqual.to(0.0));
 		
 		return solution;
 	}

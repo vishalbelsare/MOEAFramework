@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -18,32 +18,26 @@
 package org.moeaframework.algorithm.pso;
 
 import org.moeaframework.core.PRNG;
-import org.moeaframework.core.Problem;
+import org.moeaframework.core.Settings;
 import org.moeaframework.core.Solution;
 import org.moeaframework.core.comparator.CrowdingComparator;
 import org.moeaframework.core.comparator.ParetoDominanceComparator;
 import org.moeaframework.core.fitness.CrowdingDistanceFitnessEvaluator;
 import org.moeaframework.core.fitness.FitnessBasedArchive;
 import org.moeaframework.core.operator.real.PM;
-import org.moeaframework.core.variable.EncodingUtils;
 import org.moeaframework.core.variable.RealVariable;
-
-//NOTE: This implementation is derived from the original manuscripts and the
-//JMetal implementation.
+import org.moeaframework.problem.Problem;
 
 /**
- * Implementation of SMPSO, the speed-constrained multi-objective particle
- * swarm optimizer.
+ * Implementation of SMPSO, the speed-constrained multi-objective particle swarm optimizer.
  * <p>
  * References:
  * <ol>
- *   <li>Nebro, A. J., J. J. Durillo, J. Garcia-Nieto, and C. A. Coello Coello
- *       (2009).  SMPSO: A New PSO-based Metaheuristic for Multi-objective
- *       Optimization.  2009 IEEE Symposium on Computational Intelligence in
+ *   <li>Nebro, A. J., J. J. Durillo, J. Garcia-Nieto, and C. A. Coello Coello (2009).  SMPSO: A New PSO-based
+ *       Metaheuristic for Multi-objective Optimization.  2009 IEEE Symposium on Computational Intelligence in
  *       Multi-Criteria Decision-Making, pp. 66-73.
- *   <li>Durillo, J. J., J. Garc�a-Nieto, A. J. Nebro, C. A. Coello Coello,
- *       F. Luna, and E. Alba (2009).  Multi-Objective Particle Swarm
- *       Optimizers: An Experimental Comparison.  Evolutionary Multi-Criterion
+ *   <li>Durillo, J. J., J. Garc�a-Nieto, A. J. Nebro, C. A. Coello Coello, F. Luna, and E. Alba (2009).
+ *       Multi-Objective Particle Swarm Optimizers: An Experimental Comparison.  Evolutionary Multi-Criterion
  *       Optimization, pp. 495-509.
  * </ol>
  */
@@ -55,18 +49,40 @@ public class SMPSO extends AbstractPSOAlgorithm {
 	private double[] minimumVelocity;
 	
 	/**
-	 * The maximum velocity for each varaible.
+	 * The maximum velocity for each variable.
 	 */
 	private double[] maximumVelocity;
 	
-	public SMPSO(Problem problem, int swarmSize, int leaderSize,
-			double mutationProbability, double distributionIndex) {
-		super(problem, swarmSize, leaderSize, new CrowdingComparator(),
+	/**
+	 * Constructs a new SMPSO instance with default settings.
+	 * 
+	 * @param problem the problem
+	 */
+	public SMPSO(Problem problem) {
+		this(problem,
+				Settings.DEFAULT_POPULATION_SIZE,
+				Settings.DEFAULT_POPULATION_SIZE,
+				1.0 / problem.getNumberOfVariables(),
+				20.0);
+	}
+	
+	/**
+	 * Constructs a new SMPSO instance.
+	 * 
+	 * @param problem the problem
+	 * @param swarmSize the number of particles
+	 * @param leaderSize the number of leaders
+	 * @param mutationProbability the mutation probability for {@link PM}
+	 * @param distributionIndex the distribution index for {@link PM}
+	 */
+	public SMPSO(Problem problem, int swarmSize, int leaderSize, double mutationProbability, double distributionIndex) {
+		super(problem, swarmSize, leaderSize,
+				new CrowdingComparator(),
 				new ParetoDominanceComparator(),
 				new FitnessBasedArchive(new CrowdingDistanceFitnessEvaluator(), leaderSize),
 				null,
 				new PM(mutationProbability, distributionIndex));
-
+		
 		// initialize the minimum and maximum velocities
 		minimumVelocity = new double[problem.getNumberOfVariables()];
 		maximumVelocity = new double[problem.getNumberOfVariables()];
@@ -93,12 +109,12 @@ public class SMPSO extends AbstractPSOAlgorithm {
 		double W = PRNG.nextDouble(0.1, 0.1);
 		
 		for (int j = 0; j < problem.getNumberOfVariables(); j++) {
-			double particleValue = EncodingUtils.getReal(particle.getVariable(j));
-			double localBestValue = EncodingUtils.getReal(localBestParticle.getVariable(j));
-			double leaderValue = EncodingUtils.getReal(leader.getVariable(j));
+			double particleValue = RealVariable.getReal(particle.getVariable(j));
+			double localBestValue = RealVariable.getReal(localBestParticle.getVariable(j));
+			double leaderValue = RealVariable.getReal(leader.getVariable(j));
 			
-			double velocity = constrictionCoefficient(C1, C2) * 
-					(W * velocities[i][j] + 
+			double velocity = constrictionCoefficient(C1, C2) *
+					(W * velocities[i][j] +
 					C1*r1*(localBestValue - particleValue) +
 					C2*r2*(leaderValue - particleValue));
 			
@@ -110,6 +126,11 @@ public class SMPSO extends AbstractPSOAlgorithm {
 			
 			velocities[i][j] = velocity;
 		}
+	}
+	
+	@Override
+	public String getName() {
+		return "SMPSO";
 	}
 	
 	/**
@@ -135,7 +156,7 @@ public class SMPSO extends AbstractPSOAlgorithm {
 		// but the JMetal implementation applies to every 6th particle.  Should
 		// the application of mutation be random instead?
 		if (i % 6 == 0) {
-			particles[i] = mutation.evolve(new Solution[] { particles[i] })[0];
+			particles[i] = mutation.mutate(particles[i]);
 		}
 	}
 

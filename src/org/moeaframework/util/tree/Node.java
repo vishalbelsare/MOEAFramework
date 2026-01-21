@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,16 +17,20 @@
  */
 package org.moeaframework.util.tree;
 
+import java.io.Serializable;
+
+import org.moeaframework.core.Named;
+
 /**
- * A node in an expression tree.  Expression trees are strongly typed, meaning
- * nodes have defined return types and argument types.  The return type of all
- * nodes must match the argument type from its parent node.
+ * A node in an expression tree.  Expression trees are strongly typed, meaning nodes have defined return types and
+ * argument types.  The return type of all nodes must match the argument type from its parent node.
  */
-public abstract class Node {
-	
+public abstract class Node implements Serializable, Named {
+
+	private static final long serialVersionUID = 8670076212862882751L;
+
 	/**
-	 * {@code true} if this node should not be modified, altered or replaced;
-	 * {@code false} otherwise.
+	 * {@code true} if this node should not be modified, altered or replaced; {@code false} otherwise.
 	 */
 	private boolean fixed;
 
@@ -71,13 +75,16 @@ public abstract class Node {
 		arguments = new Node[argumentTypes.length];
 	}
 	
+	@Override
+	public String getName() {
+		return getClass().getSimpleName();
+	}
+	
 	/**
-	 * Calls {@link #setFixed(boolean)} on all nodes in the subtree rooted at
-	 * this node.
+	 * Calls {@link #setFixed(boolean)} on all nodes in the subtree rooted at this node.
 	 * 
-	 * @param fixed {@code true} if all nodes in the subtree rooted at this
-	 *        node should not be modified, altered, or replaced; {@code false}
-	 *        otherwise
+	 * @param fixed {@code true} if all nodes in the subtree rooted at this node should not be modified, altered, or
+	 *        replaced; {@code false} otherwise
 	 */
 	public void setFixedTree(boolean fixed) {
 		setFixed(fixed);
@@ -90,22 +97,18 @@ public abstract class Node {
 	}
 	
 	/**
-	 * Set to {@code true} if this node should not be modified, altered, or
-	 * replaced; {@code false} otherwise.
+	 * Set to {@code true} if this node should not be modified, altered, or replaced; {@code false} otherwise.
 	 * 
-	 * @param fixed {@code true} if this node should not be modified, altered,
-	 *        or replaced; {@code false} otherwise
+	 * @param fixed {@code true} if this node should not be modified, altered, or replaced; {@code false} otherwise
 	 */
 	public void setFixed(boolean fixed) {
 		this.fixed = fixed;
 	}
 	
 	/**
-	 * Returns {@code true} if this node should not be modified, altered, or
-	 * replaced; {@code false} otherwise.
+	 * Returns {@code true} if this node should not be modified, altered, or replaced; {@code false} otherwise.
 	 * 
-	 * @return {@code true} if this node should not be modified, altered, or
-	 *         replaced; {@code false} otherwise
+	 * @return {@code true} if this node should not be modified, altered, or replaced; {@code false} otherwise
 	 */
 	public boolean isFixed() {
 		return fixed;
@@ -131,11 +134,9 @@ public abstract class Node {
 	}
 
 	/**
-	 * Returns the parent of this node; or {@code null} if this node has no
-	 * parent.
+	 * Returns the parent of this node; or {@code null} if this node has no parent.
 	 * 
-	 * @return the parent of this node; or {@code null} if this node has no
-	 *         parent
+	 * @return the parent of this node; or {@code null} if this node has no parent
 	 */
 	public Node getParent() {
 		return parent;
@@ -174,12 +175,12 @@ public abstract class Node {
 	 * 
 	 * @param index the index of the new argument
 	 * @param expression the expression defining the argument
-	 * @return a reference to this node, allowing multiple calls to be chained
-	 *         together
+	 * @return a reference to this node, allowing multiple calls to be chained together
 	 */
 	public Node setArgument(int index, Node expression) {
-		expression.setParent(this);
 		arguments[index] = expression;
+		expression.setParent(this);
+
 		return this;
 	}
 	
@@ -199,8 +200,7 @@ public abstract class Node {
 	}
 
 	/**
-	 * Returns the depth of this node, which is the number of branches between
-	 * this node and the root.
+	 * Returns the depth of this node, which is the number of branches between this node and the root.
 	 * 
 	 * @return the depth of this node
 	 */
@@ -251,21 +251,17 @@ public abstract class Node {
 	}
 
 	/**
-	 * Returns a copy of this node, but without any children or parents
-	 * assigned.
+	 * Returns a copy of this node, but without any children or parents assigned.
 	 * 
-	 * @return a copy of this node, but without any children or parents
-	 *         assigned
+	 * @return a copy of this node, but without any children or parents assigned
 	 */
 	public abstract Node copyNode();
 
 	/**
-	 * Returns a copy of this node including copies of all its arguments (child
-	 * nodes).  All attributes of the node are also retained, such as 
-	 * {@link #isFixed()}.
+	 * Returns a copy of this node including copies of all its arguments (child nodes).  All attributes of the node are
+	 * also retained, such as {@link #isFixed()}.
 	 * 
-	 * @return a copy of this node including copies of all its arguments (child
-	 *         nodes)
+	 * @return a copy of this node including copies of all its arguments (child nodes)
 	 */
 	public Node copyTree() {
 		Node node = copyNode();
@@ -290,26 +286,24 @@ public abstract class Node {
 	public abstract Object evaluate(Environment environment);
 	
 	/**
-	 * Returns {@code true} if this node and its arguments are valid;
-	 * {@code false} otherwise.  A valid node has all arguments defined,
-	 * all arguments are valid, and all arguments are the appropriate type.
+	 * Returns {@code true} if this node and its arguments are valid; {@code false} otherwise.  A valid node has all
+	 * arguments defined, all arguments are valid, and all arguments are the appropriate type.
 	 * 
-	 * @return {@code true} if this node and its arguments are valid;
-	 *         {@code false} otherwise
+	 * @return {@code true} if this node and its arguments are valid; {@code false} otherwise
 	 */
 	public boolean isValid() {
 		for (int i = 0; i < getNumberOfArguments(); i++) {
 			Node argument = getArgument(i);
 			
 			if (argument == null) {
-				System.err.println("argument is null");
+				System.err.println("WARNING: Invalid argument to " + getClass().getSimpleName() + " (" + i + "): " +
+						"value is null");
 				return false;
 			}
 			
 			if (!getArgumentType(i).isAssignableFrom(argument.getReturnType())) {
-				System.err.println(getClass().getSimpleName() + " (" + i +
-						"): " + getArgumentType(i) + " not assignable from " +
-						argument.getReturnType());
+				System.err.println("WARNING: Invalid argument to " + getClass().getSimpleName() + " (" + i + "): " +
+						getArgumentType(i) + " not assignable from " + argument.getReturnType());
 				return false;
 			}
 			
@@ -350,241 +344,194 @@ public abstract class Node {
 	}
 	
 	/**
-	 * Returns {@code true} if this is a terminal node (has no arguments); 
-	 * {@code false} otherwise.
+	 * Returns {@code true} if this is a terminal node (has no arguments); {@code false} otherwise.
 	 * 
-	 * @return {@code true} if this is a terminal node (has no arguments); 
-	 *         {@code false} otherwise
+	 * @return {@code true} if this is a terminal node (has no arguments); {@code false} otherwise
 	 */
 	public boolean isTerminal() {
 		return getNumberOfArguments() == 0;
 	}
 	
 	/**
-	 * Returns the number of function (non-terminal) nodes contained in the
-	 * subtree rooted at this node that match the given return type.
+	 * Returns the number of function (non-terminal) nodes contained in the subtree rooted at this node that match the
+	 * given return type.
 	 * 
 	 * @param type the return type of the node
-	 * @return the number of function (non-terminal) nodes contained in the
-	 *         subtree rooted at this node that match the given return type
+	 * @return the number of function (non-terminal) nodes contained in the subtree rooted at this node that match the
+	 *         given return type
 	 */
 	public int getNumberOfFunctions(Class<?> type) {
 		return getNumberOfNodes(type, true, false);
 	}
 
 	/**
-	 * Returns the function (non-terminal) node at the specified index in the
-	 * subtree rooted at this node, counting only nodes that match the given
-	 * return type.  A depth-first search (DFS) walk of the tree is used to
-	 * find the appropriate node.
+	 * Returns the function (non-terminal) node at the specified index in the subtree rooted at this node, counting
+	 * only nodes that match the given return type.  A depth-first search (DFS) walk of the tree is used to find the
+	 * appropriate node.
 	 * 
 	 * @param type the return type of the node
 	 * @param index the index of the node to return
-	 * @return the function (non-terminal) node at the specified index in the
-	 *         subtree rooted at this node, counting only nodes that match the
-	 *         given return type
-	 * @throws IndexOutOfBoundsException if the index refers to a node not
-	 *         within the subtree rooted at this node
+	 * @return the function (non-terminal) node at the specified index in the subtree rooted at this node, counting
+	 *         only nodes that match the given return type
+	 * @throws IndexOutOfBoundsException if the index refers to a node not within the subtree rooted at this node
 	 */
 	public Node getFunctionAt(Class<?> type, int index) {
 		return getNodeAt(type, true, false, index);
 	}
 	
 	/**
-	 * Returns the number of function (non-terminal) nodes contained in the
-	 * subtree rooted at this node.
+	 * Returns the number of function (non-terminal) nodes contained in the subtree rooted at this node.
 	 * 
-	 * @return the number of function (non-terminal) nodes contained in the
-	 *         subtree rooted at this node
+	 * @return the number of function (non-terminal) nodes contained in the subtree rooted at this node
 	 */
 	public int getNumberOfFunctions() {
 		return getNumberOfFunctions(Object.class);
 	}
 	
 	/**
-	 * Returns the function (non-terminal) node at the specified index in the
-	 * subtree rooted at this node.  A depth-first search (DFS) walk of the
-	 * tree is used to find the appropriate node.
+	 * Returns the function (non-terminal) node at the specified index in the subtree rooted at this node.  A
+	 * depth-first search (DFS) walk of the tree is used to find the appropriate node.
 	 * 
 	 * @param index the index of the node to return
-	 * @return the function (non-terminal) node at the specified index in the
-	 *         subtree rooted at this node
-	 * @throws IndexOutOfBoundsException if the index refers to a node not
-	 *         within the subtree rooted at this node
+	 * @return the function (non-terminal) node at the specified index in the subtree rooted at this node
+	 * @throws IndexOutOfBoundsException if the index refers to a node not within the subtree rooted at this node
 	 */
 	public Node getFunctionAt(int index) {
 		return getFunctionAt(Object.class, index);
 	}
 	
 	/**
-	 * Returns the number of terminal nodes contained in the subtree rooted at
-	 * this node that match the given return type.
+	 * Returns the number of terminal nodes contained in the subtree rooted at this node that match the given return
+	 * type.
 	 * 
 	 * @param type the return type of the node
-	 * @return the number of terminal nodes contained in the subtree rooted at
-	 *         this node that match the given return type
+	 * @return the number of terminal nodes contained in the subtree rooted at this node that match the given return
+	 *         type
 	 */
 	public int getNumberOfTerminals(Class<?> type) {
 		return getNumberOfNodes(type, false, true);
 	}
 	
 	/**
-	 * Returns the terminal node at the specified index in the subtree rooted
-	 * at this node, counting only nodes that match the given return type.  A
-	 * depth-first search (DFS) walk of the tree is used to find the
-	 * appropriate node.
+	 * Returns the terminal node at the specified index in the subtree rooted at this node, counting only nodes that
+	 * match the given return type.  A depth-first search (DFS) walk of the tree is used to find the appropriate node.
 	 * 
 	 * @param type the return type of the node
 	 * @param index the index of the node to return
-	 * @return the terminal node at the specified index in the subtree rooted
-	 *         at this node, counting only nodes that match the given return
-	 *         type
-	 * @throws IndexOutOfBoundsException if the index refers to a node not
-	 *         within the subtree rooted at this node
+	 * @return the terminal node at the specified index in the subtree rooted at this node, counting only nodes that
+	 *         match the given return type
+	 * @throws IndexOutOfBoundsException if the index refers to a node not within the subtree rooted at this node
 	 */
 	public Node getTerminalAt(Class<?> type, int index) {
 		return getNodeAt(type, false, true, index);
 	}
 	
 	/**
-	 * Returns the number of terminal nodes contained in the subtree rooted at
-	 * this node.
+	 * Returns the number of terminal nodes contained in the subtree rooted at this node.
 	 * 
-	 * @return the number of terminal nodes contained in the subtree rooted at
-	 *         this node
+	 * @return the number of terminal nodes contained in the subtree rooted at this node
 	 */
 	public int getNumberOfTerminals() {
 		return getNumberOfTerminals(Object.class);
 	}
 	
 	/**
-	 * Returns the terminal node at the specified index in the subtree rooted
-	 * at this node.  A depth-first search (DFS) walk of the tree is used to
-	 * find the appropriate node.
+	 * Returns the terminal node at the specified index in the subtree rooted at this node.  A depth-first search (DFS)
+	 * walk of the tree is used to find the appropriate node.
 	 * 
 	 * @param index the index of the node to return
-	 * @return the terminal node at the specified index in the subtree rooted
-	 *         at this node
-	 * @throws IndexOutOfBoundsException if the index refers to a node not
-	 *         within the subtree rooted at this node
+	 * @return the terminal node at the specified index in the subtree rooted at this node
+	 * @throws IndexOutOfBoundsException if the index refers to a node not within the subtree rooted at this node
 	 */
 	public Node getTerminalAt(int index) {
 		return getTerminalAt(Object.class, index);
 	}
 	
 	/**
-	 * Returns the number of nodes contained in the subtree rooted at this
-	 * node that match the given return type.
+	 * Returns the number of nodes contained in the subtree rooted at this node that match the given return type.
 	 * 
 	 * @param type the return type of the node
-	 * @return the number of nodes contained in the subtree rooted at this
-	 *         node that match the given return type
+	 * @return the number of nodes contained in the subtree rooted at this node that match the given return type
 	 */
 	public int getNumberOfNodes(Class<?> type) {
 		return getNumberOfNodes(type, true, true);
 	}
 	
 	/**
-	 * Returns the node at the specified index in the subtree rooted at this
-	 * node, counting only nodes that match the given return type.  A
-	 * depth-first search (DFS) walk of the tree is used to find the
-	 * appropriate node.
+	 * Returns the node at the specified index in the subtree rooted at this node, counting only nodes that match the
+	 * given return type.  A depth-first search (DFS) walk of the tree is used to find the appropriate node.
 	 * 
 	 * @param type the return type of the node
 	 * @param index the index of the node to return
-	 * @return the node at the specified index in the subtree rooted at this
-	 *         node, counting only nodes that match the given return type
-	 * @throws IndexOutOfBoundsException if the index refers to a node not
-	 *         within the subtree rooted at this node
+	 * @return the node at the specified index in the subtree rooted at this node, counting only nodes that match the
+	 *         given return type
+	 * @throws IndexOutOfBoundsException if the index refers to a node not within the subtree rooted at this node
 	 */
 	public Node getNodeAt(Class<?> type, int index) {
 		return getNodeAt(type, true, true, index);
 	}
 	
 	/**
-	 * Returns the number of nodes contained in the subtree rooted at this
-	 * node.
+	 * Returns the number of nodes contained in the subtree rooted at this node.
 	 * 
-	 * @return the number of nodes contained in the subtree rooted at this
-	 *         node
+	 * @return the number of nodes contained in the subtree rooted at this node
 	 */
 	public int getNumberOfNodes() {
 		return getNumberOfNodes(Object.class);
 	}
 	
 	/**
-	 * Returns the node at the specified index in the subtree rooted at this
-	 * node.  A depth-first search (DFS) walk of the tree is used to find the
-	 * appropriate node.
+	 * Returns the node at the specified index in the subtree rooted at this node.  A depth-first search (DFS) walk of
+	 * the tree is used to find the appropriate node.
 	 * 
 	 * @param index the index of the node to return
-	 * @return the node at the specified index in the subtree rooted at this
-	 *         node
-	 * @throws IndexOutOfBoundsException if the index refers to a node not
-	 *         within the subtree rooted at this node
+	 * @return the node at the specified index in the subtree rooted at this node
+	 * @throws IndexOutOfBoundsException if the index refers to a node not within the subtree rooted at this node
 	 */
 	public Node getNodeAt(int index) {
 		return getNodeAt(Object.class, index);
 	}
 	
 	/**
-	 * Returns the number of nodes contained in the subtree rooted at this
-	 * node.
+	 * Returns the number of nodes contained in the subtree rooted at this node.
 	 * 
 	 * @param type the return type of the node
-	 * @param includeFunctions {@code true} if functions (non-terminals) are
-	 *        counted; {@code false} otherwise
-	 * @param includeTerminals {@code true} if terminals are counted;
-	 *        {@code false} otherwise
-	 * @return the number of nodes contained in the subtree rooted at this
-	 *         node
+	 * @param includeFunctions {@code true} if functions (non-terminals) are counted; {@code false} otherwise
+	 * @param includeTerminals {@code true} if terminals are counted; {@code false} otherwise
+	 * @return the number of nodes contained in the subtree rooted at this node
 	 */
-	protected int getNumberOfNodes(Class<?> type, boolean includeFunctions,
-			boolean includeTerminals) {
+	protected int getNumberOfNodes(Class<?> type, boolean includeFunctions, boolean includeTerminals) {
 		int result = 0;
 
 		// is this node a match?
-		if ((isTerminal() && 
-				includeTerminals && 
-				type.isAssignableFrom(getReturnType())) ||
-			(!isTerminal() && 
-				includeFunctions && 
-				type.isAssignableFrom(getReturnType()))) {
+		if ((isTerminal() && includeTerminals && type.isAssignableFrom(getReturnType())) ||
+			(!isTerminal() && includeFunctions && type.isAssignableFrom(getReturnType()))) {
 			result++;
 		}
 		
 		// count matching nodes in arguments
 		for (Node argument : arguments) {
-			result += argument.getNumberOfNodes(type, includeFunctions,
-					includeTerminals);
+			result += argument.getNumberOfNodes(type, includeFunctions, includeTerminals);
 		}
 		
 		return result;
 	}
 	
 	/**
-	 * Returns the node at the specified index in the subtree rooted at this
-	 * node.  A depth-first search (DFS) walk of the tree is used to find the
-	 * appropriate node.
+	 * Returns the node at the specified index in the subtree rooted at this node.  A depth-first search (DFS) walk of
+	 * the tree is used to find the appropriate node.
 	 * 
 	 * @param type the return type of the node
-	 * @param includeFunctions {@code true} if functions (non-terminals) are
-	 *        counted; {@code false} otherwise
-	 * @param includeTerminals {@code true} if terminals are counted;
-	 *        {@code false} otherwise
+	 * @param includeFunctions {@code true} if functions (non-terminals) are counted; {@code false} otherwise
+	 * @param includeTerminals {@code true} if terminals are counted; {@code false} otherwise
 	 * @param index the index of the node to return
-	 * @return the node at the specified index in the subtree rooted at this
-	 *         node
-	 * @throws IndexOutOfBoundsException if the index refers to a node not
-	 *         within the subtree rooted at this node
+	 * @return the node at the specified index in the subtree rooted at this node
+	 * @throws IndexOutOfBoundsException if the index refers to a node not within the subtree rooted at this node
 	 */
-	protected Node getNodeAt(Class<?> type, boolean includeFunctions,
-			boolean includeTerminals, int index) {
+	protected Node getNodeAt(Class<?> type, boolean includeFunctions, boolean includeTerminals, int index) {
 		// is this node a match?
-		if ((isTerminal() && includeTerminals && 
-				type.isAssignableFrom(getReturnType())) ||
-			(!isTerminal() && includeFunctions && 
-				type.isAssignableFrom(getReturnType()))) {
+		if ((isTerminal() && includeTerminals && type.isAssignableFrom(getReturnType())) ||
+			(!isTerminal() && includeFunctions && type.isAssignableFrom(getReturnType()))) {
 			if (index == 0) {
 				return this;
 			} else {
@@ -594,21 +541,18 @@ public abstract class Node {
 		
 		// recurse on matching nodes in arguments
 		for (Node argument : arguments) {
-			int size = argument.getNumberOfNodes(type, includeFunctions,
-					includeTerminals);
+			int size = argument.getNumberOfNodes(type, includeFunctions, includeTerminals);
 			
 			if (size > index) {
 				// this argument contains the node to return
-				return argument.getNodeAt(type, includeFunctions,
-						includeTerminals, index);
+				return argument.getNodeAt(type, includeFunctions, includeTerminals, index);
 			} else {
 				// this argument does not contain the node
 				index -= size;
 			}
 		}
 		
-		throw new IndexOutOfBoundsException(
-				"index does not reference node in tree");
+		throw new IndexOutOfBoundsException("Index does not reference node in tree");
 	}
 
 }

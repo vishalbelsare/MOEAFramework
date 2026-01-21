@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -18,14 +18,14 @@
 package org.moeaframework.util.tree;
 
 /**
- * The node for comparing if one number is greater than another.  The inputs and
- * outputs to this node are shown below:
+ * The node for comparing if one number is greater than another.
  * 
- * <table border="1" cellpadding="3" cellspacing="0">
- *   <tr class="TableHeadingColor">
- *     <th width="25%" align="left">Name</th>
- *     <th width="25%" align="left">Type</th>
- *     <th width="50%" align="left">Description</th>
+ * <table style="margin-top: 1em; width: 100%">
+ *   <caption style="text-align: left">Node signature:</caption>
+ *   <tr>
+ *     <th style="width: 15%; text-align: left">Name</th>
+ *     <th style="width: 15%; text-align: left">Type</th>
+ *     <th style="width: 70%; text-align: left">Description</th>
  *   </tr>
  *   <tr>
  *     <td>Argument 1</td>
@@ -40,16 +40,16 @@ package org.moeaframework.util.tree;
  *   <tr>
  *     <td>Return Value</td>
  *     <td>Boolean</td>
- *     <td>{@code true} if the first number is greater than the second;
- *         {@code false} otherwise</td>
+ *     <td>{@code true} if the first number is greater than the second; {@code false} otherwise</td>
  *   </tr>
  * </table>
  */
 public class GreaterThan extends Node {
 	
+	private static final long serialVersionUID = 870051108440754805L;
+
 	/**
-	 * Constructs a new node for comparing if one number is greater than
-	 * another.
+	 * Constructs a new node for comparing if one number is greater than another.
 	 */
 	public GreaterThan() {
 		super(Boolean.class, Number.class, Number.class);

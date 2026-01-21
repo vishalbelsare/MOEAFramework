@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -18,6 +18,7 @@
 package org.moeaframework.problem.misc;
 
 import org.moeaframework.core.Solution;
+import org.moeaframework.core.constraint.GreaterThanOrEqual;
 import org.moeaframework.core.variable.RealVariable;
 import org.moeaframework.problem.AbstractProblem;
 
@@ -33,12 +34,10 @@ import org.moeaframework.problem.AbstractProblem;
  * <p>
  * References:
  * <ol>
- *   <li>Osyczka, A. and Kundu, S. (1995).  "A New Method to Solve Generalized
- *       Multicriteria Optimization Problems using the Simple Genetic
- *       Algorithm."  Structural Optimization, vol. 10, pp. 94-99.
- *   <li>Van Veldhuizen, D. A (1999).  "Multiobjective Evolutionary Algorithms: 
- *       Classifications, Analyses, and New Innovations."  Air Force Institute
- *       of Technology, Ph.D. Thesis, Appendix B.
+ *   <li>Osyczka, A. and Kundu, S. (1995).  "A New Method to Solve Generalized Multicriteria Optimization Problems
+ *       using the Simple Genetic Algorithm."  Structural Optimization, vol. 10, pp. 94-99.
+ *   <li>Van Veldhuizen, D. A (1999).  "Multiobjective Evolutionary Algorithms: Classifications, Analyses, and New
+ *       Innovations."  Air Force Institute of Technology, Ph.D. Thesis, Appendix B.
  * </ol>
  */
 public class Osyczka2 extends AbstractProblem {
@@ -70,14 +69,14 @@ public class Osyczka2 extends AbstractProblem {
 		double c5 = 4.0 - Math.pow(x3 - 3.0, 2.0) - x4;
 		double c6 = Math.pow(x5 - 3.0, 2.0) + x6 - 4.0;
 		
-		solution.setObjective(0, f1);
-		solution.setObjective(1, f2);
-		solution.setConstraint(0, c1 >= 0.0 ? 0.0 : c1);
-		solution.setConstraint(1, c2 >= 0.0 ? 0.0 : c2);
-		solution.setConstraint(2, c3 >= 0.0 ? 0.0 : c3);
-		solution.setConstraint(3, c4 >= 0.0 ? 0.0 : c4);
-		solution.setConstraint(4, c5 >= 0.0 ? 0.0 : c5);
-		solution.setConstraint(5, c6 >= 0.0 ? 0.0 : c6);
+		solution.setObjectiveValue(0, f1);
+		solution.setObjectiveValue(1, f2);
+		solution.setConstraintValue(0, c1);
+		solution.setConstraintValue(1, c2);
+		solution.setConstraintValue(2, c3);
+		solution.setConstraintValue(3, c4);
+		solution.setConstraintValue(4, c5);
+		solution.setConstraintValue(5, c6);
 	}
 
 	@Override
@@ -90,6 +89,13 @@ public class Osyczka2 extends AbstractProblem {
 		solution.setVariable(3, new RealVariable(0.0, 6.0));
 		solution.setVariable(4, new RealVariable(1.0, 5.0));
 		solution.setVariable(5, new RealVariable(0.0, 10.0));
+		
+		solution.setConstraint(0, GreaterThanOrEqual.to(0.0));
+		solution.setConstraint(1, GreaterThanOrEqual.to(0.0));
+		solution.setConstraint(2, GreaterThanOrEqual.to(0.0));
+		solution.setConstraint(3, GreaterThanOrEqual.to(0.0));
+		solution.setConstraint(4, GreaterThanOrEqual.to(0.0));
+		solution.setConstraint(5, GreaterThanOrEqual.to(0.0));
 		
 		return solution;
 	}

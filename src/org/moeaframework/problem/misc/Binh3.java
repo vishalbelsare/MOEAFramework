@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -31,12 +31,10 @@ import org.moeaframework.problem.AbstractProblem;
  * <p>
  * References:
  * <ol>
- *   <li>Binh, T. T (1999).  "A Multiobjective Evolutionary Algorithm: The
- *       Study Cases."  Technical Report, Institute for Automation and
- *       Communication, Barleben, Germany.
- *   <li>Van Veldhuizen, D. A (1999).  "Multiobjective Evolutionary Algorithms: 
- *       Classifications, Analyses, and New Innovations."  Air Force Institute
- *       of Technology, Ph.D. Thesis, Appendix B.
+ *   <li>Binh, T. T (1999).  "A Multiobjective Evolutionary Algorithm: The Study Cases."  Technical Report, Institute
+ *       for Automation and Communication, Barleben, Germany.
+ *   <li>Van Veldhuizen, D. A (1999).  "Multiobjective Evolutionary Algorithms: Classifications, Analyses, and New
+ *       Innovations."  Air Force Institute of Technology, Ph.D. Thesis, Appendix B.
  * </ol>
  */
 public class Binh3 extends AbstractProblem {
@@ -53,9 +51,9 @@ public class Binh3 extends AbstractProblem {
 		double x = ((RealVariable)solution.getVariable(0)).getValue();
 		double y = ((RealVariable)solution.getVariable(1)).getValue();
 		
-		solution.setObjective(0, x - 1e6);
-		solution.setObjective(1, y - 2e-6);
-		solution.setObjective(2, x*y - 2.0);
+		solution.setObjectiveValue(0, x - 1e6);
+		solution.setObjectiveValue(1, y - 2e-6);
+		solution.setObjectiveValue(2, x*y - 2.0);
 	}
 
 	@Override

@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -32,12 +32,10 @@ import org.moeaframework.problem.AbstractProblem;
  * <p>
  * References:
  * <ol>
- *   <li>Van Veldhuizen, D. A (1999).  "Multiobjective Evolutionary Algorithms: 
- *       Classifications, Analyses, and New Innovations."  Air Force Institute
- *       of Technology, Ph.D. Thesis, Appendix B.
- *   <li>Valenzuela-Rendon, M., et al. (1997).  "A Non-Generational Genetic
- *       Algorithm for Multiobjective Optimization."  Proceedings of the
- *       Seventh International Conference on Genetic Algorithms, pp. 658-665.
+ *   <li>Van Veldhuizen, D. A (1999).  "Multiobjective Evolutionary Algorithms: Classifications, Analyses, and New
+ *       Innovations."  Air Force Institute of Technology, Ph.D. Thesis, Appendix B.
+ *   <li>Valenzuela-Rendon, M., et al. (1997).  "A Non-Generational Genetic Algorithm for Multiobjective Optimization."
+ *       Proceedings of the Seventh International Conference on Genetic Algorithms, pp. 658-665.
  * </ol>
  */
 public class Rendon extends AbstractProblem {
@@ -56,8 +54,8 @@ public class Rendon extends AbstractProblem {
 		double f1 = 1.0 / (Math.pow(x, 2.0) + Math.pow(y, 2.0) + 1.0);
 		double f2 = Math.pow(x, 2.0) + 3.0*Math.pow(y, 2.0) + 1.0;
 		
-		solution.setObjective(0, f1);
-		solution.setObjective(1, f2);
+		solution.setObjectiveValue(0, f1);
+		solution.setObjectiveValue(1, f2);
 	}
 
 	@Override

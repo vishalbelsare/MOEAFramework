@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,15 +17,11 @@
  */
 package org.moeaframework.util.statistics;
 
-import org.junit.Assert;
 import org.junit.Test;
-import org.moeaframework.TestThresholds;
+import org.moeaframework.Assert;
+import org.moeaframework.TestEnvironment;
 import org.moeaframework.core.PRNG;
-import org.moeaframework.core.Settings;
 
-/**
- * Tests the {@link MannWhitneyUTest} class.
- */
 public class MannWhitneyUTestTest {
 
 	/**
@@ -34,24 +30,15 @@ public class MannWhitneyUTestTest {
 	@Test
 	public void testExample1() {
 		MannWhitneyUTest test = new MannWhitneyUTest();
-		test.add(11, 0);
-		test.add(1, 0);
-		test.add(0, 0);
-		test.add(2, 0);
-		test.add(0, 0);
-		test.add(11, 1);
-		test.add(11, 1);
-		test.add(5, 1);
-		test.add(8, 1);
-		test.add(4, 1);
+		test.addAll(new double[] { 11, 1, 0, 2, 0 }, 0);
+		test.addAll(new double[] { 11, 11, 5, 8, 4 }, 1);
 
 		Assert.assertFalse(test.test(0.05));
 	}
 
 	/**
 	 * This is the Tortoise vs. Hare example from
-	 * <a href="http://en.wikipedia.org/wiki/Mann%E2%80%93Whitney_U">
-	 * Wikipedia</a>
+	 * <a href="http://en.wikipedia.org/wiki/Mann%E2%80%93Whitney_U"> Wikipedia</a>
 	 */
 	@Test
 	public void testExample2() {
@@ -74,13 +61,12 @@ public class MannWhitneyUTestTest {
 		}
 
 		Assert.assertTrue(test.test(0.05));
-		Assert.assertEquals(100, test.lastU, TestThresholds.STATISTICS_EPS);
+		Assert.assertEquals(100, test.lastU, TestEnvironment.LOW_PRECISION);
 	}
 	
 	/**
-	 * Commons Math 3.0 introduced their own MannWhitneyUTest class.  The
-	 * Commons Math implementation only supports the normal approximation for
-	 * the U statistic, and will be inaccurate with small sample sizes.
+	 * Commons Math 3.0 introduced their own MannWhitneyUTest class.  The Commons Math implementation only supports the
+	 * normal approximation for the U statistic, and will be inaccurate with small sample sizes.
 	 */
 	@Test
 	public void testCommonsMath() {
@@ -98,26 +84,18 @@ public class MannWhitneyUTestTest {
 		test1.test(0.05);
 		double u1 = test1.lastU;
 		
-		org.apache.commons.math3.stat.inference.MannWhitneyUTest test2 = 
+		org.apache.commons.math3.stat.inference.MannWhitneyUTest test2 =
 				new org.apache.commons.math3.stat.inference.MannWhitneyUTest();
 		double u2 = test2.mannWhitneyU(d1, d2);
 		
-		Assert.assertEquals(100*100 - u2, u1, Settings.EPS);
+		Assert.assertEquals(100*100 - u2, u1, TestEnvironment.HIGH_PRECISION);
 	}
 	
 	@Test
 	public void testAllEqual() {
 		MannWhitneyUTest test = new MannWhitneyUTest();
-		test.add(10, 0);
-		test.add(10, 0);
-		test.add(10, 0);
-		test.add(10, 0);
-		test.add(10, 0);
-		test.add(10, 1);
-		test.add(10, 1);
-		test.add(10, 1);
-		test.add(10, 1);
-		test.add(10, 1);
+		test.addAll(new double[] { 10, 10, 10, 10, 10 }, 0);
+		test.addAll(new double[] { 10, 10, 10, 10, 10 }, 1);
 
 		Assert.assertFalse(test.test(0.05));
 		Assert.assertFalse(test.test(0.01));

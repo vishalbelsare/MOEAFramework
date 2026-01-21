@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,27 +17,22 @@
  */
 package org.moeaframework.core.spi;
 
-import java.util.Properties;
-
-import org.moeaframework.core.Problem;
-import org.moeaframework.core.Variation;
+import org.moeaframework.core.TypedProperties;
+import org.moeaframework.core.operator.Variation;
+import org.moeaframework.problem.Problem;
 
 /**
- * Defines an SPI for initializing different operators.  Operators are
- * identified by a unique name.  The methods of the provider must return {@code
- * null} if the operator is not supported by the provider.
+ * Defines a SPI for variation operators.
  * <p>
- * If the provider can supply the operator but an error occurred during
- * instantiation, the provider may throw a {@link ProviderNotFoundException}
- * along with the details causing the exception.
- * <p>
- * To provide a custom {@code OperatorProvider}, first extend this class and
- * implement the two abstract methods. Next, build a JAR file containing the
- * custom provider. Within the JAR file, create the file
- * {@code META-INF/services/org.moeaframework.core.spi.OperatorProvider}
- * containing on a single line the class name of the custom provider. Lastly,
- * add this JAR file to the classpath. Once these steps are completed, the
- * operators(s) are now accessible via the methods in this class.
+ * To create a custom {@code OperatorProvider}:
+ * <ol>
+ *   <li>Extend this class and implement the abstract methods.
+ *   <li>Create the file {@code META-INF/services/org.moeaframework.core.spi.OperatorProvider} with a line identifying
+ *       the fully-qualified class name of the custom provider.
+ *   <li>Compile and bundle the {@code .class} file(s) along with the {@code META-INF} folder into a JAR.
+ *   <li>Include this JAR on the classpath.
+ * </ol>
+ * Providers can also be registered directly with {@link OperatorFactory}.
  */
 public abstract class OperatorProvider {
 	
@@ -49,9 +44,8 @@ public abstract class OperatorProvider {
 	}
 	
 	/**
-	 * Returns the name of the suggested mutation operator for the given
-	 * problem.  Mixed types are currently not supported.  Returns {@code null}
-	 * if no mutation operators support the given problem.
+	 * Returns the name of the suggested mutation operator for the given problem, or {@code null} if no hint is
+	 * available.
 	 * 
 	 * @param problem the problem
 	 * @return the name of the suggested mutation operator for the given problem
@@ -59,26 +53,25 @@ public abstract class OperatorProvider {
 	public abstract String getMutationHint(Problem problem);
 	
 	/**
-	 * Returns the name of the suggested variation operator for the given
-	 * problem.  Mixed types are currently not supported.  Returns {@code null}
-	 * if no variation operators support the given problem.
+	 * Returns the name of the suggested variation operator for the given problem, or {@code null} if no hint is
+	 * available.
 	 * 
 	 * @param problem the problem
-	 * @return the name of the suggested variation operator for the given
-	 *         problem
+	 * @return the name of the suggested variation operator for the given problem
 	 */
 	public abstract String getVariationHint(Problem problem);
 	
 	/**
-	 * Returns an instance of the variation operator with the specified name.
-	 * This method must return {@code null} if no suitable operator is found.
+	 * Returns an instance of the variation operator with the specified name.  This method must return {@code null}
+	 * if the named operator is not supported, or no suitable operator could be identified using hints.
 	 * 
-	 * @param name the name identifying the variation operator
+	 * @param name the name identifying the variation operator, or {@code null} to select a default operator based on
+	 *        the hints
 	 * @param properties the implementation-specific properties
 	 * @param problem the problem to be solved
-	 * @return an instance of the variation operator with the specified name
+	 * @return an instance of the variation operator or {@code null}
+	 * @throws ProviderException if the creation of the operator failed for any reason
 	 */
-	public abstract Variation getVariation(String name, Properties properties, 
-			Problem problem);
+	public abstract Variation getVariation(String name, TypedProperties properties, Problem problem);
 
 }

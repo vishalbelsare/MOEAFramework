@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -20,6 +20,9 @@ package org.moeaframework.util.statistics;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
+import org.moeaframework.util.validate.Validate;
+
 /**
  * Abstract class for interval ratio statistical tests.
  */
@@ -36,8 +39,7 @@ public abstract class IntervalRatioStatisticalTest implements StatisticalTest {
 	protected final List<Observation> data;
 
 	/**
-	 * Constructs an interval ratio statistical test with the specified number
-	 * of groups.
+	 * Constructs an interval ratio statistical test with the specified number of groups.
 	 * 
 	 * @param numberOfGroups the number of groups being tested
 	 */
@@ -45,7 +47,7 @@ public abstract class IntervalRatioStatisticalTest implements StatisticalTest {
 		super();
 		this.numberOfGroups = numberOfGroups;
 
-		data = new ArrayList<Observation>();
+		data = new ArrayList<>();
 	}
 
 	/**
@@ -55,10 +57,7 @@ public abstract class IntervalRatioStatisticalTest implements StatisticalTest {
 	 * @param group the group to which the new observation belongs
 	 */
 	protected void add(double value, int group) {
-		if ((group < 0) || (group >= numberOfGroups)) {
-			throw new IllegalArgumentException("invalid group");
-		}
-
+		Validate.that("group", group).isBetween(0, numberOfGroups-1);
 		data.add(new Observation(value, group));
 	}
 	
@@ -85,7 +84,7 @@ public abstract class IntervalRatioStatisticalTest implements StatisticalTest {
 			n[observation.getGroup()]++;
 		}
 
-		List<double[]> groupedData = new ArrayList<double[]>();
+		List<double[]> groupedData = new ArrayList<>();
 		for (int i = 0; i < numberOfGroups; i++) {
 			groupedData.add(new double[n[i]]);
 		}
@@ -106,6 +105,24 @@ public abstract class IntervalRatioStatisticalTest implements StatisticalTest {
 	 */
 	public int getNumberOfGroups() {
 		return numberOfGroups;
+	}
+	
+	/**
+	 * Returns the descriptive statistics for the given group.
+	 * 
+	 * @param group the group
+	 * @return the descriptive statistics
+	 */
+	protected DescriptiveStatistics getStatistics(int group) {
+		DescriptiveStatistics statistics = new DescriptiveStatistics();
+		
+		for (Observation observation : data) {
+			if (observation.getGroup() == group) {
+				statistics.addValue(observation.getValue());
+			}
+		}
+		
+		return statistics;
 	}
 
 }

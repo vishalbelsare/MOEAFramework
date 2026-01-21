@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -23,27 +23,23 @@ import java.util.List;
 import org.apache.commons.math3.linear.MatrixUtils;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.moeaframework.core.PRNG;
+import org.moeaframework.util.validate.Validate;
 
 /**
- * Builds rotation matrices of any dimension constructively from one or more
- * 2D planar rotations.  Three types of construction mechanisms are provided:
- * 
+ * Builds rotation matrices of any dimension constructively from one or more 2D planar rotations.  Three types of
+ * construction mechanisms are provided:
  * <ol>
  *   <li>Specific rotation planes and thetas
- *     <pre>  new RotationMatrixBuilder(3).rotatePlane(0,1).withTheta(Math.PI/4)
- *       .rotatePlane(1,2).withTheta(Math.PI/8).create()</pre>
+ *     <pre>new RotationMatrixBuilder(3).rotatePlane(0,1).withTheta(Math.PI/4).rotatePlane(1,2).withTheta(Math.PI/8).create()</pre>
  *   <li>Specific rotation planes with random thetas
- *     <pre>  new RotationMatrixBuilder(3).rotatePlane(0,1).rotatePlane(1,2)
- *       .withRandomThetas().create()</pre>
+ *     <pre>new RotationMatrixBuilder(3).rotatePlane(0,1).rotatePlane(1,2).withRandomThetas().create()</pre>
  *   <li>Random subplanes with random thetas
- *     <pre>  new RotationMatrixBuilder(3).rotateK(2).create()</pre>
+ *     <pre>new RotationMatrixBuilder(3).rotateK(2).create()</pre>
  * </ol>
- * 
  * <p>
  * References:
  * <ol>
- *   <li>Aguilera, A. and P&eacute;rez-Aguila, R.  "General n-Dimensional 
- *       Rotations."  WSCG 2004, pp. 1-8, 2004.
+ *   <li>Aguilera, A. and P&eacute;rez-Aguila, R.  "General n-Dimensional Rotations."  WSCG 2004, pp. 1-8, 2004.
  * </ol>
  */
 public class RotationMatrixBuilder {
@@ -64,8 +60,7 @@ public class RotationMatrixBuilder {
 		private final int secondAxis;
 		
 		/**
-		 * The rotation angle in radians; or {@code NaN} if no rotation is 
-		 * assigned.
+		 * The rotation angle in radians; or {@code NaN} if no rotation is assigned.
 		 */
 		private double theta;
 		
@@ -102,11 +97,9 @@ public class RotationMatrixBuilder {
 		}
 
 		/**
-		 * Returns the rotation angle in radians; or {@code NaN} if no rotation
-		 * is assigned.
+		 * Returns the rotation angle in radians; or {@code NaN} if no rotation is assigned.
 		 * 
-		 * @return the rotation angle in radians; or {@code NaN} if no rotation
-		 *         is assigned
+		 * @return the rotation angle in radians; or {@code NaN} if no rotation is assigned
 		 */
 		public double getTheta() {
 			return theta;
@@ -136,53 +129,46 @@ public class RotationMatrixBuilder {
 	/**
 	 * Constructs a rotation matrix builder for the given dimension.
 	 * 
-	 * @param dimension the dimension of rotation matrices produced by
-	 *        this builder
+	 * @param dimension the dimension of rotation matrices produced by this builder
 	 */
 	public RotationMatrixBuilder(int dimension) {
 		super();
 		this.dimension = dimension;
 		
-		planes = new ArrayList<Plane>();
+		planes = new ArrayList<>();
 	}
 	
 	/**
-	 * Adds a rotation around the 2D rotation plane defined by the two axes.
-	 * The plane is initially unrotated, but can be assigned a specific rotation
-	 * angle if followed by {@link #withTheta(double)}.
+	 * Adds a rotation around the 2D rotation plane defined by the two axes.  The plane is initially unrotated, but
+	 * can be assigned a specific rotation angle if followed by {@link #withTheta(double)}.
 	 * 
 	 * @param i the first axis
 	 * @param j the second axis
 	 * @return a reference to this rotation matrix builder
 	 */
 	public RotationMatrixBuilder rotatePlane(int i, int j) {
-		if ((i < 0) || (i >= dimension) || (j < 0) || 
-				(j >= dimension) || (i == j)) {
-			throw new IllegalArgumentException("invalid plane");
-		}
-		
+		Validate.that("i", i).isBetween(0, dimension-1);
+		Validate.that("j", j).isBetween(0, dimension-1);
+		Validate.that("i", i).isNotEqualTo("j", j);
+
 		planes.add(new Plane(i, j));
-		
 		return this;
 	}
 	
 	/**
-	 * Sets the rotation angle, in radians, of the last 2D rotation plane
-	 * added to this builder.  This method should always only follow 
-	 * invocations of {@link #rotatePlane(int, int)}.
+	 * Sets the rotation angle, in radians, of the last 2D rotation plane added to this builder.  This method should
+	 * always only follow  invocations of {@link #rotatePlane(int, int)}.
 	 * 
 	 * @param theta the rotation angle in radians
 	 * @return a reference to this rotation matrix builder
 	 */
 	public RotationMatrixBuilder withTheta(double theta) {
 		planes.get(planes.size()-1).setTheta(theta);
-		
 		return this;
 	}
 	
 	/**
-	 * Sets the rotation angle, in radians, of all 2D rotation planes added to
-	 * this builder.
+	 * Sets the rotation angle, in radians, of all 2D rotation planes added to this builder.
 	 * 
 	 * @param theta the rotation angle in radians
 	 * @return a reference to this rotation matrix builder
@@ -196,8 +182,7 @@ public class RotationMatrixBuilder {
 	}
 	
 	/**
-	 * Assigns random rotation angles to all 2D rotation planes added to this 
-	 * builder.
+	 * Assigns random rotation angles to all 2D rotation planes added to this builder.
 	 * 
 	 * @return a reference to this rotation matrix builder
 	 */
@@ -227,15 +212,14 @@ public class RotationMatrixBuilder {
 	}
 	
 	/**
-	 * Rotates {@code k} randomly-selected but unique 2D rotation planes and 
-	 * assigns each a random rotation angle.  For an {@code N}-dimension 
-	 * rotation matrix, there exist {@code (N choose 2)} 2D rotation planes.
+	 * Rotates {@code k} randomly-selected but unique 2D rotation planes and  assigns each a random rotation angle.
+	 * For an {@code N}-dimension rotation matrix, there exist {@code (N choose 2)} 2D rotation planes.
 	 * 
 	 * @param k the number of randomly-selected 2D rotation planes
 	 * @return a reference to this rotation matrix builder
 	 */
 	public RotationMatrixBuilder rotateK(int k) {
-		List<Plane> tempPlanes = new ArrayList<Plane>();
+		List<Plane> tempPlanes = new ArrayList<>();
 		
 		//generate the list of all available rotation planes
 		for (int i = 0; i < dimension - 1; i++) {
@@ -244,9 +228,7 @@ public class RotationMatrixBuilder {
 			}
 		}
 		
-		if ((k < 0) || (k > tempPlanes.size())) {
-			throw new IllegalArgumentException("invalid number of planes");
-		}
+		Validate.that("k", k).isBetween(0, tempPlanes.size());
 		
 		//shuffle to randomize which planes are rotated
 		PRNG.shuffle(tempPlanes);
@@ -265,11 +247,9 @@ public class RotationMatrixBuilder {
 	}
 	
 	/**
-	 * Returns the rotation matrix resulting from applying all 2D rotation 
-	 * planes and angles added to this builder.
+	 * Returns the rotation matrix resulting from applying all 2D rotation planes and angles added to this builder.
 	 * 
-	 * @return the rotation matrix resulting from applying all 2D rotation 
-	 *         planes and angles added to this builder
+	 * @return the rotation matrix resulting from applying all 2D rotation planes and angles added to this builder
 	 */
 	public RealMatrix create() {
 		RealMatrix rotation = newIdentityMatrix();
@@ -281,8 +261,7 @@ public class RotationMatrixBuilder {
 				continue;
 			}
 
-			rotation = rotation.multiply(newRotationMatrix(
-					plane.getFirstAxis(), plane.getSecondAxis(), theta));
+			rotation = rotation.multiply(newRotationMatrix(plane.getFirstAxis(), plane.getSecondAxis(), theta));
 		}
 		
 		return rotation;
@@ -294,8 +273,7 @@ public class RotationMatrixBuilder {
 	 * @return an identity matrix
 	 */
 	private RealMatrix newIdentityMatrix() {
-		RealMatrix identity = MatrixUtils.createRealMatrix(dimension, 
-				dimension); 
+		RealMatrix identity = MatrixUtils.createRealMatrix(dimension, dimension);
 		
 		for (int i = 0; i < dimension; i++) {
 			identity.setEntry(i, i, 1.0);
@@ -305,14 +283,12 @@ public class RotationMatrixBuilder {
 	}
 	
 	/**
-	 * Returns a rotation matrix for rotating about the 2D plane defined by
-	 * the specified axes.
+	 * Returns a rotation matrix for rotating about the 2D plane defined by the specified axes.
 	 * 
 	 * @param i the first axis
 	 * @param j the second axis
 	 * @param theta the rotation angle in radians
-	 * @return a rotation matrix for rotating about the 2D plane defined by
-	 *         the specified axes
+	 * @return a rotation matrix for rotating about the 2D plane defined by the specified axes
 	 */
 	private RealMatrix newRotationMatrix(int i, int j, double theta) {
 		RealMatrix rotation = newIdentityMatrix();

@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -21,37 +21,26 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
-import org.junit.Assert;
 import org.junit.Test;
-import org.moeaframework.TestThresholds;
+import org.moeaframework.Assert;
+import org.moeaframework.TestEnvironment;
 import org.moeaframework.core.PRNG;
-import org.moeaframework.core.Solution;
-import org.moeaframework.core.operator.ParentImmutabilityTest;
-import org.moeaframework.core.operator.TypeSafetyTest;
+import org.moeaframework.core.operator.AbstractSubsetOperatorTest;
 import org.moeaframework.core.variable.Subset;
 
-/**
- * Tests the {@link SSX} class.
- */
-public class SSXTest {
-
-	/**
-	 * Tests if the SSX crossover operator is type-safe.
-	 */
-	@Test
-	public void testTypeSafety() {
-		TypeSafetyTest.testTypeSafety(new SSX(1.0));
+public class SSXTest extends AbstractSubsetOperatorTest<SSX> {
+	
+	@Override
+	public SSX createInstance() {
+		return new SSX(1.0);
 	}
-
-	/**
-	 * Tests if the {@link SSX#evolve} method produces valid subset for fixed-size sets.
-	 */
+	
 	@Test
 	public void testEvolveFixedSize() {
 		DescriptiveStatistics stats1 = new DescriptiveStatistics();
 		DescriptiveStatistics stats2 = new DescriptiveStatistics();
 		
-		for (int i = 0; i < TestThresholds.SAMPLES; i++) {
+		for (int i = 0; i < TestEnvironment.SAMPLES; i++) {
 			int n = PRNG.nextInt(1, 20);
 			int k = PRNG.nextInt(0, n);
 			Subset s1 = new Subset(k, n);
@@ -63,27 +52,24 @@ public class SSXTest {
 			Subset s1copy = s1.copy();
 			Subset s2copy = s2.copy();
 			
-			SSX.evolve(s1copy, s2copy);
-
-			s1copy.validate();
-			s2copy.validate();
+			new SSX().evolve(s1copy, s2copy);
+			
+			Assert.assertTrue(s1copy.isValid());
+			Assert.assertTrue(s2copy.isValid());
 			
 			countSwapped(s1, s2, s1copy, s2copy, stats1, stats2);
 		}
 		
-		Assert.assertEquals(0.5, stats1.getMean(), TestThresholds.STATISTICS_EPS);
-		Assert.assertEquals(0.5, stats1.getMean(), TestThresholds.STATISTICS_EPS);
+		Assert.assertEquals(0.5, stats1.getMean(), TestEnvironment.LOW_PRECISION);
+		Assert.assertEquals(0.5, stats1.getMean(), TestEnvironment.LOW_PRECISION);
 	}
 	
-	/**
-	 * Tests if the {@link SSX#evolve} method produces valid subset for variable-size sets.
-	 */
 	@Test
 	public void testEvolveVariableSize() {
 		DescriptiveStatistics stats1 = new DescriptiveStatistics();
 		DescriptiveStatistics stats2 = new DescriptiveStatistics();
 		
-		for (int i = 0; i < TestThresholds.SAMPLES; i++) {
+		for (int i = 0; i < TestEnvironment.SAMPLES; i++) {
 			int n = PRNG.nextInt(1, 20);
 			int l = PRNG.nextInt(0, n-1);
 			int u = PRNG.nextInt(l+1, n);
@@ -100,42 +86,19 @@ public class SSXTest {
 			int size1 = s1copy.size();
 			int size2 = s2copy.size();
 			
-			SSX.evolve(s1copy, s2copy);
+			new SSX().evolve(s1copy, s2copy);
 
-			s1copy.validate();
-			s2copy.validate();
+			Assert.assertTrue(s1copy.isValid());
+			Assert.assertTrue(s2copy.isValid());
+			
 			Assert.assertEquals(size1, s1copy.size());
 			Assert.assertEquals(size2, s2copy.size());
 			
 			countSwapped(s1, s2, s1copy, s2copy, stats1, stats2);
 		}
 		
-		Assert.assertEquals(0.5, stats1.getMean(), TestThresholds.STATISTICS_EPS);
-		Assert.assertEquals(0.5, stats1.getMean(), TestThresholds.STATISTICS_EPS);
-	}
-
-	/**
-	 * Tests if the parents remain unchanged during variation.
-	 */
-	@Test
-	public void testParentImmutability() {
-		SSX ssx = new SSX(1.0);
-
-		Subset p1 = new Subset(5, 10);
-		Subset p2 = new Subset(5, 10);
-		
-		p1.randomize();
-		p2.randomize();
-
-		Solution s1 = new Solution(1, 0);
-		s1.setVariable(0, p1);
-
-		Solution s2 = new Solution(1, 0);
-		s2.setVariable(0, p2);
-
-		Solution[] parents = new Solution[] { s1, s2 };
-
-		ParentImmutabilityTest.test(parents, ssx);
+		Assert.assertEquals(0.5, stats1.getMean(), TestEnvironment.LOW_PRECISION);
+		Assert.assertEquals(0.5, stats1.getMean(), TestEnvironment.LOW_PRECISION);
 	}
 	
 	/**
@@ -149,13 +112,13 @@ public class SSXTest {
 	 * @param stats2 the percent of swapped values for the second subset
 	 */
 	protected void countSwapped(Subset original1, Subset original2, Subset new1, Subset new2,
-			DescriptiveStatistics stats1, DescriptiveStatistics stats2) {		
+			DescriptiveStatistics stats1, DescriptiveStatistics stats2) {
 		Set<Integer> original1set = original1.getSet();
 		Set<Integer> new1set = new1.getSet();
 		Set<Integer> original2set = original2.getSet();
 		Set<Integer> new2set = new2.getSet();
 		
-		Set<Integer> intersection = new HashSet<Integer>(original1set);
+		Set<Integer> intersection = new HashSet<>(original1set);
 		intersection.retainAll(original2set);
 		
 		original1set.removeAll(intersection);

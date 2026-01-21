@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,41 +17,16 @@
  */
 package org.moeaframework.algorithm;
 
-import java.io.IOException;
-
-import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.moeaframework.CIRunner;
-import org.moeaframework.Flaky;
 import org.moeaframework.Retryable;
 
-/**
- * Tests the {@link GDE3} class.
- */
 @RunWith(CIRunner.class)
 @Retryable
-public class GDE3Test extends AlgorithmTest {
+public class GDE3Test extends JMetalAlgorithmTest {
 	
-	@Test
-	@Flaky("need to investigate - differences showing up after upgrading to JMetal 5.9")
-	public void testDTLZ1() throws IOException {
-		test("DTLZ1_2", "GDE3", "GDE3-JMetal");
-	}
-	
-	@Test
-	@Flaky("need to investigate - differences showing up after upgrading to JMetal 5.9")
-	public void testDTLZ2() throws IOException {
-		test("DTLZ2_2", "GDE3", "GDE3-JMetal");
-	}
-	
-	@Test
-	public void testDTLZ7() throws IOException {
-		test("DTLZ7_2", "GDE3", "GDE3-JMetal");
-	}
-	
-	@Test
-	public void testUF1() throws IOException {
-		test("UF1", "GDE3", "GDE3-JMetal");
+	public GDE3Test() {
+		super("GDE3", true);
 	}
 
 }

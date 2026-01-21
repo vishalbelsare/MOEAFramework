@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,26 +17,21 @@
  */
 package org.moeaframework.util.weights;
 
-import org.junit.Test;
+import org.moeaframework.mock.MockRealProblem;
 
-/**
- * Tests the {@link NormalBoundaryIntersectionGenerator} class.
- */
-public class NormalBoundaryIntersectionGeneratorTest extends
-WeightGeneratorTest {
-
-	@Test
-	public void testSingleLayer() {
-		test(new NormalBoundaryIntersectionGenerator(2, 30), 2);
-		test(new NormalBoundaryIntersectionGenerator(3, 12), 3);
-		test(new NormalBoundaryIntersectionGenerator(5, 4), 5);
+public class NormalBoundaryIntersectionGeneratorTest extends AbstractWeightGeneratorTest<NormalBoundaryIntersectionGenerator> {
+	
+	// numberOfObjectives >= 6 will produce two layers
+	@Override
+	public NormalBoundaryIntersectionGenerator createInstance(int numberOfObjectives) {
+		return new NormalBoundaryIntersectionGenerator(numberOfObjectives,
+				NormalBoundaryDivisions.forProblem(new MockRealProblem(numberOfObjectives)));
 	}
 	
-	@Test
-	public void testTwoLayer() {
-		test(new NormalBoundaryIntersectionGenerator(8, 4, 3), 8);
-		test(new NormalBoundaryIntersectionGenerator(10, 3, 2), 10);
-		test(new NormalBoundaryIntersectionGenerator(15, 3, 2), 15);
+	@Override
+	public int getExpectedNumberOfSamples(int numberOfObjectives) {
+		return NormalBoundaryDivisions.forProblem(new MockRealProblem(numberOfObjectives))
+				.getNumberOfReferencePoints(numberOfObjectives);
 	}
 	
 }

@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -20,8 +20,7 @@ package org.moeaframework.util.tree;
 import org.moeaframework.core.FrameworkException;
 
 /**
- * Exception indicating a tree node had one or more unsatisfied arguments
- * so no valid tree could be constructed.
+ * Exception indicating a tree node had one or more unsatisfied arguments so no valid tree could be constructed.
  */
 public class UnsatisfiedArgumentException extends FrameworkException {
 

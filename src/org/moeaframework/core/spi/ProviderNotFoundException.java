@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,14 +17,10 @@
  */
 package org.moeaframework.core.spi;
 
-import java.text.MessageFormat;
-
-import org.moeaframework.core.FrameworkException;
-
 /**
  * Exception indicating a provider was not found.
  */
-public class ProviderNotFoundException extends FrameworkException {
+public class ProviderNotFoundException extends ProviderException {
 
 	private static final long serialVersionUID = 273130604019491242L;
 
@@ -44,7 +40,7 @@ public class ProviderNotFoundException extends FrameworkException {
 	 * @param cause the cause of this exception
 	 */
 	public ProviderNotFoundException(String name, Throwable cause) {
-		super(MessageFormat.format("no provider for {0}", name), cause);
+		super("No provider for " + name, cause);
 	}
 	
 }

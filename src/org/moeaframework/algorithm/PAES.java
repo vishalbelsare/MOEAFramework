@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -18,33 +18,30 @@
 package org.moeaframework.algorithm;
 
 import org.apache.commons.math3.util.ArithmeticUtils;
-import org.moeaframework.core.AdaptiveGridArchive;
-import org.moeaframework.core.Population;
-import org.moeaframework.core.Problem;
 import org.moeaframework.core.Solution;
-import org.moeaframework.core.Variation;
+import org.moeaframework.core.TypedProperties;
 import org.moeaframework.core.comparator.DominanceComparator;
 import org.moeaframework.core.comparator.ParetoDominanceComparator;
-import org.moeaframework.core.operator.RandomInitialization;
+import org.moeaframework.core.configuration.Property;
+import org.moeaframework.core.initialization.RandomInitialization;
+import org.moeaframework.core.operator.Mutation;
+import org.moeaframework.core.population.AdaptiveGridArchive;
+import org.moeaframework.core.population.Population;
+import org.moeaframework.core.spi.OperatorFactory;
+import org.moeaframework.problem.Problem;
 
 /**
- * Implementation of the (1+1) Pareto Archived Evolution Strategy (PAES).  PAES
- * uses an adaptive grid archive to maintain a diverse set of solutions.
+ * Implementation of the (1+1) Pareto Archived Evolution Strategy (PAES).  PAES uses an adaptive grid archive to
+ * maintain a diverse set of solutions.
  * <p>
  * References:
  * <ol>
- *   <li>Knowles, J.D. and D. W. Corne (1999). The Pareto Archived Evolution
- *       Strategy: A New Baseline Algorithm for Pareto Multiobjective
- *       Optimisation. In Proceedings of the 1999 Congress on Evolutionary
- *       Computation (CEC'99), pp. 98-105.
+ *   <li>Knowles, J.D. and D. W. Corne (1999).  The Pareto Archived Evolution Strategy: A New Baseline Algorithm for
+ *       Pareto Multiobjective Optimisation.  In Proceedings of the 1999 Congress on Evolutionary Computation (CEC'99),
+ *       pp. 98-105.
  * </ol>
  */
 public class PAES extends AbstractEvolutionaryAlgorithm {
-	
-	/**
-	 * The mutation operator
-	 */
-	private final Variation variation;
 	
 	/**
 	 * The dominance comparator.
@@ -52,30 +49,51 @@ public class PAES extends AbstractEvolutionaryAlgorithm {
 	private final DominanceComparator comparator;
 	
 	/**
+	 * Constructs a new PAES instance with default settings.
+	 * 
+	 * @param problem the problem
+	 */
+	public PAES(Problem problem) {
+		this(problem, OperatorFactory.getInstance().getMutation(problem), 8, 100);
+	}
+	
+	/**
 	 * Constructs a new PAES instance.
 	 * 
 	 * @param problem the problem
-	 * @param variation the mutation operator
+	 * @param mutation the mutation operator
 	 * @param bisections the number of bisections in the adaptive grid archive
 	 * @param archiveSize the capacity of the adaptive grid archive
-	 * @throws IllegalArgumentException if the variation operator requires more
-	 *         than one parent
 	 */
-	public PAES(Problem problem, Variation variation, int bisections,
-			int archiveSize) {
+	public PAES(Problem problem, Mutation mutation, int bisections, int archiveSize) {
 		super(problem,
+				1,
 				new Population(),
-				new AdaptiveGridArchive(archiveSize, problem, 
-						ArithmeticUtils.pow(2, bisections)),
-				null);
-		this.variation = variation;
-		
-		if (variation.getArity() != 1) {
-			throw new IllegalArgumentException(
-					"PAES only supports mutation operators with 1 parent");
-		}
+				new AdaptiveGridArchive(archiveSize, problem, ArithmeticUtils.pow(2, bisections)),
+				new RandomInitialization(problem),
+				mutation);
 		
 		comparator = new ParetoDominanceComparator();
+	}
+	
+	@Override
+	public String getName() {
+		return "PAES";
+	}
+	
+	/**
+	 * Replaces the mutation operator to be used by this algorithm.
+	 * 
+	 * @param mutation the mutation operator
+	 */
+	@Property("operator")
+	public void setVariation(Mutation mutation) {
+		super.setVariation(mutation);
+	}
+	
+	@Override
+	public Mutation getVariation() {
+		return (Mutation)super.getVariation();
 	}
 
 	@Override
@@ -83,26 +101,9 @@ public class PAES extends AbstractEvolutionaryAlgorithm {
 		return (AdaptiveGridArchive)super.getArchive();
 	}
 	
-	@Override
-	protected void initialize() {
-		// avoid calling super.initialize() since no initializer is set
-		if (initialized) {
-			throw new AlgorithmInitializationException(this, 
-					"algorithm already initialized");
-		}
-
-		initialized = true;
-		
-		Solution solution = new RandomInitialization(problem, 1).initialize()[0];
-		evaluate(solution);
-		population.add(solution);
-		archive.add(solution);
-	}
-
 	/**
-	 * The test procedure to determine which solution, the parent or offspring,
-	 * moves on to the next generation.  The solution in a lower density region
-	 * in the archive is returned.
+	 * The test procedure to determine which solution, the parent or offspring, moves on to the next generation.  The
+	 * solution in a lower density region in the archive is returned.
 	 * 
 	 * @param parent the parent solution
 	 * @param offspring the offspring solution
@@ -130,8 +131,10 @@ public class PAES extends AbstractEvolutionaryAlgorithm {
 
 	@Override
 	protected void iterate() {
+		Population population = getPopulation();
+		AdaptiveGridArchive archive = getArchive();
 		Solution parent = population.get(0);
-		Solution offspring = variation.evolve(new Solution[] { parent })[0];
+		Solution offspring = getVariation().mutate(parent);
 		
 		evaluate(offspring);
 		
@@ -147,6 +150,27 @@ public class PAES extends AbstractEvolutionaryAlgorithm {
 				population.replace(0, test(parent, offspring));
 			}
 		}
+	}
+	
+	@Override
+	public void applyConfiguration(TypedProperties properties) {
+		if (properties.contains("archiveSize") || properties.contains("bisections")) {
+			int archiveSize = properties.getInt("archiveSize", getArchive().getCapacity());
+			int bisections = properties.getInt("bisections", getArchive().getBisections());
+			setArchive(new AdaptiveGridArchive(archiveSize, problem, ArithmeticUtils.pow(2, bisections)));
+		}
+		
+		super.applyConfiguration(properties);
+	}
+
+	@Override
+	public TypedProperties getConfiguration() {
+		TypedProperties properties = super.getConfiguration();
+		
+		properties.setInt("archiveSize", getArchive().getCapacity());
+		properties.setInt("bisections", getArchive().getBisections());
+		
+		return properties;
 	}
 
 }

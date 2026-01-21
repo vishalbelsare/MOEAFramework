@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,58 +17,68 @@
  */
 package org.moeaframework.core.spi;
 
-import java.util.Properties;
-
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
-import org.moeaframework.analysis.sensitivity.ProblemStub;
-import org.moeaframework.core.Problem;
+import org.moeaframework.Assert;
 import org.moeaframework.core.Solution;
-import org.moeaframework.core.Variable;
-import org.moeaframework.core.Variation;
-import org.moeaframework.core.operator.RandomInitialization;
-import org.moeaframework.core.variable.BinaryVariable;
-import org.moeaframework.core.variable.Grammar;
-import org.moeaframework.core.variable.Permutation;
-import org.moeaframework.core.variable.RealVariable;
+import org.moeaframework.core.TypedProperties;
+import org.moeaframework.core.initialization.RandomInitialization;
+import org.moeaframework.core.operator.CompoundVariation;
+import org.moeaframework.core.operator.DefaultOperators;
+import org.moeaframework.core.operator.Variation;
+import org.moeaframework.core.operator.binary.BitFlip;
+import org.moeaframework.core.operator.binary.HUX;
+import org.moeaframework.core.operator.grammar.GrammarCrossover;
+import org.moeaframework.core.operator.grammar.GrammarMutation;
+import org.moeaframework.core.operator.permutation.Insertion;
+import org.moeaframework.core.operator.permutation.PMX;
+import org.moeaframework.core.operator.permutation.Swap;
+import org.moeaframework.core.operator.real.PM;
+import org.moeaframework.core.operator.real.SBX;
+import org.moeaframework.mock.MockBinaryProblem;
+import org.moeaframework.mock.MockGrammarProblem;
+import org.moeaframework.mock.MockMixedBinaryProblem;
+import org.moeaframework.mock.MockMultiTypeProblem;
+import org.moeaframework.mock.MockPermutationProblem;
+import org.moeaframework.mock.MockProblem;
+import org.moeaframework.mock.MockRealProblem;
+import org.moeaframework.mock.MockUnsupportedVariable;
+import org.moeaframework.problem.Problem;
 
-/**
- * Tests the {@link OperatorFactory} class.
- */
-public class OperatorFactoryTest {
+public class OperatorFactoryTest extends AbstractFactoryTest<OperatorProvider, OperatorFactory> {
 
-	private static final String[] operators = { "sbx+pm", "hux+bf", 
-		"pmx+insertion+swap", "de", "de+pm", "pcx", "spx", "undx", "pm", "um", 
-		"1x+um", "2x+um", "ux+um", "gx+gm", "bx", "ptm", "bx+ptm" };
-	
-	private Problem problem;
-	
-	@Before
-	public void setUp() {
-		problem = ProblemFactory.getInstance().getProblem("DTLZ2_2");
+	@Override
+	public Class<OperatorProvider> getProviderType() {
+		return OperatorProvider.class;
 	}
 	
-	@After
-	public void tearDown() {
-		problem = null;
+	@Override
+	public Class<OperatorFactory> getFactoryType() {
+		return OperatorFactory.class;
 	}
 	
 	@Test
-	public void testCommonOperators() {
-		for (String operator : operators) {
-			Variation variation = OperatorFactory.getInstance().getVariation(
-					operator, new Properties(), problem);
+	public void testOperators() {
+		Problem problem = ProblemFactory.getInstance().getProblem("DTLZ2_2");
+		
+		for (String operator : new DefaultOperators().getRegisteredOperators()) {
+			System.out.println("Testing OperatorFactory on " + operator);
 			
-			test(variation);
+			try {
+				Variation variation = createFactory().getVariation(operator, new TypedProperties(), problem);
+				test(problem, variation);
+			} catch (ProviderException e) {
+				// this operator is renamed and displays an error
+				if (!operator.equalsIgnoreCase("bx")) {
+					throw e;
+				}
+			}
 		}
 	}
 	
-	private void test(Variation variation) {
-		RandomInitialization initialization = new RandomInitialization(problem, 
-				variation.getArity());
-		Solution[] parents = initialization.initialize();
+	private void test(Problem problem, Variation variation) {
+		RandomInitialization initialization = new RandomInitialization(problem);
+		
+		Solution[] parents = initialization.initialize(variation.getArity());
 		Solution[] offspring = variation.evolve(parents);
 		
 		Assert.assertNotNull(offspring);
@@ -76,139 +86,104 @@ public class OperatorFactoryTest {
 	
 	@Test
 	public void testDefaultReal() {
-		Problem problem = new ProblemStub(1) {
-			
-			@Override
-			public Solution newSolution() {
-				Solution solution = new Solution(1, 0);
-				solution.setVariable(0, new RealVariable(0, 1));
-				return solution;
-			}
-
-		};
+		Problem problem = new MockRealProblem();
+		Assert.assertEquals("sbx+pm", createFactory().lookupVariationHint(problem));
 		
-		Assert.assertNotNull(OperatorFactory.getInstance().getVariation(null, 
-				new Properties(), problem));
+		Variation variation = createFactory().getVariation(null, new TypedProperties(), problem);
+		Assert.assertInstanceOf(CompoundVariation.class, variation);
+		Assert.assertInstanceOf(SBX.class, ((CompoundVariation)variation).getOperators().get(0));
+		Assert.assertInstanceOf(PM.class, ((CompoundVariation)variation).getOperators().get(1));
 	}
 	
 	@Test
 	public void testDefaultBinary() {
-		Problem problem = new ProblemStub(1) {
-			
-			@Override
-			public Solution newSolution() {
-				Solution solution = new Solution(1, 0);
-				solution.setVariable(0, new BinaryVariable(10));
-				return solution;
-			}
-
-		};
+		Problem problem = new MockBinaryProblem();
+		Assert.assertEquals("hux+bf", createFactory().lookupVariationHint(problem));
 		
-		Assert.assertNotNull(OperatorFactory.getInstance().getVariation(null, 
-				new Properties(), problem));
+		Variation variation = createFactory().getVariation(null, new TypedProperties(), problem);
+		Assert.assertInstanceOf(CompoundVariation.class, variation);
+		Assert.assertInstanceOf(HUX.class, ((CompoundVariation)variation).getOperators().get(0));
+		Assert.assertInstanceOf(BitFlip.class, ((CompoundVariation)variation).getOperators().get(1));
+	}
+	
+	@Test
+	public void testCombiningBinary() {
+		Problem problem = new MockMixedBinaryProblem();
+		Assert.assertEquals("hux+bf", createFactory().lookupVariationHint(problem));
+		
+		Variation variation = createFactory().getVariation(null, new TypedProperties(), problem);
+		Assert.assertInstanceOf(CompoundVariation.class, variation);
+		Assert.assertInstanceOf(HUX.class, ((CompoundVariation)variation).getOperators().get(0));
+		Assert.assertInstanceOf(BitFlip.class, ((CompoundVariation)variation).getOperators().get(1));
 	}
 	
 	@Test
 	public void testDefaultPermutation() {
-		Problem problem = new ProblemStub(1) {
-			
-			@Override
-			public Solution newSolution() {
-				Solution solution = new Solution(1, 0);
-				solution.setVariable(0, new Permutation(4));
-				return solution;
-			}
-
-		};
+		Problem problem = new MockPermutationProblem();
+		Assert.assertEquals("pmx+insertion+swap", createFactory().lookupVariationHint(problem));
 		
-		Assert.assertNotNull(OperatorFactory.getInstance().getVariation(null, 
-				new Properties(), problem));
+		Variation variation = createFactory().getVariation(null, new TypedProperties(), problem);
+		Assert.assertInstanceOf(CompoundVariation.class, variation);
+		Assert.assertInstanceOf(PMX.class, ((CompoundVariation)variation).getOperators().get(0));
+		Assert.assertInstanceOf(Insertion.class, ((CompoundVariation)variation).getOperators().get(1));
+		Assert.assertInstanceOf(Swap.class, ((CompoundVariation)variation).getOperators().get(2));
 	}
 	
 	@Test
 	public void testDefaultGrammar() {
-		Problem problem = new ProblemStub(1) {
-			
-			@Override
-			public Solution newSolution() {
-				Solution solution = new Solution(1, 0);
-				solution.setVariable(0, new Grammar(4));
-				return solution;
-			}
-
-		};
+		Problem problem = new MockGrammarProblem();
+		Assert.assertEquals("gx+gm", createFactory().lookupVariationHint(problem));
 		
-		Assert.assertNotNull(OperatorFactory.getInstance().getVariation(null, 
-				new Properties(), problem));
+		Variation variation = createFactory().getVariation(null, new TypedProperties(), problem);
+		Assert.assertInstanceOf(CompoundVariation.class, variation);
+		Assert.assertInstanceOf(GrammarCrossover.class, ((CompoundVariation)variation).getOperators().get(0));
+		Assert.assertInstanceOf(GrammarMutation.class, ((CompoundVariation)variation).getOperators().get(1));
 	}
 	
-	@Test(expected = ProviderLookupException.class)
+	@Test
 	public void testMixedType() {
-		Problem problem = new ProblemStub(5) {
-			
-			@Override
-			public Solution newSolution() {
-				Solution solution = new Solution(5, 0);
-				solution.setVariable(0, new RealVariable(0, 1));
-				solution.setVariable(1, new BinaryVariable(10));
-				solution.setVariable(2, new Permutation(4));
-				solution.setVariable(3, new Grammar(4));
-				return solution;
-			}
-
-		};
+		Problem problem = new MockMultiTypeProblem();
+		Assert.assertEquals("sbx+hux+pmx+pm+bf+insertion+swap", createFactory().lookupVariationHint(problem));
 		
-		OperatorFactory.getInstance().getVariation(null, new Properties(), 
-				problem);
+		Variation variation = createFactory().getVariation(null, new TypedProperties(), problem);
+		Assert.assertInstanceOf(CompoundVariation.class, variation);
+		Assert.assertInstanceOf(SBX.class, ((CompoundVariation)variation).getOperators().get(0));
+		Assert.assertInstanceOf(HUX.class, ((CompoundVariation)variation).getOperators().get(1));
+		Assert.assertInstanceOf(PMX.class, ((CompoundVariation)variation).getOperators().get(2));
+		Assert.assertInstanceOf(PM.class, ((CompoundVariation)variation).getOperators().get(3));
+		Assert.assertInstanceOf(BitFlip.class, ((CompoundVariation)variation).getOperators().get(4));
+		Assert.assertInstanceOf(Insertion.class, ((CompoundVariation)variation).getOperators().get(5));
+		Assert.assertInstanceOf(Swap.class, ((CompoundVariation)variation).getOperators().get(6));
 	}
 	
-	@Test(expected = ProviderLookupException.class)
+	@Test
 	public void testUnknownType() {
-		Problem problem = new ProblemStub(1) {
+		Problem problem = new MockProblem(1, 0) {
 			
 			@Override
 			public Solution newSolution() {
 				Solution solution = new Solution(1, 0);
-				
-				solution.setVariable(0, new Variable() {
-
-					private static final long serialVersionUID = -5453570189207466169L;
-
-					@Override
-					public Variable copy() {
-						throw new UnsupportedOperationException();
-					}
-
-					@Override
-					public void randomize() {
-						throw new UnsupportedOperationException();
-					}
-
-				});
-				
+				solution.setVariable(0, new MockUnsupportedVariable());
 				return solution;
 			}
 
 		};
 		
-		OperatorFactory.getInstance().getVariation(null, new Properties(), 
-				problem);
+		Assert.assertNull(createFactory().lookupVariationHint(problem));
+		Assert.assertNull(createFactory().getVariation(null, new TypedProperties(), problem));
 	}
 	
-	@Test(expected = ProviderLookupException.class)
+	@Test
 	public void testEmptyType() {
-		Problem problem = new ProblemStub(0);
-		
-		OperatorFactory.getInstance().getVariation(null, new Properties(), 
-				problem);
+		Problem problem = new MockProblem(0);
+		Assert.assertNull(createFactory().lookupVariationHint(problem));
+		Assert.assertNull(createFactory().getVariation(null, new TypedProperties(), problem));
 	}
 	
 	@Test(expected = ProviderNotFoundException.class)
 	public void testNonexistentOperator() {
-		Problem problem = new ProblemStub(0);
-		
-		OperatorFactory.getInstance().getVariation("sbx+test_fake_operator", 
-				new Properties(), problem);
+		Problem problem = new MockProblem(0);
+		createFactory().getVariation("sbx+test_fake_operator", new TypedProperties(), problem);
 	}
 
 }

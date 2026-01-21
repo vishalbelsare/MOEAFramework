@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,37 +17,25 @@
  */
 import java.io.IOException;
 
-import org.moeaframework.Analyzer;
-import org.moeaframework.Executor;
+import org.moeaframework.algorithm.NSGAII;
+import org.moeaframework.analysis.plot.XYPlotBuilder;
+import org.moeaframework.problem.DTLZ.DTLZ2;
+import org.moeaframework.problem.Problem;
 
 /**
- * Demonstrates how only a few lines of code are necessary to setup, run
- * and statistically compare multiple algorithms.
+ * Demonstrates displaying the end-of-run approximation set in a plot.
  */
 public class Example2 {
 
 	public static void main(String[] args) throws IOException {
-		String problem = "UF1";
-		String[] algorithms = { "NSGAII", "GDE3", "eMOEA" };
-
-		//setup the experiment
-		Executor executor = new Executor()
-				.withProblem(problem)
-				.withMaxEvaluations(10000);
-
-		Analyzer analyzer = new Analyzer()
-				.withProblem(problem)
-				.includeHypervolume()
-				.showStatisticalSignificance();
-
-		//run each algorithm for 50 seeds
-		for (String algorithm : algorithms) {
-			analyzer.addAll(algorithm, 
-					executor.withAlgorithm(algorithm).runSeeds(50));
-		}
-
-		//print the results
-		analyzer.printAnalysis();
+		Problem problem = new DTLZ2(2);
+		
+		NSGAII algorithm = new NSGAII(problem);
+		algorithm.run(10000);
+		
+		new XYPlotBuilder()
+			.scatter("NSGA-II", algorithm.getResult())
+			.show();
 	}
-	
+
 }

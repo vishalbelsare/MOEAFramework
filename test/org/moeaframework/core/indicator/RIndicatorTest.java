@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,24 +17,22 @@
  */
 package org.moeaframework.core.indicator;
 
-import java.io.File;
 import java.io.IOException;
 
-import org.junit.Assert;
 import org.junit.Test;
-import org.moeaframework.core.NondominatedPopulation;
-import org.moeaframework.core.PopulationIO;
-import org.moeaframework.problem.MockRealProblem;
+import org.moeaframework.Assert;
+import org.moeaframework.core.population.NondominatedPopulation;
+import org.moeaframework.mock.MockRealProblem;
+import org.moeaframework.problem.Problem;
 
 /**
- * Tests the {@link RIndicator} class.  The raw values used here were produced
- * using the PISA r-ind.exe program.
+ * The raw values used here were produced using the PISA r-ind.exe program.
  */
 public class RIndicatorTest {
 	
 	@Test
-	public void testChebychev() throws IOException {
-		testUtility("./pf/DTLZ2.2D.pf", new RIndicator.ChebychevUtility(), 0.782451);
+	public void testChebyshev() throws IOException {
+		testUtility("./pf/DTLZ2.2D.pf", new RIndicator.ChebyshevUtility(), 0.782451);
 	}
 	
 	@Test
@@ -42,11 +40,13 @@ public class RIndicatorTest {
 		testUtility("./pf/DTLZ2.2D.pf", new RIndicator.LinearWeightedSumUtility(), 0.750497);
 	}
 	
-	public void testUtility(String file, RIndicator.UtilityFunction utilityFunction, double expectedUtility) throws IOException {
-		NondominatedPopulation referenceSet = new NondominatedPopulation(
-				PopulationIO.readObjectives(new File(file)));
+	public void testUtility(String resource, RIndicator.UtilityFunction utilityFunction, double expectedUtility)
+			throws IOException {
+		Problem problem = new MockRealProblem(2);
+		NondominatedPopulation referenceSet = NondominatedPopulation.load(resource);
+		Normalizer normalizer = new Normalizer(referenceSet);
 		
-		RIndicator indicator = new RIndicator(new MockRealProblem(2), 500, referenceSet, utilityFunction) {
+		RIndicator indicator = new RIndicator(problem, 500, referenceSet, normalizer, utilityFunction) {
 
 			@Override
 			public double evaluate(NondominatedPopulation approximationSet) {

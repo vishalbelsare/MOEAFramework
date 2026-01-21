@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,12 +17,9 @@
  */
 package org.moeaframework.util.statistics;
 
-import org.junit.Assert;
 import org.junit.Test;
+import org.moeaframework.Assert;
 
-/**
- * Tests the {@link WilcoxonSignedRanksTest} class.
- */
 public class WilcoxonSignedRanksTestTest {
 
 	/**
@@ -31,66 +28,30 @@ public class WilcoxonSignedRanksTestTest {
 	@Test
 	public void testExample1() {
 		WilcoxonSignedRanksTest test = new WilcoxonSignedRanksTest(5.0);
-		test.add(9);
-		test.add(10);
-		test.add(8);
-		test.add(4);
-		test.add(8);
-		test.add(3);
-		test.add(0);
-		test.add(10);
-		test.add(15);
-		test.add(9);
-
+		test.addAll(new double[] { 9, 10, 8, 4, 8, 3, 0, 10, 15, 9 });
+		
 		Assert.assertFalse(test.test(0.05));
 	}
 
 	/**
-	 * Example from
-	 * <a href="http://en.wikipedia.org/wiki/Wilcoxon_signed-rank_test">
-	 * Wikipedia</a>.
+	 * Example from <a href="http://en.wikipedia.org/wiki/Wilcoxon_signed-rank_test">Wikipedia</a>.
 	 */
 	@Test
 	public void testExample2() {
 		WilcoxonSignedRanksTest test = new WilcoxonSignedRanksTest(0.0);
-		test.add(15);
-		test.add(-7);
-		test.add(5);
-		test.add(20);
-		test.add(0);
-		test.add(-9);
-		test.add(17);
-		test.add(-12);
-		test.add(5);
-		test.add(-10);
+		test.addAll(new double[] { 15, -7, 5, 20, 0, -9, 17, -12, 5, -10 });
 
 		Assert.assertFalse(test.test(0.05));
 		Assert.assertEquals(18, test.lastT, 0.001);
 	}
 
 	/**
-	 * Example from <a href="http://faculty.vassar.edu/lowry/ch12a.html">
-	 * http://faculty.vassar.edu/lowry/ch12a.html</a>
+	 * Example from <a href="http://faculty.vassar.edu/lowry/ch12a.html">http://faculty.vassar.edu/lowry/ch12a.html</a>
 	 */
 	@Test
 	public void testExample3() {
 		WilcoxonSignedRanksTest test = new WilcoxonSignedRanksTest(0.0);
-		test.add(0);
-		test.add(0);
-		test.add(2);
-		test.add(-3);
-		test.add(-4);
-		test.add(-4);
-		test.add(5);
-		test.add(6);
-		test.add(8);
-		test.add(10);
-		test.add(10);
-		test.add(-14);
-		test.add(16);
-		test.add(20);
-		test.add(32);
-		test.add(40);
+		test.addAll(new double[] { 0, 0, 2, -3, -4, -4, 5, 6, 8, 10, 10, -14, 16, 20, 32, 40 });
 
 		Assert.assertTrue(test.test(0.05));
 		Assert.assertEquals(19, test.lastT, 0.001);
@@ -102,16 +63,7 @@ public class WilcoxonSignedRanksTestTest {
 	@Test(expected = IllegalArgumentException.class)
 	public void testAllEqual() {
 		WilcoxonSignedRanksTest test = new WilcoxonSignedRanksTest(10.0);
-		test.add(10);
-		test.add(10);
-		test.add(10);
-		test.add(10);
-		test.add(10);
-		test.add(10);
-		test.add(10);
-		test.add(10);
-		test.add(10);
-		test.add(10);
+		test.addAll(new double[] { 10, 10, 10, 10, 10, 10, 10, 10, 10, 10 });
 
 		Assert.assertFalse(test.test(0.05));
 	}

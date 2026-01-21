@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,41 +17,42 @@
  */
 package org.moeaframework.problem.misc;
 
-import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
-import org.moeaframework.TestUtils;
-import org.moeaframework.core.Problem;
-import org.moeaframework.core.Settings;
+import org.moeaframework.Assert;
+import org.moeaframework.TestEnvironment;
+import org.moeaframework.problem.Problem;
 import org.moeaframework.problem.ProblemTest;
 
 public class TanakaTest extends ProblemTest {
 
 	@Test
-	@Ignore("JMetal 5.9 modifies the constraint values causing a difference")
-	public void testJMetal() throws Exception {
-		test(new org.uma.jmetal.problem.multiobjective.Tanaka(), new Tanaka());
+	public void testJMetal() {
+		testAgainstJMetal("Tanaka", false);
 	}
 	
 	@Test
 	public void test() {
 		Problem problem = new Tanaka();
 		
-		Assert.assertArrayEquals(new double[] { 0.1, 0.1 }, 
-				TestUtils.evaluateAt(problem, 0.1, 0.1).getObjectives(),
-				Settings.EPS);
+		Assert.assertArrayEquals(new double[] { 0.1, 0.1 },
+				evaluateAt(problem, 0.1, 0.1).getObjectiveValues(),
+				TestEnvironment.HIGH_PRECISION);
 		
-		Assert.assertArrayEquals(new double[] { 1.08, 0.0 }, 
-				TestUtils.evaluateAt(problem, 0.1, 0.1).getConstraints(),
-				Settings.EPS);
+		Assert.assertArrayEquals(new double[] { 1.08, -0.18 },
+				evaluateAt(problem, 0.1, 0.1).getConstraintValues(),
+				TestEnvironment.HIGH_PRECISION);
 		
-		Assert.assertArrayEquals(new double[] { Math.PI, Math.PI }, 
-				TestUtils.evaluateAt(problem, Math.PI, Math.PI).getObjectives(),
-				Settings.EPS);
+		Assert.assertFalse(evaluateAt(problem, 0.1, 0.1).isFeasible());
 		
-		Assert.assertArrayEquals(new double[] { 0.0, 13.456 }, 
-				TestUtils.evaluateAt(problem, Math.PI, Math.PI).getConstraints(),
+		Assert.assertArrayEquals(new double[] { Math.PI, Math.PI },
+				evaluateAt(problem, Math.PI, Math.PI).getObjectiveValues(),
+				TestEnvironment.HIGH_PRECISION);
+		
+		Assert.assertArrayEquals(new double[] { -18.639, 13.456 },
+				evaluateAt(problem, Math.PI, Math.PI).getConstraintValues(),
 				0.001);
+		
+		Assert.assertFalse(evaluateAt(problem, Math.PI, Math.PI).isFeasible());
 	}
 
 }

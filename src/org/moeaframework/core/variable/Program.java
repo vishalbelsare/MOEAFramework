@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,21 +17,24 @@
  */
 package org.moeaframework.core.variable;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.util.Base64;
+
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.moeaframework.core.PRNG;
-import org.moeaframework.core.Variable;
 import org.moeaframework.util.tree.Environment;
 import org.moeaframework.util.tree.Node;
 import org.moeaframework.util.tree.Rules;
 
 /**
- * A decision variable for programs.  The program is represented as a
- * strongly-typed expression tree.
- * <p>
- * <b>Note: Although {@code Program} extends {@link Node}, the {@code Program}
- * object must never be altered by the optimization algorithm.</b>  Only
- * its arguments can undergo variation.
+ * A decision variable for programs.  The program is represented as a strongly-typed expression tree.
  */
-public class Program extends Node implements Variable {
+public class Program extends AbstractVariable {
 
 	private static final long serialVersionUID = -2621361322042428290L;
 
@@ -39,15 +42,31 @@ public class Program extends Node implements Variable {
 	 * The rules defining the program syntax.
 	 */
 	private final Rules rules;
-
+	
+	/**
+	 * The root of the program tree.
+	 */
+	private Root root;
+	
 	/**
 	 * Constructs a new program variable with the specified syntax rules.
 	 * 
 	 * @param rules the rules defining the program syntax
 	 */
 	public Program(Rules rules) {
-		super(rules.getReturnType(), rules.getReturnType());
+		this(null, rules);
+	}
+
+	/**
+	 * Constructs a new program variable with the specified syntax rules and name.
+	 * 
+	 * @param name the name of this decision variable
+	 * @param rules the rules defining the program syntax
+	 */
+	public Program(String name, Rules rules) {
+		super(name);
 		this.rules = rules;
+		this.root = new Root();
 	}
 	
 	/**
@@ -59,19 +78,53 @@ public class Program extends Node implements Variable {
 		return rules;
 	}
 	
+	/**
+	 * Returns the root node of this program.  The root's main purpose is to act as the parent, or container, for the
+	 * actual program, which we call the body.  This method is intended for testing purposes only.
+	 * 
+	 * @return the root
+	 */
+	Root getRoot() {
+		return root;
+	}
+	
+	/**
+	 * Returns the body of this program.
+	 * 
+	 * @return the top-level node
+	 */
+	public Node getBody() {
+		return root.getBody();
+	}
+	
+	/**
+	 * Sets the body of this program.
+	 * 
+	 * @param node the top-level node
+	 */
+	public void setBody(Node node) {
+		root.setBody(node);
+	}
+	
 	@Override
 	public Program copy() {
-		return (Program)copyTree();
+		Program program = new Program(name, rules);
+		
+		if (getBody() != null) {
+			program.setBody(getBody().copyTree());
+		}
+		
+		return program;
 	}
-
-	@Override
-	public Program copyNode() {
-		return new Program(rules);
-	}
-
-	@Override
+	
+	/**
+	 * Evaluates this program using the given environment.
+	 * 
+	 * @param environment the environment
+	 * @return the result
+	 */
 	public Object evaluate(Environment environment) {
-		return getArgument(0).evaluate(environment);
+		return root.evaluate(environment);
 	}
 
 	/**
@@ -82,23 +135,112 @@ public class Program extends Node implements Variable {
 		Rules rules = getRules();
 		int depth = PRNG.nextInt(2, rules.getMaxInitializationDepth());
 		boolean isFull = PRNG.nextBoolean();
-		Node root = null;
+		Node body = null;
 		
 		if (isFull) {
 			if (rules.getScaffolding() == null) {
-				root = rules.buildTreeFull(rules.getReturnType(), depth);
+				body = rules.buildTreeFull(rules.getReturnType(), depth);
 			} else {
-				root = rules.buildTreeFull(rules.getScaffolding(), depth);
+				body = rules.buildTreeFull(rules.getScaffolding(), depth);
 			}
 		} else {
 			if (rules.getScaffolding() == null) {
-				root = rules.buildTreeGrow(rules.getReturnType(), depth);
+				body = rules.buildTreeGrow(rules.getReturnType(), depth);
 			} else {
-				root = rules.buildTreeGrow(rules.getScaffolding(), depth);
+				body = rules.buildTreeGrow(rules.getScaffolding(), depth);
 			}
 		}
 		
-		setArgument(0, root);
+		setBody(body);
+	}
+	
+	@Override
+	public String getDefinition() {
+		throw new UnsupportedOperationException();
+	}
+	
+	@Override
+	public String encode() {
+		try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
+				ObjectOutputStream oos = new ObjectOutputStream(baos)) {
+			oos.writeObject(root);
+			return "Program(" + Base64.getEncoder().encodeToString(baos.toByteArray()) + ")";
+		} catch (IOException e) {
+			throw new VariableEncodingException("Failed to encode program", e);
+		}
+	}
+	
+	@Override
+	public void decode(String value) {
+		if (!value.startsWith("Program(") || !value.endsWith(")")) {
+			throw new VariableEncodingException("Failed to decode program, missing 'Program(' ... ')'");
+		}
+		
+		byte[] encoding = Base64.getDecoder().decode(value.substring(8, value.length()-1));
+		
+		try (ByteArrayInputStream baos = new ByteArrayInputStream(encoding);
+				ObjectInputStream ois = new ObjectInputStream(baos)) {
+			root = (Root)ois.readObject();
+		} catch (IOException | ClassNotFoundException e) {
+			throw new VariableEncodingException("Failed to decode program", e);
+		}
+	}
+	
+	@Override
+	public int hashCode() {
+		return new HashCodeBuilder()
+				.appendSuper(super.hashCode())
+				.append(rules)
+				.append(root)
+				.toHashCode();
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (obj == this) {
+			return true;
+		} else if ((obj == null) || (obj.getClass() != getClass())) {
+			return false;
+		} else {
+			Program rhs = (Program)obj;
+			
+			return new EqualsBuilder()
+					.appendSuper(super.equals(obj))
+					.append(rules, rhs.rules)
+					.append(root, rhs.root)
+					.isEquals();
+		}
+	}
+	
+	/**
+	 * Node representing the root of a program.
+	 */
+	class Root extends Node {
+		
+		private static final long serialVersionUID = -7045431952776749584L;
+				
+		public Root() {
+			super(getRules().getReturnType(), getRules().getReturnType());
+		}
+		
+		public Node getBody() {
+			return getArgument(0);
+		}
+		
+		public void setBody(Node node) {
+			setArgument(0, node);
+		}
+
+		@Override
+		public Root copyNode() {
+			return new Root();
+		}
+
+		@Override
+		public Object evaluate(Environment environment) {
+			return getBody().evaluate(environment);
+		}
+
 	}
 
 }

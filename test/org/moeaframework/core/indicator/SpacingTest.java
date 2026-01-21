@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,83 +17,58 @@
  */
 package org.moeaframework.core.indicator;
 
-import org.junit.Assert;
 import org.junit.Test;
-import org.moeaframework.TestUtils;
-import org.moeaframework.core.NondominatedPopulation;
-import org.moeaframework.core.Problem;
-import org.moeaframework.core.Settings;
-import org.moeaframework.core.Solution;
-import org.moeaframework.core.spi.ProblemFactory;
+import org.moeaframework.Assert;
+import org.moeaframework.TestEnvironment;
+import org.moeaframework.core.population.NondominatedPopulation;
+import org.moeaframework.mock.MockRealProblem;
+import org.moeaframework.mock.MockSolution;
+import org.moeaframework.problem.Problem;
 
-/**
- * Tests the {@link Spacing} class.
- */
-public class SpacingTest {
+public class SpacingTest extends AbstractIndicatorTest<Spacing> {
 	
-	/**
-	 * Tests if an empty approximation set returns a value of zero.
-	 */
-	@Test
-	public void testEmptyApproximationSet() {
-		Problem problem = ProblemFactory.getInstance().getProblem("DTLZ2_2");
-		NondominatedPopulation approximationSet = new NondominatedPopulation();
-
-		Spacing sp = new Spacing(problem);
-		Assert.assertEquals(0.0, sp.evaluate(approximationSet), 
-				Settings.EPS);
+	@Override
+	public Spacing createInstance(Problem problem, NondominatedPopulation referenceSet) {
+		return new Spacing(problem);
 	}
 	
-	/**
-	 * Tests if infeasible solutions are properly ignored.
-	 */
-	@Test
-	public void testInfeasibleApproximationSet() {
-		Problem problem = ProblemFactory.getInstance().getProblem("CF1");
-		NondominatedPopulation approximationSet = new NondominatedPopulation();
-		
-		Solution solution = problem.newSolution();
-		solution.setObjectives(new double[] { 0.5, 0.5 });
-		solution.setConstraints(new double[] { 10.0 });
-		approximationSet.add(solution);
-
-		Spacing sp = new Spacing(problem);
-		Assert.assertEquals(0.0, sp.evaluate(approximationSet), 
-				Settings.EPS);
+	@Override
+	public double getWorstValue() {
+		return 0.0;
 	}
 	
-	/**
-	 * Runs through some simple cases to ensure the spacing metric is
-	 * computed correctly.
-	 */
+	@Override
+	public void testEmptyReferenceSet() {
+		throw new IllegalArgumentException("Bypass this test, spacing does not require a reference set");
+	}
+	
 	@Test
-	public void testSimple() {
-		Problem problem = ProblemFactory.getInstance().getProblem("DTLZ2_2");
-		Spacing sp = new Spacing(problem);
+	public void test() {
+		Problem problem = new MockRealProblem(2);
+		NondominatedPopulation referenceSet = getDefaultReferenceSet();
+		Indicator indicator = createInstance(problem, referenceSet);
 		
 		NondominatedPopulation approximationSet = new NondominatedPopulation();
-		
-		Assert.assertEquals(0.0, sp.evaluate(approximationSet), Settings.EPS);
-		
-		approximationSet.add(TestUtils.newSolution(0.5, 0.5));
-		Assert.assertEquals(0.0, sp.evaluate(approximationSet), Settings.EPS);
+
+		approximationSet.add(MockSolution.of(problem).withObjectives(0.5, 0.5));
+		Assert.assertEquals(0.0, indicator.evaluate(approximationSet), TestEnvironment.HIGH_PRECISION);
 		
 		approximationSet.clear();
-		approximationSet.add(TestUtils.newSolution(0.0, 1.0));
-		approximationSet.add(TestUtils.newSolution(1.0, 0.0));
-		Assert.assertEquals(0.0, sp.evaluate(approximationSet), Settings.EPS);
+		approximationSet.add(MockSolution.of(problem).withObjectives(0.0, 1.0));
+		approximationSet.add(MockSolution.of(problem).withObjectives(1.0, 0.0));
+		Assert.assertEquals(0.0, indicator.evaluate(approximationSet), TestEnvironment.HIGH_PRECISION);
 
 		approximationSet.clear();
-		approximationSet.add(TestUtils.newSolution(0.0, 1.0));
-		approximationSet.add(TestUtils.newSolution(0.5, 0.5));
-		approximationSet.add(TestUtils.newSolution(1.0, 0.0));
-		Assert.assertEquals(0.0, sp.evaluate(approximationSet), Settings.EPS);
+		approximationSet.add(MockSolution.of(problem).withObjectives(0.0, 1.0));
+		approximationSet.add(MockSolution.of(problem).withObjectives(0.5, 0.5));
+		approximationSet.add(MockSolution.of(problem).withObjectives(1.0, 0.0));
+		Assert.assertEquals(0.0, indicator.evaluate(approximationSet), TestEnvironment.HIGH_PRECISION);
 		
 		approximationSet.clear();
-		approximationSet.add(TestUtils.newSolution(0.0, 1.0));
-		approximationSet.add(TestUtils.newSolution(0.25, 0.75));
-		approximationSet.add(TestUtils.newSolution(1.0, 0.0));
-		Assert.assertTrue(sp.evaluate(approximationSet) > 0.0);
+		approximationSet.add(MockSolution.of(problem).withObjectives(0.0, 1.0));
+		approximationSet.add(MockSolution.of(problem).withObjectives(0.25, 0.75));
+		approximationSet.add(MockSolution.of(problem).withObjectives(1.0, 0.0));
+		Assert.assertGreaterThan(indicator.evaluate(approximationSet), 0.0);
 	}
 
 }

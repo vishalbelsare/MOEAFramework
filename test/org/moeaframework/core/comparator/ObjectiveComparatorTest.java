@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -18,56 +18,39 @@
 package org.moeaframework.core.comparator;
 
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.moeaframework.Assert;
 import org.moeaframework.core.Solution;
+import org.moeaframework.mock.MockSolution;
 
-/**
- * Tests the {@link ObjectiveComparator} class.
- */
 public class ObjectiveComparatorTest {
 
-	/**
-	 * The objective comparator used for testing.
-	 */
 	private ObjectiveComparator comparator;
 
-	/**
-	 * Setup the comparator for use by all test methods.
-	 */
 	@Before
 	public void setUp() {
 		comparator = new ObjectiveComparator(1);
 	}
 
-	/**
-	 * Removes references to shared objects so they can be garbage collected.
-	 */
 	@After
 	public void tearDown() {
 		comparator = null;
 	}
 
-	/**
-	 * Tests if the comparator correctly detects dominance.
-	 */
 	@Test
 	public void testDominance() {
-		Solution solution1 = new Solution(new double[] { 1, 0 });
-		Solution solution2 = new Solution(new double[] { 0, 1 });
+		Solution solution1 = MockSolution.of().withObjectives(1, 0);
+		Solution solution2 = MockSolution.of().withObjectives(0, 1);
 
 		Assert.assertTrue(comparator.compare(solution1, solution2) < 0);
 		Assert.assertTrue(comparator.compare(solution2, solution1) > 0);
 	}
 
-	/**
-	 * Tests if the comparator correctly detects non-dominance.
-	 */
 	@Test
 	public void testNondominance() {
-		Solution solution1 = new Solution(new double[] { 1, 0 });
-		Solution solution2 = new Solution(new double[] { 0, 0 });
+		Solution solution1 = MockSolution.of().withObjectives(1, 0);
+		Solution solution2 = MockSolution.of().withObjectives(0, 0);
 
 		Assert.assertTrue(comparator.compare(solution1, solution2) == 0);
 		Assert.assertTrue(comparator.compare(solution2, solution1) == 0);

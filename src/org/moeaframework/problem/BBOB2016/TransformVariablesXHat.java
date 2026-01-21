@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -18,13 +18,12 @@
 package org.moeaframework.problem.BBOB2016;
 
 import org.moeaframework.core.Solution;
-import org.moeaframework.core.variable.EncodingUtils;
+import org.moeaframework.core.variable.RealVariable;
 
-/* 
- * The following source code is derived from the Coco Framework available at
- * <https://github.com/numbbo/coco> under the 3-clause BSD license. The
- * original code is copyright 2013 by the NumBBO/CoCO team.  See the AUTHORS
- * file located in the Coco Framework repository for more details.
+/*
+ * The following source code is derived from the Coco Framework available at <https://github.com/numbbo/coco> under the
+ * 3-clause BSD license.  The original code is copyright 2013 by the NumBBO/CoCO team.  See the AUTHORS file located in
+ * the Coco Framework repository for more details.
  */
 
 /**
@@ -41,8 +40,7 @@ public class TransformVariablesXHat extends BBOBTransformation {
 	 * Constructs a new instance of the x-hat transformation.
 	 * 
 	 * @param function the inner function
-	 * @param seed the random number seed controlling which decision variables
-	 *        are negated
+	 * @param seed the random number seed controlling which decision variables are negated
 	 */
 	public TransformVariablesXHat(BBOBFunction function, long seed) {
 		super(function);
@@ -51,7 +49,7 @@ public class TransformVariablesXHat extends BBOBTransformation {
 
 	@Override
 	public void evaluate(Solution solution) {
-		double[] x = EncodingUtils.getReal(solution);
+		double[] x = RealVariable.getReal(solution);
 		double[] tx = BBOBUtils.uniform(x.length, seed);
 		
 		for (int i = 0; i < x.length; i++) {
@@ -62,9 +60,9 @@ public class TransformVariablesXHat extends BBOBTransformation {
 			}
 		}
 		
-		EncodingUtils.setReal(solution, tx);
+		RealVariable.setReal(solution, tx);
 		function.evaluate(solution);
-		EncodingUtils.setReal(solution, x);
+		RealVariable.setReal(solution, x);
 	}
 
 }

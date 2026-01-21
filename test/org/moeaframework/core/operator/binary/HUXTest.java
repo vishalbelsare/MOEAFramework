@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,43 +17,29 @@
  */
 package org.moeaframework.core.operator.binary;
 
-import org.junit.Assert;
 import org.junit.Test;
-import org.moeaframework.TestThresholds;
-import org.moeaframework.core.Solution;
-import org.moeaframework.core.operator.ParentImmutabilityTest;
-import org.moeaframework.core.operator.TypeSafetyTest;
+import org.moeaframework.Assert;
+import org.moeaframework.TestEnvironment;
+import org.moeaframework.core.operator.AbstractBinaryOperatorTest;
 import org.moeaframework.core.variable.BinaryVariable;
 
-/**
- * Tests the {@link HUX} class.
- */
-public class HUXTest {
-
-	/**
-	 * Tests if the grammar crossover operator is type-safe.
-	 */
-	@Test
-	public void testTypeSafety() {
-		TypeSafetyTest.testTypeSafety(new HUX(1.0));
+public class HUXTest extends AbstractBinaryOperatorTest<HUX> {
+	
+	@Override
+	public HUX createInstance() {
+		return new HUX(1.0);
 	}
 
-	/**
-	 * Test to ensure matching bits are not modified.
-	 */
 	@Test
-	public void testCorrectBits() {
-		for (int i = 0; i < TestThresholds.SAMPLES; i++) {
-			BinaryVariable parent1 = new BinaryVariable(100);
-			BinaryVariable parent2 = new BinaryVariable(100);
-
-			BitFlip.evolve(parent1, 0.5);
-			BitFlip.evolve(parent2, 0.5);
+	public void testMatchingBitsUnchanged() {
+		for (int i = 0; i < TestEnvironment.SAMPLES; i++) {
+			BinaryVariable parent1 = createTestVariable();
+			BinaryVariable parent2 = createTestVariable();
 
 			BinaryVariable offspring1 = parent1.copy();
 			BinaryVariable offspring2 = parent2.copy();
 
-			HUX.evolve(offspring1, offspring2);
+			createInstance().evolve(offspring1, offspring2);
 
 			for (int j = 0; j < 100; j++) {
 				if (parent1.get(j) == parent2.get(j)) {
@@ -63,25 +49,18 @@ public class HUXTest {
 		}
 	}
 
-	/**
-	 * Tests if the correct number of bits are swapped. On average, half of the
-	 * differing bits should be swapped.
-	 */
 	@Test
-	public void testSwapProbability() {
+	public void testBitSwapProbability() {
 		double sum = 0.0;
 
-		for (int i = 0; i < TestThresholds.SAMPLES; i++) {
-			BinaryVariable parent1 = new BinaryVariable(100);
-			BinaryVariable parent2 = new BinaryVariable(100);
-
-			BitFlip.evolve(parent1, 0.5);
-			BitFlip.evolve(parent2, 0.5);
+		for (int i = 0; i < TestEnvironment.SAMPLES; i++) {
+			BinaryVariable parent1 = createTestVariable();
+			BinaryVariable parent2 = createTestVariable();
 
 			BinaryVariable offspring1 = parent1.copy();
 			BinaryVariable offspring2 = parent2.copy();
 
-			HUX.evolve(offspring1, offspring2);
+			createInstance().evolve(offspring1, offspring2);
 
 			int differingBits = parent1.hammingDistance(parent2);
 			int changedBits1 = offspring1.hammingDistance(parent1);
@@ -92,32 +71,7 @@ public class HUXTest {
 			sum += (double)changedBits1 / differingBits;
 		}
 
-		Assert.assertEquals(sum / TestThresholds.SAMPLES, 0.5,
-				TestThresholds.VARIATION_EPS);
-	}
-
-	/**
-	 * Tests if the parents remain unchanged during variation.
-	 */
-	@Test
-	public void testParentImmutability() {
-		HUX hux = new HUX(1.0);
-
-		BinaryVariable bv1 = new BinaryVariable(100);
-		BinaryVariable bv2 = new BinaryVariable(100);
-
-		BitFlip.evolve(bv1, 0.5);
-		BitFlip.evolve(bv2, 0.5);
-
-		Solution s1 = new Solution(1, 0);
-		s1.setVariable(0, bv1);
-
-		Solution s2 = new Solution(1, 0);
-		s2.setVariable(0, bv2);
-
-		Solution[] parents = new Solution[] { s1, s2 };
-
-		ParentImmutabilityTest.test(parents, hux);
+		Assert.assertEquals(sum / TestEnvironment.SAMPLES, 0.5, TestEnvironment.LOW_PRECISION);
 	}
 
 }

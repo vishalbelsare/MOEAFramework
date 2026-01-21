@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,49 +17,29 @@
  */
 package org.moeaframework.core.comparator;
 
-import static org.moeaframework.core.FitnessEvaluator.FITNESS_ATTRIBUTE;
-
-import java.io.Serializable;
 import java.util.Comparator;
 
-import org.moeaframework.core.FitnessEvaluator;
 import org.moeaframework.core.Solution;
+import org.moeaframework.core.attribute.Fitness;
+import org.moeaframework.core.fitness.FitnessEvaluator;
 
 /**
- * Compares two solutions based on their {@code FITNESS_ATTRIBUTE} value.
+ * Compares two solutions based on their fitness value.
  * 
  * @see FitnessEvaluator
  */
-public class FitnessComparator implements DominanceComparator, 
-Comparator<Solution>, Serializable {
-
-	private static final long serialVersionUID = -3480841924543305614L;
+public class FitnessComparator implements DominanceComparator, Comparator<Solution> {
 	
 	/**
-	 * {@code true} if larger fitness values are preferred; otherwise smaller
-	 * fitness values are preferred.
+	 * {@code true} if larger fitness values are preferred; otherwise smaller fitness values are preferred.
 	 */
 	private final boolean largerValuesPreferred;
-
-	/**
-	 * Constructs a dominance comparator for comparing solutions based on their
-	 * {@code FITNESS_ATTRIBUTE} value.  By default, smaller fitness values
-	 * are preferred.
-	 * 
-	 * @deprecated Use {@link #FitnessComparator(boolean)} instead; this method
-	 *             will be removed in a future version
-	 */
-	@Deprecated
-	public FitnessComparator() {
-		this(false);
-	}
 	
 	/**
-	 * Constructs a dominance comparator for comparing solutions based on their
-	 * {@code FITNESS_ATTRIBUTE} value.
+	 * Constructs a dominance comparator for comparing solutions based on their fitness value.
 	 * 
-	 * @param largerValuesPreferred {@code true} if larger fitness values are
-	 *        preferred; otherwise smaller fitness values are preferred
+	 * @param largerValuesPreferred {@code true} if larger fitness values are preferred; otherwise smaller fitness
+	 *        values are preferred
 	 */
 	public FitnessComparator(boolean largerValuesPreferred) {
 		super();
@@ -68,9 +48,8 @@ Comparator<Solution>, Serializable {
 
 	@Override
 	public int compare(Solution solution1, Solution solution2) {
-		return (largerValuesPreferred ? -1 : 1) * Double.compare(
-				(Double)solution1.getAttribute(FITNESS_ATTRIBUTE),
-				(Double)solution2.getAttribute(FITNESS_ATTRIBUTE));
+		return (largerValuesPreferred ? -1 : 1) *
+				Double.compare(Fitness.getAttribute(solution1), Fitness.getAttribute(solution2));
 	}
 
 }

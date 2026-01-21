@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,24 +17,18 @@
  */
 package org.moeaframework.core.comparator;
 
-import static org.moeaframework.core.FastNondominatedSorting.RANK_ATTRIBUTE;
-
-import java.io.Serializable;
 import java.util.Comparator;
 
 import org.moeaframework.core.Solution;
+import org.moeaframework.core.attribute.Rank;
 
 /**
- * Compares solutions using their {@code RANK_ATTRIBUTE} value.
+ * Compares solutions using their rank.
  */
-public class RankComparator implements DominanceComparator, 
-Comparator<Solution>, Serializable {
-
-	private static final long serialVersionUID = 4973403102558586390L;
+public class RankComparator implements DominanceComparator, Comparator<Solution> {
 
 	/**
-	 * Constructs a dominance comparator for comparing solutions using their
-	 * {@code RANK_ATTRIBUTE} value.
+	 * Constructs a dominance comparator for comparing solutions using their rank.
 	 */
 	public RankComparator() {
 		super();
@@ -42,10 +36,7 @@ Comparator<Solution>, Serializable {
 
 	@Override
 	public int compare(Solution solution1, Solution solution2) {
-		int rank1 = (Integer)solution1.getAttribute(RANK_ATTRIBUTE);
-		int rank2 = (Integer)solution2.getAttribute(RANK_ATTRIBUTE);
-		
-		return Integer.compare(rank1, rank2);
+		return Integer.compare(Rank.getAttribute(solution1), Rank.getAttribute(solution2));
 	}
 
 }

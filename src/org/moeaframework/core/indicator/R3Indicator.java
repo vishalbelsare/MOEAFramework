@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,34 +17,44 @@
  */
 package org.moeaframework.core.indicator;
 
-import org.moeaframework.core.NondominatedPopulation;
-import org.moeaframework.core.Problem;
 import org.moeaframework.core.Solution;
+import org.moeaframework.core.population.NondominatedPopulation;
+import org.moeaframework.problem.Problem;
 
 /**
- * Computes the R3 indicator.  The R3 indicator is a utility ratio, or the
- * value of the R2 indicator divided by the reference set utility.  Values
- * range from {@code [-inf, inf]} with values nearer to {@code -inf} preferred.
+ * Computes the R3 indicator.  The R3 indicator is a utility ratio, or the value of the R2 indicator divided by the
+ * reference set utility.  Values range from {@code [-inf, inf]} with values nearer to {@code -inf} preferred.
  * <p>
  * References:
  * <ol>
- *   <li>Hansen, M. P. and A. Jaszkiewicz (1998).  Evaluating the Quality of
- *       Approximations to the Non-dominated Set.  IMM Technical Report
- *       IMM-REP-1998-7.
+ *   <li>Hansen, M. P. and A. Jaszkiewicz (1998).  Evaluating the Quality of Approximations to the Non-dominated Set.
+ *       IMM Technical Report IMM-REP-1998-7.
  * </ol>
  */
 public class R3Indicator extends RIndicator {
 
 	/**
-	 * Constructs a new R3 indicator using the Chebychev utility function.
+	 * Constructs a new R3 indicator using the Chebyshev utility function.  The default normalization procedure, as
+	 * specified by {@link DefaultNormalizer}, is used.
 	 * 
 	 * @param problem the problem
 	 * @param subdivisions the number of subdivisions along each objective
 	 * @param referenceSet the reference set
 	 */
-	public R3Indicator(Problem problem, int subdivisions,
-			NondominatedPopulation referenceSet) {
-		this(problem, subdivisions, referenceSet, new ChebychevUtility());
+	public R3Indicator(Problem problem, int subdivisions, NondominatedPopulation referenceSet) {
+		this(problem, subdivisions, referenceSet, null);
+	}
+	
+	/**
+	 * Constructs a new R3 indicator using the Chebyshev utility function.
+	 * 
+	 * @param problem the problem
+	 * @param subdivisions the number of subdivisions along each objective
+	 * @param referenceSet the reference set
+	 * @param normalizer the user-provided normalizer, or {@code null} if the default is used
+	 */
+	public R3Indicator(Problem problem, int subdivisions, NondominatedPopulation referenceSet, Normalizer normalizer) {
+		this(problem, subdivisions, referenceSet, normalizer, new ChebyshevUtility());
 	}
 	
 	/**
@@ -53,30 +63,29 @@ public class R3Indicator extends RIndicator {
 	 * @param problem the problem
 	 * @param subdivisions the number of subdivisions along each objective
 	 * @param referenceSet the reference set
+	 * @param normalizer the user-provided normalizer, or {@code null} if the default is used
 	 * @param utilityFunction the utility function
 	 */
-	public R3Indicator(Problem problem, int subdivisions,
-			NondominatedPopulation referenceSet,
+	public R3Indicator(Problem problem, int subdivisions, NondominatedPopulation referenceSet, Normalizer normalizer,
 			UtilityFunction utilityFunction) {
-		super(problem, subdivisions, referenceSet, utilityFunction);
+		super(problem, subdivisions, referenceSet, normalizer, utilityFunction);
 	}
 	
 	@Override
 	public double evaluate(NondominatedPopulation population) {
 		double sum = 0.0;
+		NondominatedPopulation normalizedPopulation = normalize(population);
 		
 		for (int i = 0; i < weights.length; i++) {
 			double max1 = Double.NEGATIVE_INFINITY;
 			double max2 = Double.NEGATIVE_INFINITY;
 			
-			for (Solution solution : population) {
-				max1 = Math.max(max1, utilityFunction.computeUtility(solution,
-						weights[i]));
+			for (Solution solution : normalizedPopulation) {
+				max1 = Math.max(max1, utilityFunction.computeUtility(solution, weights[i]));
 			}
 			
 			for (Solution solution : getNormalizedReferenceSet()) {
-				max2 = Math.max(max2, utilityFunction.computeUtility(solution,
-						weights[i]));
+				max2 = Math.max(max2, utilityFunction.computeUtility(solution, weights[i]));
 			}
 			
 			sum += (max2 - max1) / (max2 + 1e-30);

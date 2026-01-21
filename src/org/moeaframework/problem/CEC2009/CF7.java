@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -18,13 +18,12 @@
 package org.moeaframework.problem.CEC2009;
 
 import org.moeaframework.core.Solution;
-import org.moeaframework.core.variable.EncodingUtils;
+import org.moeaframework.core.constraint.GreaterThanOrEqual;
 import org.moeaframework.core.variable.RealVariable;
 import org.moeaframework.problem.AbstractProblem;
 
 /**
- * The constrained CF7 test problem from the CEC 2009 special session and
- * competition.
+ * The constrained CF7 test problem from the CEC 2009 special session and competition.
  */
 public class CF7 extends AbstractProblem {
 
@@ -36,8 +35,7 @@ public class CF7 extends AbstractProblem {
 	}
 
 	/**
-	 * Constructs a CF7 test problem with the specified number of decision
-	 * variables.
+	 * Constructs a CF7 test problem with the specified number of decision variables.
 	 * 
 	 * @param numberOfVariables the number of decision variables
 	 */
@@ -47,15 +45,14 @@ public class CF7 extends AbstractProblem {
 
 	@Override
 	public void evaluate(Solution solution) {
-		double[] x = EncodingUtils.getReal(solution);
+		double[] x = RealVariable.getReal(solution);
 		double[] f = new double[2];
 		double[] c = new double[2];
 
 		CEC2009.CF7(x, f, c, numberOfVariables);
 
-		solution.setObjectives(f);
-		solution.setConstraint(0, c[0] >= 0.0 ? 0.0 : c[0]);
-		solution.setConstraint(1, c[1] >= 0.0 ? 0.0 : c[1]);
+		solution.setObjectiveValues(f);
+		solution.setConstraintValues(c);
 	}
 
 	@Override
@@ -66,6 +63,9 @@ public class CF7 extends AbstractProblem {
 		for (int i = 1; i < numberOfVariables; i++) {
 			solution.setVariable(i, new RealVariable(-2.0, 2.0));
 		}
+		
+		solution.setConstraint(0, GreaterThanOrEqual.to(0.0));
+		solution.setConstraint(1, GreaterThanOrEqual.to(0.0));
 
 		return solution;
 	}

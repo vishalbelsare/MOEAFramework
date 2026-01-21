@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -26,25 +26,26 @@ import java.awt.GridLayout;
 import java.awt.Insets;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.Vector;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
-import javax.swing.ButtonGroup;
 import javax.swing.JButton;
-import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JComboBox;
+import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
-import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JProgressBar;
@@ -55,38 +56,68 @@ import javax.swing.JSplitPane;
 import javax.swing.JTable;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingUtilities;
+import javax.swing.Timer;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
+import javax.swing.filechooser.FileFilter;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.table.AbstractTableModel;
 
-import org.moeaframework.analysis.collector.Accumulator;
-import org.moeaframework.core.Settings;
+import org.apache.commons.io.FilenameUtils;
+import org.jfree.base.Library;
+import org.jfree.ui.about.AboutDialog;
+import org.jfree.ui.about.ProjectInfo;
+import org.moeaframework.analysis.series.ResultSeries;
+import org.moeaframework.analysis.viewer.RuntimeViewer;
+import org.moeaframework.core.TypedProperties;
+import org.moeaframework.core.spi.AlgorithmFactory;
+import org.moeaframework.core.spi.ProblemFactory;
+import org.moeaframework.util.Iterators;
+import org.moeaframework.util.Iterators.IndexedValue;
 import org.moeaframework.util.Localization;
+import org.moeaframework.util.io.LineReader;
+import org.moeaframework.util.io.Resources;
+import org.moeaframework.util.io.Resources.ResourceOption;
+import org.moeaframework.util.mvc.ControllerEvent;
+import org.moeaframework.util.mvc.ControllerListener;
+import org.moeaframework.util.mvc.InvertedToggleAction;
+import org.moeaframework.util.mvc.RunnableAction;
+import org.moeaframework.util.mvc.ToggleAction;
+import org.moeaframework.util.mvc.UI;
 
 /**
  * The main window of the diagnostic tool.
  */
-public class DiagnosticTool extends JFrame implements ListSelectionListener, 
-ControllerListener {
+public class DiagnosticTool extends JFrame implements ListSelectionListener, ControllerListener {
 
 	private static final long serialVersionUID = -8770087330810075627L;
 	
 	/**
 	 * The localization instance for produce locale-specific strings.
 	 */
-	private static Localization localization = Localization.getLocalization(
-			DiagnosticTool.class);
+	private static final Localization LOCALIZATION = Localization.getLocalization(DiagnosticTool.class);
+	
+	/**
+	 * The file extension.
+	 */
+	private static final String EXTENSION = LOCALIZATION.getString("file.extension");
 
 	/**
-	 * The controller which stores the underlying data model and notifies this
-	 * diagnostic tool of any changes.
+	 * The file filter used when selecting the file to save/load.
 	 */
-	private Controller controller;
+	private static final FileFilter FILTER = new FileNameExtensionFilter(
+			LOCALIZATION.getString("file.extension.description"),
+			LOCALIZATION.getString("file.extension"));
+
+	/**
+	 * The controller which stores the underlying data model and notifies this diagnostic tool of any changes.
+	 */
+	private DiagnosticToolController controller;
 
 	/**
 	 * The list of all available metrics.
 	 */
-	private JList metricList;
+	private JList<String> metricList;
 	
 	/**
 	 * The underlying data model storing all available results.
@@ -109,8 +140,7 @@ ControllerListener {
 	private JTable resultTable;
 	
 	/**
-	 * The table model that allows {@code resultListModel} to be displayed in a
-	 * table.
+	 * The table model that allows {@code resultListModel} to be displayed in a table.
 	 */
 	private AbstractTableModel resultTableModel;
 	
@@ -127,12 +157,12 @@ ControllerListener {
 	/**
 	 * The control for setting the algorithm used by evaluation jobs.
 	 */
-	private JComboBox algorithm;
+	private JComboBox<String> algorithm;
 	
 	/**
 	 * The control for setting the problem used by evaluation jobs.
 	 */
-	private JComboBox problem;
+	private JComboBox<String> problem;
 	
 	/**
 	 * The control for setting the number of seeds used by evaluation jobs.
@@ -140,8 +170,7 @@ ControllerListener {
 	private JSpinner numberOfSeeds;
 	
 	/**
-	 * The control for setting the number of evaluations used by evaluation
-	 * jobs.
+	 * The control for setting the number of evaluations used by evaluation jobs.
 	 */
 	private JSpinner numberOfEvaluations;
 	
@@ -169,11 +198,6 @@ ControllerListener {
 	 * The progress bar displaying the overall progress.
 	 */
 	private JProgressBar overallProgress;
-	
-	/**
-	 * The factory for the actions supported in this diagnostic tool window.
-	 */
-	private ActionFactory actionFactory;
 
 	/**
 	 * Maintains a mapping from series key to paints displayed in the plot.
@@ -184,12 +208,10 @@ ControllerListener {
 	 * Constructs a new diagnostic tool window.
 	 */
 	public DiagnosticTool() {
-		super(localization.getString("title.diagnosticTool"));
+		super(LOCALIZATION.getString("title.diagnosticTool"));
 
-		setSize(800, 600);
-		setMinimumSize(new Dimension(800, 600));
+		setPreferredSize(new Dimension(800, 600));
 		setExtendedState(JFrame.MAXIMIZED_BOTH);
-		setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 		
 		initialize();
 		layoutMenu();
@@ -197,17 +219,15 @@ ControllerListener {
 	}
 	
 	/**
-	 * Initializes this window.  This method is invoked by the constructor, and
-	 * should not be invoked again.
+	 * Initializes this window.  This method is invoked by the constructor, and should not be invoked again.
 	 */
-	protected void initialize() {
-		controller = new Controller(this);
+	private void initialize() {
+		controller = new DiagnosticToolController(this);
 		controller.addControllerListener(this);
 		
-		actionFactory = new ActionFactory(this, controller);
-		resultListModel = new SortedListModel<ResultKey>();
-		metricListModel = new SortedListModel<String>();
-		metricList = new JList(metricListModel);
+		resultListModel = new SortedListModel<>();
+		metricListModel = new SortedListModel<>();
+		metricList = new JList<>(metricListModel);
 		paintHelper = new PaintHelper();
 		chartContainer = new JPanel();
 		
@@ -220,16 +240,12 @@ ControllerListener {
 
 			@Override
 			public String getColumnName(int column) {
-				switch (column) {
-				case 0: 
-					return localization.getString("text.algorithm");
-				case 1: 
-					return localization.getString("text.problem");
-				case 2: 
-					return localization.getString("text.numberOfSeeds");
-				default: 
-					throw new IllegalStateException();
-				}
+				return switch (column) {
+					case 0 -> LOCALIZATION.getString("text.algorithm");
+					case 1 -> LOCALIZATION.getString("text.problem");
+					case 2 -> LOCALIZATION.getString("text.numberOfSeeds");
+					default -> throw new IllegalStateException();
+				};
 			}
 
 			@Override
@@ -246,30 +262,24 @@ ControllerListener {
 			public Object getValueAt(int row, int column) {
 				ResultKey key = resultListModel.getElementAt(row);
 				
-				switch (column) {
-				case 0: 
-					return key.getAlgorithm();
-				case 1: 
-					return key.getProblem();
-				case 2: 
-					return controller.get(key).size();
-				default: 
-					throw new IllegalStateException();
-				}
+				return switch (column) {
+					case 0 -> key.getAlgorithm();
+					case 1 -> key.getProblem();
+					case 2 -> controller.get(key).size();
+					default -> throw new IllegalStateException();
+				};
 			}
 			
 		};
 		
 		resultTable = new JTable(resultTableModel);
-		
 		resultTable.getSelectionModel().addListSelectionListener(this);
-
 		resultTable.addMouseListener(new MouseAdapter() {
 			
+			@Override
 			public void mouseClicked(final MouseEvent e) {
 				if (SwingUtilities.isRightMouseButton(e)) {
 					int index = resultTable.rowAtPoint(e.getPoint());
-					boolean containsSet = false;
 					
 					if (index == -1) {
 						return;
@@ -277,23 +287,22 @@ ControllerListener {
 					
 					ResultKey key = resultListModel.getElementAt(index);
 					
-					//verify that at least one accumulator contains data
-					for (Accumulator accumulator : controller.get(key)) {
-						if (accumulator.keySet().contains(
-								"Approximation Set")) {
-							containsSet = true;
-						}
-					}
-					
-					if (!containsSet) {
-						return;
-					}
-					
 					JPopupMenu popupMenu = new JPopupMenu();
-					
-					popupMenu.add(new JMenuItem(
-							actionFactory.getShowApproximationSetAction(
-									resultListModel.getElementAt(index))));
+					popupMenu.add(new RunnableAction("showApproximationSet", LOCALIZATION, () -> {
+						UI.show(() -> {
+							RuntimeViewer viewer = new RuntimeViewer(DiagnosticTool.this, key.toString());
+								
+							for (IndexedValue<ResultSeries> indexedSeries : Iterators.enumerate(controller.get(key))) {
+								String name = LOCALIZATION.getString("text.seed", indexedSeries.getIndex() + 1);
+								viewer.getController().addSeries(name, indexedSeries.getValue());
+							}
+								
+							viewer.getController().setReferenceSet(
+									ProblemFactory.getInstance().getReferenceSet(key.getProblem()));
+							
+							return viewer;
+						});
+					}).toMenuItem());
 					
 					popupMenu.show(resultTable, e.getX(), e.getY());
 				}
@@ -301,142 +310,169 @@ ControllerListener {
 			
 		});
 		
-		selectAll = new JButton(actionFactory.getSelectAllAction(resultTable));
-		showStatistics = new JButton(actionFactory.getShowStatisticsAction());
+		selectAll = new RunnableAction("selectAll", LOCALIZATION, this::selectAllResults).toButton();
+		showStatistics = new RunnableAction("showStatistics", LOCALIZATION, controller::showStatistics).toButton();
 		
 		//initialize the sorted list of algorithms
-		Set<String> algorithmNames = new HashSet<String>();
+		Vector<String> sortedAlgorithmNames = new Vector<>(AlgorithmFactory.getInstance().getAllDiagnosticToolAlgorithms());
+		Collections.sort(sortedAlgorithmNames, String.CASE_INSENSITIVE_ORDER);
 		
-		for (String algorithm : Settings.getDiagnosticToolAlgorithms()) {
-			algorithmNames.add(algorithm);
-		}
-		
-		for (String algorithm : Settings.getPISAAlgorithms()) {
-			algorithmNames.add(algorithm);
-		}
-		
-		List<String> sortedAlgorithmNames = new ArrayList<String>(
-				algorithmNames);
-		Collections.sort(sortedAlgorithmNames);
-		
-		algorithm = new JComboBox(sortedAlgorithmNames.toArray());
+		algorithm = new JComboBox<>(sortedAlgorithmNames);
 		
 		//initialize the sorted list of problems
-		Set<String> problemNames = new HashSet<String>();
+		Vector<String> sortedProblemNames = new Vector<>(ProblemFactory.getInstance().getAllDiagnosticToolProblems());
+		Collections.sort(sortedProblemNames, String.CASE_INSENSITIVE_ORDER);
 		
-		for (String problem : Settings.getDiagnosticToolProblems()) {
-			problemNames.add(problem);
-		}
-		
-		for (String problem : Settings.getProblems()) {
-			problemNames.add(problem);
-		}
-		
-		List<String> sortedProblemNames = new ArrayList<String>(problemNames);
-		Collections.sort(sortedProblemNames);
-		
-		problem = new JComboBox(sortedProblemNames.toArray());
+		problem = new JComboBox<>(sortedProblemNames);
 		
 		//initialize miscellaneous components
-		numberOfSeeds = new JSpinner(new SpinnerNumberModel(10, 1, 
-				Integer.MAX_VALUE, 10));
-		numberOfEvaluations = new JSpinner(new SpinnerNumberModel(10000, 500, 
-				Integer.MAX_VALUE, 1000));
-		run = new JButton(actionFactory.getRunAction());
-		cancel = new JButton(actionFactory.getCancelAction());
-		clear = new JButton(actionFactory.getClearAction());
+		numberOfSeeds = new JSpinner(new SpinnerNumberModel(10, 1, Integer.MAX_VALUE, 10));
+		numberOfEvaluations = new JSpinner(new SpinnerNumberModel(10000, 500, Integer.MAX_VALUE, 1000));
+		run = new RunnableAction("run", LOCALIZATION, controller::run).toButton();
+		cancel = new RunnableAction("cancel", LOCALIZATION, controller::cancel).toButton();
+		clear = new RunnableAction("clear", LOCALIZATION, controller::clear).toButton();
 		
 		runProgress = new JProgressBar();
 		overallProgress = new JProgressBar();
 		
 		algorithm.setEditable(true);
 		problem.setEditable(true);
+		
+		controller.fireEvent("modelChanged");
+		controller.fireEvent("viewChanged");
 	}
 	
 	/**
-	 * Lays out the menu on this window.  This method is invoked by the
-	 * constructor, and should not be invoked again.
+	 * Lays out the menu on this window.  This method is invoked by the constructor, and should not be invoked again.
 	 */
-	protected void layoutMenu() {
-		JMenu file = new JMenu(localization.getString("menu.file"));
-		file.add(new JMenuItem(actionFactory.getSaveAction()));
-		file.add(new JMenuItem(actionFactory.getLoadAction()));
-		file.addSeparator();
-		file.add(new JMenuItem(actionFactory.getExitAction()));
+	private void layoutMenu() {
+		JMenu fileMenu = new JMenu(LOCALIZATION.getString("menu.file"));
+		fileMenu.add(new RunnableAction("save", LOCALIZATION, () -> {
+				JFileChooser fileChooser = new JFileChooser();
+				fileChooser.setFileFilter(FILTER);
+	
+				int result = fileChooser.showSaveDialog(this);
+	
+				if (result == JFileChooser.APPROVE_OPTION) {
+					File file = fileChooser.getSelectedFile();
+	
+					if (!FilenameUtils.getExtension(file.getName()).equalsIgnoreCase(EXTENSION)) {
+						file = new File(file.getParent(), file.getName() + "." + EXTENSION);
+					}
+	
+					try {
+						controller.saveData(file);
+					} catch (IOException e) {
+						controller.handleException(e);
+					}
+				}
+			}).toMenuItem());
+		fileMenu.add(new RunnableAction("load", LOCALIZATION, () -> {
+				JFileChooser fileChooser = new JFileChooser();
+				fileChooser.setFileFilter(FILTER);
+	
+				int result = fileChooser.showOpenDialog(this);
+	
+				if (result == JFileChooser.APPROVE_OPTION) {
+					try {
+						controller.loadData(fileChooser.getSelectedFile());
+					} catch (IOException e) {
+						controller.handleException(e);
+					}
+				}
+			}).toMenuItem());
+		fileMenu.addSeparator();
+		fileMenu.add(new RunnableAction("exit", LOCALIZATION, this::dispose).toMenuItem());
 		
-		JMenu view = new JMenu(localization.getString("menu.view"));
-		JMenuItem individualTraces = new JRadioButtonMenuItem(
-				actionFactory.getShowIndividualTracesAction());
-		JMenuItem quantiles = new JRadioButtonMenuItem(
-				actionFactory.getShowQuantilesAction());
-		ButtonGroup traceGroup = new ButtonGroup();
-		traceGroup.add(individualTraces);
-		traceGroup.add(quantiles);
-		view.add(individualTraces);
-		view.add(quantiles);
-		view.addSeparator();
-		view.add(new JCheckBoxMenuItem(
-				actionFactory.getShowLastTraceAction()));
+		JMenu viewMenu = new JMenu(LOCALIZATION.getString("menu.view"));
+		viewMenu.add(new JRadioButtonMenuItem(new ToggleAction("showIndividualTraces", LOCALIZATION, controller.showIndividualTraces())));
+		viewMenu.add(new JRadioButtonMenuItem(new InvertedToggleAction("showQuantiles", LOCALIZATION, controller.showIndividualTraces())));
+		viewMenu.addSeparator();
+		viewMenu.add(new ToggleAction("showLastTrace", LOCALIZATION, controller.showLastTrace()).toMenuItem());
 		
-		JMenu metrics = new JMenu(localization.getString("menu.collect"));
-		metrics.add(new JMenuItem(
-				actionFactory.getEnableAllIndicatorsAction()));
-		metrics.add(new JMenuItem(
-				actionFactory.getDisableAllIndicatorsAction()));
-		metrics.addSeparator();
-		metrics.add(new JCheckBoxMenuItem(
-				actionFactory.getIncludeHypervolumeAction()));
-		metrics.add(new JCheckBoxMenuItem(
-				actionFactory.getIncludeGenerationalDistanceAction()));
-		metrics.add(new JCheckBoxMenuItem(
-				actionFactory.getIncludeInvertedGenerationalDistanceAction()));
-		metrics.add(new JCheckBoxMenuItem(
-				actionFactory.getIncludeSpacingAction()));
-		metrics.add(new JCheckBoxMenuItem(
-				actionFactory.getIncludeAdditiveEpsilonIndicatorAction()));
-		metrics.add(new JCheckBoxMenuItem(
-				actionFactory.getIncludeContributionAction()));
-		metrics.add(new JCheckBoxMenuItem(
-				actionFactory.getIncludeR1Action()));
-		metrics.add(new JCheckBoxMenuItem(
-				actionFactory.getIncludeR2Action()));
-		metrics.add(new JCheckBoxMenuItem(
-				actionFactory.getIncludeR3Action()));
-		metrics.addSeparator();
-		metrics.add(new JCheckBoxMenuItem(
-				actionFactory.getIncludeEpsilonProgressAction()));
-		metrics.add(new JCheckBoxMenuItem(
-				actionFactory.getIncludeAdaptiveMultimethodVariationAction()));
-		metrics.add(new JCheckBoxMenuItem(
-				actionFactory.getIncludeAdaptiveTimeContinuationAction()));
-		metrics.add(new JCheckBoxMenuItem(
-				actionFactory.getIncludeElapsedTimeAction()));
-		metrics.add(new JCheckBoxMenuItem(
-				actionFactory.getIncludePopulationSizeAction()));
-		metrics.add(new JCheckBoxMenuItem(
-				actionFactory.getIncludeApproximationSetAction()));
+		JMenu metricsMenu = new JMenu(LOCALIZATION.getString("menu.collect"));
+		metricsMenu.add(new RunnableAction("enableAllIndicators", LOCALIZATION, () -> {
+				controller.includeHypervolume().set(true);
+				controller.includeGenerationalDistance().set(true);
+				controller.includeGenerationalDistancePlus().set(true);
+				controller.includeInvertedGenerationalDistance().set(true);
+				controller.includeInvertedGenerationalDistancePlus().set(true);
+				controller.includeSpacing().set(true);
+				controller.includeAdditiveEpsilonIndicator().set(true);
+				controller.includeContribution().set(true);
+				controller.includeR1().set(true);
+				controller.includeR2().set(true);
+				controller.includeR3().set(true);
+			}).toMenuItem());
+		metricsMenu.add(new RunnableAction("disableAllIndicators", LOCALIZATION, () -> {
+				controller.includeHypervolume().set(false);
+				controller.includeGenerationalDistance().set(false);
+				controller.includeGenerationalDistancePlus().set(false);
+				controller.includeInvertedGenerationalDistance().set(false);
+				controller.includeInvertedGenerationalDistancePlus().set(false);
+				controller.includeSpacing().set(false);
+				controller.includeAdditiveEpsilonIndicator().set(false);
+				controller.includeContribution().set(false);
+				controller.includeR1().set(false);
+				controller.includeR2().set(false);
+				controller.includeR3().set(false);
+			}).toMenuItem());
+		metricsMenu.addSeparator();
+		metricsMenu.add(new ToggleAction("includeHypervolume", LOCALIZATION, controller.includeHypervolume()).toMenuItem());
+		metricsMenu.add(new ToggleAction("includeGenerationalDistance", LOCALIZATION, controller.includeGenerationalDistance()).toMenuItem());
+		metricsMenu.add(new ToggleAction("includeInvertedGenerationalDistance", LOCALIZATION, controller.includeInvertedGenerationalDistance()).toMenuItem());
+		metricsMenu.add(new ToggleAction("includeSpacing", LOCALIZATION, controller.includeSpacing()).toMenuItem());
+		metricsMenu.add(new ToggleAction("includeAdditiveEpsilonIndicator", LOCALIZATION, controller.includeAdditiveEpsilonIndicator()).toMenuItem());
+		metricsMenu.add(new ToggleAction("includeContribution", LOCALIZATION, controller.includeContribution()).toMenuItem());
+		metricsMenu.add(new ToggleAction("includeR1", LOCALIZATION, controller.includeR1()).toMenuItem());
+		metricsMenu.add(new ToggleAction("includeR2", LOCALIZATION, controller.includeR2()).toMenuItem());
+		metricsMenu.add(new ToggleAction("includeR3", LOCALIZATION, controller.includeR3()).toMenuItem());
+		metricsMenu.add(new ToggleAction("includeGenerationalDistancePlus", LOCALIZATION, controller.includeGenerationalDistancePlus()).toMenuItem());
+		metricsMenu.add(new ToggleAction("includeInvertedGenerationalDistancePlus", LOCALIZATION, controller.includeInvertedGenerationalDistancePlus()).toMenuItem());
+		metricsMenu.addSeparator();
+		metricsMenu.add(new ToggleAction("includeEpsilonProgress", LOCALIZATION, controller.includeEpsilonProgress()).toMenuItem());
+		metricsMenu.add(new ToggleAction("includeAdaptiveMultimethodVariation", LOCALIZATION, controller.includeAdaptiveMultimethodVariation()).toMenuItem());
+		metricsMenu.add(new ToggleAction("includeAdaptiveTimeContinuation", LOCALIZATION, controller.includeAdaptiveTimeContinuation()).toMenuItem());
+		metricsMenu.add(new ToggleAction("includeElapsedTime", LOCALIZATION, controller.includeElapsedTime()).toMenuItem());
+		metricsMenu.add(new ToggleAction("includePopulationSize", LOCALIZATION, controller.includePopulationSize()).toMenuItem());
 		
-		JMenu help = new JMenu(localization.getString("menu.help"));
-		help.add(new JMenuItem(actionFactory.getAboutDialogAction()));
+		JMenu helpMenu = new JMenu(LOCALIZATION.getString("menu.help"));
+		helpMenu.add(new RunnableAction("about", LOCALIZATION, this::showAbout).toMenuItem());
 		
-		JMenu usage = new JMenu(actionFactory.getMemoryUsageAction());
+		JMenu usageMenu = new JMenu();
+		usageMenu.setEnabled(false);
+		
+		Timer timer = new Timer(1000, e -> {
+			final double divisor = 1024*1024;
+			long free = Runtime.getRuntime().freeMemory();
+			long total = Runtime.getRuntime().totalMemory();
+			long max = Runtime.getRuntime().maxMemory();
+			double used = (total - free) / divisor;
+			double available = max / divisor;
+			
+			usageMenu.setText(LOCALIZATION.getString("text.memory", used, available));
+		});
+		timer.setRepeats(true);
+		timer.setCoalesce(true);
+		timer.start();
+		controller.addShutdownHook(timer::stop);
 		
 		JMenuBar menuBar = new JMenuBar();
-		menuBar.add(file);
-		menuBar.add(view);
-		menuBar.add(metrics);
-		menuBar.add(help);
+		menuBar.add(fileMenu);
+		menuBar.add(viewMenu);
+		menuBar.add(metricsMenu);
+		menuBar.add(helpMenu);
 		menuBar.add(Box.createHorizontalGlue());
-		menuBar.add(usage);
-		
+		menuBar.add(usageMenu);
+				
 		setJMenuBar(menuBar);
 	}
 	
 	/**
-	 * Lays out the components on this window.  This method is invoked by the
-	 * constructor, and should not be invoked again.
+	 * Lays out the components on this window.  This method is invoked by the constructor, and should not be invoked
+	 * again.
 	 */
-	protected void layoutComponents() {
+	private void layoutComponents() {
 		GridBagConstraints label = new GridBagConstraints();
 		label.gridx = 0;
 		label.gridy = GridBagConstraints.RELATIVE;
@@ -461,15 +497,13 @@ ControllerListener {
 		analysisPane.add(showStatistics);
 		
 		JPanel resultPane = new JPanel(new BorderLayout());
-		resultPane.setBorder(BorderFactory.createTitledBorder(
-				localization.getString("text.displayedResults")));
+		resultPane.setBorder(BorderFactory.createTitledBorder(LOCALIZATION.getString("text.displayedResults")));
 		resultPane.add(new JScrollPane(resultTable), BorderLayout.CENTER);
 		resultPane.add(analysisPane, BorderLayout.SOUTH);
 		resultPane.setMinimumSize(new Dimension(100, 100));
 		
 		JPanel metricPane = new JPanel(new BorderLayout());
-		metricPane.setBorder(BorderFactory.createTitledBorder(
-				localization.getString("text.displayedMetrics")));
+		metricPane.setBorder(BorderFactory.createTitledBorder(LOCALIZATION.getString("text.displayedMetrics")));
 		metricPane.add(new JScrollPane(metricList), BorderLayout.CENTER);
 		metricPane.setMinimumSize(new Dimension(100, 100));
 		
@@ -483,28 +517,20 @@ ControllerListener {
 		buttonPane.add(clear);
 		
 		JPanel controlPane = new JPanel(new GridBagLayout());
-		controlPane.setBorder(BorderFactory.createTitledBorder(
-				localization.getString("text.controls")));
-		controlPane.add(new JLabel(
-				localization.getString("text.algorithm") + ":"), label);
+		controlPane.setBorder(BorderFactory.createTitledBorder(LOCALIZATION.getString("text.controls")));
+		controlPane.add(new JLabel(LOCALIZATION.getString("text.algorithm") + ":"), label);
 		controlPane.add(algorithm, field);
-		controlPane.add(new JLabel(
-				localization.getString("text.problem") + ":"), label);
+		controlPane.add(new JLabel(LOCALIZATION.getString("text.problem") + ":"), label);
 		controlPane.add(problem, field);
-		controlPane.add(new JLabel(
-				localization.getString("text.numberOfSeeds") + ":"), label);
+		controlPane.add(new JLabel(LOCALIZATION.getString("text.numberOfSeeds") + ":"), label);
 		controlPane.add(numberOfSeeds, field);
-		controlPane.add(new JLabel(
-				localization.getString("text.numberOfEvaluations") + ":"),
-				label);
+		controlPane.add(new JLabel(LOCALIZATION.getString("text.numberOfEvaluations") + ":"), label);
 		controlPane.add(numberOfEvaluations, field);
 		controlPane.add(buttonPane, button);
 		controlPane.add(new JPanel(), button);
-		controlPane.add(new JLabel(
-				localization.getString("text.runProgress") + ":"), label);
+		controlPane.add(new JLabel(LOCALIZATION.getString("text.runProgress") + ":"), label);
 		controlPane.add(runProgress, field);
-		controlPane.add(new JLabel(
-				localization.getString("text.overallProgress") + ":"), label);
+		controlPane.add(new JLabel(LOCALIZATION.getString("text.overallProgress") + ":"), label);
 		controlPane.add(overallProgress, field);
 		
 		JPanel controls = new JPanel();
@@ -514,8 +540,7 @@ ControllerListener {
 		controls.setMinimumSize(controlPane.getPreferredSize());
 		controls.setPreferredSize(controlPane.getPreferredSize());
 		
-		JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, 
-				controls, chartContainer);
+		JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, controls, chartContainer);
 		splitPane.setDividerLocation(-1);
 
 		getContentPane().setLayout(new BorderLayout());
@@ -523,8 +548,8 @@ ControllerListener {
 	}
 	
 	/**
-	 * Updates the models underlying the GUI components as a result of model
-	 * changes.  This method must only be invoked on the event dispatch thread.
+	 * Updates the models underlying the GUI components as a result of model changes.  This method must only be invoked
+	 * on the event dispatch thread.
 	 */
 	protected void updateModel() {
 		//determine selection mode
@@ -545,8 +570,9 @@ ControllerListener {
 		resultListModel.addAll(controller.getKeys());
 		
 		for (ResultKey key : controller.getKeys()) {
-			for (Accumulator accumulator : controller.get(key)) {
-				metricListModel.addAll(accumulator.keySet());
+			for (ResultSeries series : controller.get(key)) {
+				metricListModel.add("Approximation Set");
+				metricListModel.addAll(series.getDefinedProperties());
 			}
 		}
 		
@@ -559,8 +585,7 @@ ControllerListener {
 		} else {
 			for (String metric : selectedMetrics) {
 				int index = metricListModel.getIndexOf(metric);
-				metricList.getSelectionModel().addSelectionInterval(index, 
-						index);
+				metricList.getSelectionModel().addSelectionInterval(index, index);
 			}
 		}
 		
@@ -570,15 +595,12 @@ ControllerListener {
 		resultTable.getSelectionModel().removeListSelectionListener(this);
 		resultTableModel.fireTableDataChanged();
 		
-		if (selectAllResults && (selectedResults.size() < 
-				resultListModel.getSize())) {
-			resultTable.getSelectionModel().addSelectionInterval(0, 
-					resultListModel.getSize()-1);
+		if (selectAllResults && (selectedResults.size() < resultListModel.getSize())) {
+			resultTable.getSelectionModel().addSelectionInterval(0, resultListModel.getSize()-1);
 		} else {
 			for (ResultKey key : selectedResults) {
 				int index = resultListModel.getIndexOf(key);
-				resultTable.getSelectionModel().addSelectionInterval(index, 
-						index);
+				resultTable.getSelectionModel().addSelectionInterval(index, index);
 			}
 		}
 
@@ -586,20 +608,18 @@ ControllerListener {
 	}
 	
 	/**
-	 * Returns the controller used by this diagnostic tool instance.  This
-	 * controller provides access to the underlying data model displayed in
-	 * this window.
+	 * Returns the controller used by this diagnostic tool instance.  This controller provides access to the underlying
+	 * data model displayed in this window.
 	 * 
 	 * @return the controller used by this diagnostic tool instance
 	 */
-	public Controller getController() {
+	public DiagnosticToolController getController() {
 		return controller;
 	}
 	
 	/**
-	 * Returns the paint helper used by this diagnostic tool instance.  This
-	 * paint helper contains the mapping from series to paints displayed in this
-	 * window.
+	 * Returns the paint helper used by this diagnostic tool instance.  This paint helper contains the mapping from
+	 * series to paints displayed in this window.
 	 * 
 	 * @return the paint helper used by this diagnostic tool instance
 	 */
@@ -613,13 +633,12 @@ ControllerListener {
 			return;
 		}
 		
-		controller.fireViewChangedEvent();
+		controller.fireEvent("viewChanged");
 	}
 	
 	/**
-	 * Invoked when the underlying data model is cleared, resulting in the GUI
-	 * removing and resetting all components.  This method must only be invoked
-	 * on the event dispatch thread.
+	 * Invoked when the underlying data model is cleared, resulting in the GUI removing and resetting all components.
+	 * This method must only be invoked on the event dispatch thread.
 	 */
 	protected void clear() {
 		resultListModel.clear();
@@ -635,8 +654,8 @@ ControllerListener {
 	}
 	
 	/**
-	 * Updates the chart layout when the user changes which metrics to plot.
-	 * This method must only be invoked on the event dispatch thread.
+	 * Updates the chart layout when the user changes which metrics to plot.  This method must only be invoked on the
+	 * event dispatch thread.
 	 */
 	protected void updateChartLayout() {
 		chartContainer.removeAll();
@@ -653,8 +672,7 @@ ControllerListener {
 			} else if (selectedMetrics.size() <= 6) {
 				chartContainer.setLayout(new GridLayout(3, 2));
 			} else {
-				chartContainer.setLayout(new GridLayout(
-						(int)Math.ceil(selectedMetrics.size()/3.0), 3));
+				chartContainer.setLayout(new GridLayout((int)Math.ceil(selectedMetrics.size()/3.0), 3));
 			}
 			
 			GridLayout layout = (GridLayout)chartContainer.getLayout();
@@ -678,7 +696,7 @@ ControllerListener {
 	 * @return a list of the selected metrics
 	 */
 	protected List<String> getSelectedMetrics() {
-		List<String> selectedMetrics = new ArrayList<String>();
+		List<String> selectedMetrics = new ArrayList<>();
 		
 		for (int index : metricList.getSelectedIndices()) {
 			selectedMetrics.add(metricListModel.getElementAt(index));
@@ -688,18 +706,32 @@ ControllerListener {
 	}
 	
 	/**
+	 * Selects all available metrics for display.
+	 */
+	public void selectAllMetrics() {
+		metricList.getSelectionModel().setSelectionInterval(0, metricList.getModel().getSize()-1);
+	}
+	
+	/**
 	 * Returns a list of the selected results.
 	 * 
 	 * @return a list of the selected results
 	 */
 	protected List<ResultKey> getSelectedResults() {
-		List<ResultKey> selectedResults = new ArrayList<ResultKey>();
+		List<ResultKey> selectedResults = new ArrayList<>();
 		
 		for (int index : resultTable.getSelectedRows()) {
 			selectedResults.add(resultListModel.getElementAt(index));
 		}
 		
 		return selectedResults;
+	}
+	
+	/**
+	 * Selects all available results for display.
+	 */
+	public void selectAllResults() {
+		resultTable.getSelectionModel().setSelectionInterval(0, resultTable.getModel().getRowCount()-1);
 	}
 	
 	/**
@@ -712,12 +744,30 @@ ControllerListener {
 	}
 	
 	/**
+	 * Sets the algorithm selected in the run control pane.
+	 * 
+	 * @param algorithm the algorithm selected in the run control pane
+	 */
+	protected void setAlgorithm(String algorithm) {
+		this.algorithm.setSelectedItem(algorithm);
+	}
+	
+	/**
 	 * Returns the problem selected in the run control pane.
 	 * 
 	 * @return the problem selected in the run control pane
 	 */
 	protected String getProblem() {
 		return (String)problem.getSelectedItem();
+	}
+	
+	/**
+	 * Sets the problem selected in the run control pane.
+	 * 
+	 * @param problem the problem selected in the run control pane
+	 */
+	protected void setProblem(String problem) {
+		this.problem.setSelectedItem(problem);
 	}
 	
 	/**
@@ -730,12 +780,30 @@ ControllerListener {
 	}
 	
 	/**
+	 * Sets the number of evaluations in the run control pane.
+	 * 
+	 * @param numberOfEvaluations the number of function evaluations
+	 */
+	protected void setNumberOfEvaluations(int numberOfEvaluations) {
+		this.numberOfEvaluations.setValue(numberOfEvaluations);
+	}
+	
+	/**
 	 * Returns the number of seeds set in the run control pane.
 	 * 
 	 * @return the number of seeds set in the run control pane
 	 */
 	protected int getNumberOfSeeds() {
 		return (Integer)numberOfSeeds.getValue();
+	}
+	
+	/**
+	 * Sets the number of seeds in the run control pane.
+	 * 
+	 * @param numberOfSeeds the number of seeds
+	 */
+	protected void setNumberOfSeeds(int numberOfSeeds) {
+		this.numberOfSeeds.setValue(numberOfSeeds);
 	}
 	
 	/**
@@ -746,33 +814,119 @@ ControllerListener {
 	 */
 	protected ResultPlot createChart(String metric) {
 		if (metric.equals("Approximation Set")) {
-			return new ApproximationSetPlot(this, metric);
+			return new ApproximationSetPlot(this);
 		} else {
 			return new LinePlot(this, metric);
+		}
+	}
+	
+	/**
+	 * Creates and displays a dialog containing about / license information.
+	 * 
+	 * @return the dialog, or {@code null} if unable to display
+	 */
+	protected AboutDialog showAbout() {
+		try {
+			TypedProperties properties = TypedProperties.loadBuildProperties();
+
+			ProjectInfo info = new ProjectInfo(
+					properties.getString("name"),
+					properties.getString("version"),
+					properties.getString("description"),
+					null,
+					properties.getString("copyright"),
+					null,
+					loadLicense());
+			
+			for (String dependency : properties.getStringArray("runtime.dependencies", new String[0])) {
+				info.addLibrary(new Library(
+						dependency,
+						properties.getString(dependency + ".version", "???"),
+						properties.getString(dependency + ".license", "???"),
+						null));
+			}
+			
+			info.addLibrary(new Library(
+					"Flaticon",
+					"-",
+					"www.flaticon.com/terms-of-use",
+					null));
+			
+			return UI.showAndWait(() -> new AboutDialog(this, LOCALIZATION.getString("title.about"), info));
+		} catch (Exception ex) {
+			controller.handleException(ex);
+			return null;
+		}
+	}
+	
+	/**
+	 * Loads the GNU LGPL license file and formats it for display.
+	 * 
+	 * @return the formatted GNU LGPL license
+	 * @throws IOException if an I/O error occurred
+	 */
+	private String loadLicense() throws IOException {
+		StringBuilder sb = new StringBuilder();
+		boolean isNewParagraph = false;
+		
+		try (LineReader lineReader = Resources.asLineReader(getClass(), "/META-INF/LGPL-LICENSE",
+				ResourceOption.REQUIRED).skipComments().trim()) {
+			for (String line : lineReader) {
+				if (line.isEmpty()) {
+					isNewParagraph = true;
+				} else {
+					if (isNewParagraph) {
+						sb.append(System.lineSeparator());
+						sb.append(System.lineSeparator());
+					} else {
+						sb.append(' ');
+					}
+					
+					sb.append(line);
+					isNewParagraph = false;
+				}
+			}
+			
+			return sb.toString();
 		}
 	}
 
 	@Override
 	public void controllerStateChanged(ControllerEvent event) {
-		if (event.getType().equals(ControllerEvent.Type.MODEL_CHANGED)) {
+		if (event.getEventType().equals("modelChanged")) {
 			if (controller.getKeys().isEmpty()) {
 				clear();
 			} else {
 				updateModel();
 			}
-		} else if (event.getType().equals(
-				ControllerEvent.Type.PROGRESS_CHANGED)) {
+		}
+		
+		if (event.getEventType().equals("progressChanged")) {
 			runProgress.setValue(controller.getRunProgress());
 			overallProgress.setValue(controller.getOverallProgress());
-		} else if (event.getType().equals(ControllerEvent.Type.VIEW_CHANGED)) {
+		}
+		
+		if (event.getEventType().equals("viewChanged")) {
 			updateChartLayout();
 		}
-	}
-
-	@Override
-	public void dispose() {
-		controller.cancel();
-		super.dispose();
+		
+		if (event.getEventType().equals("stateChanged")) {
+			run.setEnabled(!controller.isRunning());
+			cancel.setEnabled(controller.isRunning());
+			clear.setEnabled(!controller.isRunning());
+		}
+		
+		if (event.getEventType().equals("viewChanged") || event.getEventType().equals("modelChanged")) {
+			Set<String> problems = new HashSet<>();
+			Set<String> algorithms = new HashSet<>();
+			
+			for (ResultKey key : getSelectedResults()) {
+				problems.add(key.getProblem());
+				algorithms.add(key.getAlgorithm());
+			}
+								
+			showStatistics.setEnabled((problems.size() == 1) && (algorithms.size() >= 1));
+		}
 	}
 
 }

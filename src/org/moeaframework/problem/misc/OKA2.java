@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -18,18 +18,17 @@
 package org.moeaframework.problem.misc;
 
 import org.moeaframework.core.Solution;
-import org.moeaframework.core.variable.EncodingUtils;
 import org.moeaframework.core.variable.RealVariable;
 import org.moeaframework.problem.AbstractProblem;
 
 /**
- * Tatsuya Okabe's OKA2 test problem. The probability density of points becomes
- * more sparse the closer a population gets to the Pareto front.
+ * Tatsuya Okabe's OKA2 test problem.  The probability density of points becomes more sparse the closer a population
+ * gets to the Pareto front.
  * <p>
  * References:
  * <ol>
- * <li>Okabe, T., et al. "On Test Functions for Evolutionary Multi-Objective
- * Optimization." Parallel Problem Solving from Nature, pp. 792-802, 2004.
+ *   <li>Okabe, T., et al.  "On Test Functions for Evolutionary Multi-Objective Optimization." Parallel Problem Solving
+ *       from Nature, pp. 792-802, 2004.
  * </ol>
  */
 public class OKA2 extends AbstractProblem {
@@ -43,13 +42,13 @@ public class OKA2 extends AbstractProblem {
 
 	@Override
 	public void evaluate(Solution solution) {
-		double[] x = EncodingUtils.getReal(solution);
+		double[] x = RealVariable.getReal(solution);
 
-		solution.setObjective(0, x[0]);
-		solution.setObjective(1, 1.0 - 1.0 / (4.0 * Math.pow(Math.PI, 2.0))
-				* Math.pow(x[0] + Math.PI, 2.0)
-				+ Math.pow(Math.abs(x[1] - 5.0 * Math.cos(x[0])), 1.0 / 3.0)
-				+ Math.pow(Math.abs(x[2] - 5.0 * Math.sin(x[0])), 1.0 / 3.0));
+		solution.setObjectiveValue(0, x[0]);
+		solution.setObjectiveValue(1, 1.0 -
+				1.0 / (4.0 * Math.pow(Math.PI, 2.0)) * Math.pow(x[0] + Math.PI, 2.0) +
+				Math.pow(Math.abs(x[1] - 5.0 * Math.cos(x[0])), 1.0 / 3.0) +
+				Math.pow(Math.abs(x[2] - 5.0 * Math.sin(x[0])), 1.0 / 3.0));
 	}
 
 	@Override

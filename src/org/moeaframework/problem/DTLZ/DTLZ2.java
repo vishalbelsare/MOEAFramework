@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,20 +17,18 @@
  */
 package org.moeaframework.problem.DTLZ;
 
-import org.moeaframework.core.PRNG;
 import org.moeaframework.core.Solution;
-import org.moeaframework.core.variable.EncodingUtils;
 import org.moeaframework.core.variable.RealVariable;
+import org.moeaframework.problem.AnalyticalProblem;
 
 /**
  * The DTLZ2 test problem.
  */
-public class DTLZ2 extends DTLZ {
+public class DTLZ2 extends DTLZ implements AnalyticalProblem {
 
 	/**
-	 * Constructs a DTLZ2 test problem with the specified number of objectives.
-	 * This is equivalent to calling {@code new DTLZ2(numberOfObjectives+9,
-	 * numberOfObjectives)}.
+	 * Constructs a DTLZ2 test problem with the specified number of objectives.  This is equivalent to calling
+	 * {@code new DTLZ2(numberOfObjectives+9, numberOfObjectives)}.
 	 * 
 	 * @param numberOfObjectives the number of objectives for this problem
 	 */
@@ -39,8 +37,7 @@ public class DTLZ2 extends DTLZ {
 	}
 
 	/**
-	 * Constructs a DTLZ2 test problem with the specified number of variables
-	 * and objectives.
+	 * Constructs a DTLZ2 test problem with the specified number of variables and objectives.
 	 * 
 	 * @param numberOfVariables the number of variables for this problem
 	 * @param numberOfObjectives the number of objectives for this problem
@@ -48,18 +45,13 @@ public class DTLZ2 extends DTLZ {
 	public DTLZ2(int numberOfVariables, int numberOfObjectives) {
 		super(numberOfVariables, numberOfObjectives);
 	}
+	
 
 	@Override
 	public void evaluate(Solution solution) {
-		double[] x = EncodingUtils.getReal(solution);
+		double[] x = RealVariable.getReal(solution);
 		double[] f = new double[numberOfObjectives];
-
-		int k = numberOfVariables - numberOfObjectives + 1;
-
-		double g = 0.0;
-		for (int i = numberOfVariables - k; i < numberOfVariables; i++) {
-			g += Math.pow(x[i] - 0.5, 2.0);
-		}
+		double g = g2(x);
 
 		for (int i = 0; i < numberOfObjectives; i++) {
 			f[i] = 1.0 + g;
@@ -73,24 +65,12 @@ public class DTLZ2 extends DTLZ {
 			}
 		}
 
-		solution.setObjectives(f);
+		solution.setObjectiveValues(f);
 	}
 
 	@Override
 	public Solution generate() {
-		Solution solution = newSolution();
-
-		for (int i = 0; i < numberOfObjectives - 1; i++) {
-			((RealVariable)solution.getVariable(i)).setValue(PRNG.nextDouble());
-		}
-
-		for (int i = numberOfObjectives - 1; i < numberOfVariables; i++) {
-			((RealVariable)solution.getVariable(i)).setValue(0.5);
-		}
-
-		evaluate(solution);
-
-		return solution;
+		return generateAt(0.5);
 	}
 
 }

@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,20 +17,15 @@
  */
 package org.moeaframework.core.comparator;
 
-import java.io.Serializable;
-
 import org.moeaframework.core.Solution;
 
 /**
  * Compares two solutions using the Pareto dominance relation on the objectives.
  * <p>
- * In general, the {@link ParetoDominanceComparator} should be used instead as
- * it also incorporates constraint violation checks.
+ * In general, the {@link ParetoDominanceComparator} should be used instead as it also incorporates constraint
+ * violation checks.
  */
-public class ParetoObjectiveComparator implements DominanceComparator,
-Serializable {
-
-	private static final long serialVersionUID = 5086102885918799148L;
+public class ParetoObjectiveComparator implements DominanceComparator {
 
 	/**
 	 * Constructs a Pareto dominance comparator.
@@ -45,7 +40,7 @@ Serializable {
 		boolean dominate2 = false;
 
 		for (int i = 0; i < solution1.getNumberOfObjectives(); i++) {
-			int flag = Double.compare(solution1.getObjective(i), solution2.getObjective(i));
+			int flag = solution1.getObjective(i).compareTo(solution2.getObjective(i));
 			
 			if (flag < 0) {
 				dominate1 = true;

@@ -1,0 +1,44 @@
+package ${packageName};
+
+import org.moeaframework.core.Solution;
+import org.moeaframework.core.constraint.Equal;
+import org.moeaframework.core.objective.Minimize;
+import org.moeaframework.core.variable.RealVariable;
+import org.moeaframework.problem.AbstractProblem;
+
+public class ${problemName} extends AbstractProblem {
+
+	public ${problemName}() {
+		super(${numberOfVariables}, ${numberOfObjectives}, ${numberOfConstraints});
+	}
+
+	public void evaluate(Solution solution) {
+		double[] vars = RealVariable.getReal(solution);
+		double[] objs = new double[numberOfObjectives];
+		double[] constrs = new double[numberOfConstraints];
+
+		// TODO: Fill in with your problem definition
+
+		solution.setObjectiveValues(objs);
+		solution.setConstraintValues(constrs);
+	}
+
+	public Solution newSolution() {
+		Solution solution = new Solution(numberOfVariables, numberOfObjectives, numberOfConstraints);
+
+		for (int i = 0; i < numberOfVariables; i++) {
+			solution.setVariable(i, new RealVariable(${lowerBound}, ${upperBound}));
+		}
+
+		for (int i = 0; i < numberOfObjectives; i++) {
+			solution.setObjective(i, new Minimize());
+		}
+
+		for (int i = 0; i < numberOfConstraints; i++ ) {
+			solution.setConstraint(i, new Equal(0.0));
+		}
+
+		return solution;
+	}
+
+}

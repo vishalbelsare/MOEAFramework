@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -19,27 +19,26 @@ package org.moeaframework.util.weights;
 
 import java.util.ArrayList;
 import java.util.List;
+
 import org.apache.commons.math3.primes.Primes;
+import org.moeaframework.util.validate.Validate;
 
 /**
- * Generates weights according to a uniform design of mixtures using the
- * Hammersley low-discrepancy sequence generator.  Uniform design has several
- * advantages over {@link NormalBoundaryIntersectionGenerator}, including
- * avoiding generating many weights on the boundary and avoiding the
- * combinatorial growth of weights as the number of objectives increases.
- * Tan et al. first proposed the use of uniform design to generate weights for
- * an MOEA, but their method becomes computationally prohibitive as the number
- * of objectives or number of points increases.  The use of the more efficient
- * Hammersley method was proposed by Berenguer and Coello Coello (2015).
+ * Generates weights according to a uniform design of mixtures using the Hammersley low-discrepancy sequence generator.
+ * Uniform design has several advantages over {@link NormalBoundaryIntersectionGenerator}, including avoiding
+ * generating many weights on the boundary and avoiding the combinatorial growth of weights as the number of objectives
+ * increases.
+ * <p>
+ * Tan et al. first proposed the use of uniform design to generate weights for an MOEA, but their method becomes
+ * computationally prohibitive as the number of objectives or number of points increases.  The use of the more
+ * efficient Hammersley method was proposed by Berenguer and Coello Coello (2015).
  * <p>
  * References:
  * <ol>
- *   <li>Tan Y., Y. Jiao, H. Li, and X. Wang (2013).  "MOEA/D + uniform design:
- *       A new version of MOEA/D for optimization problems with many
- *       objectives."  Computers & Operations Research, 40, 1648-1660.
- *   <li>Berenguer, J.A.M. and C.A. Coello Coello (2015).  "Evolutionary Many-
- *       Objective Optimization Based on Kuhn-Munkres' Algorithm."  Evolutionary
- *       Multi-Criterion Optimization: 8th International Conference, pp. 3-17.
+ *   <li>Tan Y., Y. Jiao, H. Li, and X. Wang (2013).  "MOEA/D + uniform design: A new version of MOEA/D for
+ *       optimization problems with many objectives."  Computers &amp; Operations Research, 40, 1648-1660.
+ *   <li>Berenguer, J.A.M. and C.A. Coello Coello (2015).  "Evolutionary Many-Objective Optimization Based on
+ *       Kuhn-Munkres' Algorithm."  Evolutionary Multi-Criterion Optimization: 8th International Conference, pp. 3-17.
  * </ol>
  */
 public class UniformDesignGenerator implements WeightGenerator {
@@ -64,6 +63,9 @@ public class UniformDesignGenerator implements WeightGenerator {
 		super();
 		this.numberOfObjectives = numberOfObjectives;
 		this.numberOfPoints = numberOfPoints;
+		
+		Validate.that("numberOfObjectives", numberOfObjectives).isGreaterThanOrEqualTo(3);
+		Validate.that("numberOfPoints", numberOfPoints).isGreaterThanOrEqualTo(0);
 	}
 
 	@Override
@@ -82,7 +84,7 @@ public class UniformDesignGenerator implements WeightGenerator {
 		primes[0] = 2;
 		
 		for (int i = 1; i < k; i++) {
-			primes[i] = Primes.nextPrime(primes[i-1]);
+			primes[i] = Primes.nextPrime(primes[i-1] + 1);
 		}
 		
 		return primes;
@@ -91,7 +93,7 @@ public class UniformDesignGenerator implements WeightGenerator {
 	@Override
 	public List<double[]> generate() {
 		// generate uniform design using Hammersley method
-		List<double[]> designs = new ArrayList<double[]>();
+		List<double[]> designs = new ArrayList<>();
 		int[] primes = generateFirstKPrimes(numberOfObjectives-2);
 		
 		for (int i = 0; i < numberOfPoints; i++) {
@@ -114,7 +116,7 @@ public class UniformDesignGenerator implements WeightGenerator {
 		}
 		
 		// transform designs into weight vectors (sum to 1)
-		List<double[]> weights = new ArrayList<double[]>();
+		List<double[]> weights = new ArrayList<>();
 		
 		for (double[] design : designs) {
 			double[] weight = new double[numberOfObjectives];

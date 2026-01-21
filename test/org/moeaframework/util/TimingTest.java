@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,28 +17,22 @@
  */
 package org.moeaframework.util;
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.PrintStream;
 
-import org.junit.Assert;
 import org.junit.Test;
-import org.moeaframework.TestUtils;
+import org.moeaframework.Assert;
+import org.moeaframework.Capture;
 
-/**
- * Tests the {@link Timing} class.
- */
 public class TimingTest {
 	
-	@Test(expected = Exception.class)
+	@Test(expected = IllegalStateException.class)
 	public void testNonexistentTimer() {
 		Timing.clear();
 		
 		Timing.stopTimer("testNonExistentTimer");
 	}
 
-	@Test(expected = Exception.class)
+	@Test(expected = IllegalStateException.class)
 	public void testDuplicateTimer() {
 		Timing.clear();
 		
@@ -63,71 +57,41 @@ public class TimingTest {
 	}
 	
 	@Test
-	public void testClear() throws IOException {
+	public void testDisplay() throws IOException {
 		Timing.clear();
-		Assert.assertEquals(0, TestUtils.lineCount(saveStatistics()));
-		Assert.assertEquals(0, TestUtils.lineCount(saveMagnitudes()));
+		Capture.stream(Timing::display).assertThat(out -> Assert.assertLineCount(2, out.toString()));
+		
+		Timing.startTimer("timer1");
+		Timing.stopTimer("timer1");
+		Timing.startTimer("timer2");
+		Timing.stopTimer("timer2");
+		Capture.stream(Timing::display).assertThat(out -> Assert.assertLineCount(4, out.toString()));
+	}
+	
+	@Test
+	public void testClear() {
+		Timing.clear();
 		
 		Timing.startTimer("timer1");
 		Timing.stopTimer("timer1");
 		Timing.startTimer("timer2");
 		Timing.stopTimer("timer2");
 		
-		Assert.assertEquals(2, TestUtils.lineCount(saveStatistics()));
-		Assert.assertEquals(2, TestUtils.lineCount(saveMagnitudes()));
-		Assert.assertNotNull(Timing.getStatistics("timer1"));
-		Assert.assertNotNull(Timing.getStatistics("timer2"));
+		Assert.assertEquals(1, Timing.getStatistics("timer1").getN());
+		Assert.assertEquals(1, Timing.getStatistics("timer2").getN());
 		
 		Timing.clear();
-		Assert.assertEquals(0, TestUtils.lineCount(saveStatistics()));
-		Assert.assertEquals(0, TestUtils.lineCount(saveMagnitudes()));
-		Assert.assertNull(Timing.getStatistics("timer1"));
-		Assert.assertNull(Timing.getStatistics("timer2"));
+		Assert.assertEquals(0, Timing.getStatistics("timer1").getN());
+		Assert.assertEquals(0, Timing.getStatistics("timer2").getN());
 	}
 	
-	@Test
+	@Test(expected = IllegalStateException.class)
 	public void testClearWithActiveTimers() {
 		Timing.clear();
 		
 		Timing.startTimer("timer1");
 		Timing.clear();
 		Timing.stopTimer("timer1");
-		
-		Assert.assertEquals(1, Timing.getStatistics("timer1").getN());
-	}
-	
-	private File saveStatistics() throws IOException {
-		File file = TestUtils.createTempFile();
-		PrintStream ps = null;
-		
-		try {
-			ps = new PrintStream(new FileOutputStream(file));
-			
-			Timing.printStatistics(ps);
-		} finally {
-			if (ps != null) {
-				ps.close();
-			}
-		}
-		
-		return file;
-	}
-	
-	private File saveMagnitudes() throws IOException {
-		File file = TestUtils.createTempFile();
-		PrintStream ps = null;
-		
-		try {
-			ps = new PrintStream(new FileOutputStream(file));
-			
-			Timing.printMagnitudes(ps);
-		} finally {
-			if (ps != null) {
-				ps.close();
-			}
-		}
-		
-		return file;
 	}
 	
 }

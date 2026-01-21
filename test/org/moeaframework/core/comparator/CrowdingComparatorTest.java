@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,52 +17,36 @@
  */
 package org.moeaframework.core.comparator;
 
-import static org.moeaframework.core.FastNondominatedSorting.CROWDING_ATTRIBUTE;
-
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.moeaframework.Assert;
 import org.moeaframework.core.Solution;
+import org.moeaframework.core.attribute.CrowdingDistance;
 
-/**
- * Test the {@link CrowdingComparator} class.
- */
 public class CrowdingComparatorTest {
 
-	/**
-	 * The crowding comparator used for testing.
-	 */
 	private CrowdingComparator comparator;
 
-	/**
-	 * Setup the comparator for use by all test methods.
-	 */
 	@Before
 	public void setUp() {
 		comparator = new CrowdingComparator();
 	}
 
-	/**
-	 * Removes references to shared objects so they can be garbage collected.
-	 */
 	@After
 	public void tearDown() {
 		comparator = null;
 	}
 
-	/**
-	 * Tests if the comparator correctly detects dominance.
-	 */
 	@Test
 	public void testDominance() {
 		Solution solution1 = new Solution(0, 0);
 		Solution solution2 = new Solution(0, 0);
 		Solution solution3 = new Solution(0, 0);
 
-		solution1.setAttribute(CROWDING_ATTRIBUTE, Double.POSITIVE_INFINITY);
-		solution2.setAttribute(CROWDING_ATTRIBUTE, 0.0);
-		solution3.setAttribute(CROWDING_ATTRIBUTE, 1.0);
+		CrowdingDistance.setAttribute(solution1, Double.POSITIVE_INFINITY);
+		CrowdingDistance.setAttribute(solution2, 0.0);
+		CrowdingDistance.setAttribute(solution3, 1.0);
 
 		Assert.assertTrue(comparator.compare(solution1, solution2) < 0);
 		Assert.assertTrue(comparator.compare(solution2, solution1) > 0);
@@ -70,33 +54,26 @@ public class CrowdingComparatorTest {
 		Assert.assertTrue(comparator.compare(solution2, solution3) > 0);
 	}
 
-	/**
-	 * Tests if the comparator correctly detects non-dominance.
-	 */
 	@Test
 	public void testNondominance() {
 		Solution solution1 = new Solution(0, 0);
 		Solution solution2 = new Solution(0, 0);
 
 		// test infinite crowding distance
-		solution1.setAttribute(CROWDING_ATTRIBUTE, Double.POSITIVE_INFINITY);
-		solution2.setAttribute(CROWDING_ATTRIBUTE, Double.POSITIVE_INFINITY);
+		CrowdingDistance.setAttribute(solution1, Double.POSITIVE_INFINITY);
+		CrowdingDistance.setAttribute(solution2, Double.POSITIVE_INFINITY);
 
 		Assert.assertTrue(comparator.compare(solution1, solution2) == 0);
 		Assert.assertTrue(comparator.compare(solution2, solution1) == 0);
 
 		// test finite crowding distance
-		solution1.setAttribute(CROWDING_ATTRIBUTE, 1.0);
-		solution2.setAttribute(CROWDING_ATTRIBUTE, 1.0);
+		CrowdingDistance.setAttribute(solution1, 1.0);
+		CrowdingDistance.setAttribute(solution2, 1.0);
 
 		Assert.assertTrue(comparator.compare(solution1, solution2) == 0);
 		Assert.assertTrue(comparator.compare(solution2, solution1) == 0);
 	}
 
-	/**
-	 * Tests if an exception is thrown when comparing solutions missing the
-	 * crowding attribute.
-	 */
 	@Test(expected = NullPointerException.class)
 	public void testMissingCrowdingAttribute() {
 		Solution solution1 = new Solution(0, 0);

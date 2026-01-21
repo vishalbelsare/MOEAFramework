@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,85 +17,84 @@
  */
 package org.moeaframework.problem;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.net.ConnectException;
+import java.util.concurrent.TimeUnit;
 
-import org.junit.Before;
-import org.moeaframework.TestUtils;
+import org.junit.Test;
+import org.moeaframework.Assert;
+import org.moeaframework.Assume;
 import org.moeaframework.core.Solution;
-import org.moeaframework.core.variable.BinaryVariable;
-import org.moeaframework.core.variable.Permutation;
-import org.moeaframework.core.variable.RealVariable;
+import org.moeaframework.problem.ExternalProblem.Builder;
+import org.moeaframework.util.Timer;
 
-/**
- * Tests the {@link ExternalProblem} class using the C/C++ executable.
- */
-public class ExternalProblemWithCSocketTest extends 
-ExternalProblemWithCStdioTest {
+public class ExternalProblemWithCSocketTest extends ExternalProblemWithCStdioTest {
 	
-	@Before
-	public void setUp() throws IOException {
-		//skip this test if the machine is not POSIX compliant
-		TestUtils.assumePOSIX();
+	@Override
+	public Builder createBuilder() {
+		Assume.assumePOSIX();
 		
-		file = new File("./test/org/moeaframework/problem/test_socket.exe");
+		File executable = getExecutable("test_socket.exe");
 		
-		//attempt to run make if the file does not exist
-		if (!file.exists()) {
-			TestUtils.runMake(file.getParentFile());
+		return new Builder()
+				.withCommand(executable.toString())
+				.withSocket("127.0.0.1", ExternalProblem.DEFAULT_PORT);
+	}
+	
+	@Test
+	public void testFailAfterRetries() {
+		Builder builder = new Builder()
+				.withSocket(ExternalProblem.DEFAULT_PORT)
+				.withDebugging();
+		
+		try (TestExternalProblem problem = new TestExternalProblem(builder)) {
+			Solution solution = problem.newSolution();
+			
+			// The following should take at least retryAttempts * retryDelay
+			Timer timer = Timer.startNew();
+			
+			try {
+				problem.evaluate(solution);
+			} catch (ProblemException e) {
+				Assert.assertTrue(e.getCause() instanceof ConnectException);
+			}
+			
+			Assert.assertGreaterThanOrEqual(timer.stop(), 5.0);
+			
+			Assert.assertNull(problem.getInstance().getProcess());
+			Assert.assertTrue(problem.getInstance().getSocket() == null || problem.getInstance().getSocket().isClosed());
 		}
+	}
+	
+	@Test
+	public void testFailAfterRetriesWithProcess() throws InterruptedException {
+		File executable = getExecutable("test_stdio.exe");
 		
-		TestUtils.assumeFileExists(file);
+		Builder builder = new Builder()
+				.withCommand(executable.toString())
+				.withSocket(ExternalProblem.DEFAULT_PORT)
+				.withDebugging();
 		
-		//start the process separately to intercept the error (debug) data
-		Process process = new ProcessBuilder(file.toString()).start();
-
-		//sleep to allow the external process to begin listening to the port
-		try {
-			Thread.sleep(1000);
-		} catch (InterruptedException e) {
-			//handle silently
+		try (TestExternalProblem problem = new TestExternalProblem(builder)) {
+			Solution solution = problem.newSolution();
+			
+			// The following should take at least retryAttempts * retryDelay + shutdownTimeout
+			Timer timer = Timer.startNew();
+			
+			try {
+				problem.evaluate(solution);
+			} catch (ProblemException e) {
+				Assert.assertTrue(e.getCause() instanceof ConnectException);
+			}
+			
+			Assert.assertGreaterThanOrEqual(timer.stop(), 5.0);
+			
+			Assert.assertNotNull(problem.getInstance().getProcess());
+			Assert.assertTrue(problem.getInstance().getProcess().isAlive());
+			Assert.assertTrue(problem.getInstance().getSocket() == null || problem.getInstance().getSocket().isClosed());
+			problem.close();
+			Assert.assertTrue(problem.getInstance().getProcess().waitFor(10, TimeUnit.SECONDS));
 		}
-
-		debugReader = new BufferedReader(new InputStreamReader(
-				process.getErrorStream()));
-
-		problem = new ExternalProblem("localhost", 
-				ExternalProblem.DEFAULT_PORT) {
-
-			@Override
-			public String getName() {
-				return "Test";
-			}
-
-			@Override
-			public int getNumberOfVariables() {
-				return 4;
-			}
-
-			@Override
-			public int getNumberOfObjectives() {
-				return 2;
-			}
-
-			@Override
-			public int getNumberOfConstraints() {
-				return 1;
-			}
-
-			@Override
-			public Solution newSolution() {
-				Solution solution = new Solution(4, 2, 1);
-				solution.setVariable(0, new RealVariable(0.0, 1.0));
-				solution.setVariable(1, new RealVariable(-1e26, 1e26));
-				solution.setVariable(2, new BinaryVariable(5));
-				solution.setVariable(3, new Permutation(3));
-				return solution;
-			}
-
-		};
 	}
 
 }

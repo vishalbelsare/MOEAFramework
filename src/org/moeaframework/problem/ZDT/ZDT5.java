@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -29,12 +29,11 @@ public class ZDT5 extends ZDT {
 	 * Constructs a ZDT5 test problem with 11 decision variables.
 	 */
 	public ZDT5() {
-		super(11);
+		this(11);
 	}
 
 	/**
-	 * Constructs a ZDT5 test problem with the specified number of decision
-	 * variables.
+	 * Constructs a ZDT5 test problem with the specified number of decision variables.
 	 * 
 	 * @param numberOfVariables the number of decision variables
 	 */
@@ -53,8 +52,8 @@ public class ZDT5 extends ZDT {
 
 		double h = 1.0 / f;
 
-		solution.setObjective(0, f);
-		solution.setObjective(1, g * h);
+		solution.setObjectiveValue(0, f);
+		solution.setObjectiveValue(1, g * h);
 	}
 
 	private double v(int cardinality) {

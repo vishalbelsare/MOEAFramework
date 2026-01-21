@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,33 +17,37 @@
  */
 package org.moeaframework.problem.misc;
 
-import org.junit.Assert;
 import org.junit.Test;
-import org.moeaframework.TestUtils;
-import org.moeaframework.core.Problem;
-import org.moeaframework.core.Settings;
+import org.moeaframework.Assert;
+import org.moeaframework.TestEnvironment;
+import org.moeaframework.problem.Problem;
+import org.moeaframework.problem.ProblemTest;
 
-public class JimenezTest {
+public class JimenezTest extends ProblemTest {
 	
 	@Test
 	public void test() {
 		Problem problem = new Jimenez();
 		
-		Assert.assertArrayEquals(new double[] { 0.0, 0.0 }, 
-				TestUtils.evaluateAt(problem, 0.0, 0.0).getObjectives(),
-				Settings.EPS);
+		Assert.assertArrayEquals(new double[] { 0.0, 0.0 },
+				evaluateAt(problem, 0.0, 0.0).getObjectiveValues(),
+				TestEnvironment.HIGH_PRECISION);
 		
-		Assert.assertArrayEquals(new double[] { 0.0, 0.0, 200.0, 75.0 }, 
-				TestUtils.evaluateAt(problem, 0.0, 0.0).getConstraints(),
-				Settings.EPS);
+		Assert.assertArrayEquals(new double[] { -100.0, -150.0, 200.0, 75.0 },
+				evaluateAt(problem, 0.0, 0.0).getConstraintValues(),
+				TestEnvironment.HIGH_PRECISION);
 		
-		Assert.assertArrayEquals(new double[] { -400.0, -500.0 }, 
-				TestUtils.evaluateAt(problem, 50.0, 50.0).getObjectives(),
-				Settings.EPS);
+		Assert.assertFalse(evaluateAt(problem, 0.0, 0.0).isFeasible());
 		
-		Assert.assertArrayEquals(new double[] { 150.0, 100.0, 0.0, 0.0 }, 
-				TestUtils.evaluateAt(problem, 50.0, 50.0).getConstraints(),
-				Settings.EPS);
+		Assert.assertArrayEquals(new double[] { 400.0, 500.0 },
+				evaluateAt(problem, 50.0, 50.0).getObjectiveValues(),
+				TestEnvironment.HIGH_PRECISION);
+		
+		Assert.assertArrayEquals(new double[] { 150.0, 100.0, -200.0, -425.0 },
+				evaluateAt(problem, 50.0, 50.0).getConstraintValues(),
+				TestEnvironment.HIGH_PRECISION);
+		
+		Assert.assertFalse(evaluateAt(problem, 50.0, 50.0).isFeasible());
 	}
 
 }

@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -19,33 +19,21 @@ package org.moeaframework.core.operator.subset;
 
 import java.util.Set;
 
-import org.junit.Assert;
 import org.junit.Test;
-import org.moeaframework.TestThresholds;
+import org.moeaframework.Assert;
+import org.moeaframework.TestEnvironment;
 import org.moeaframework.core.PRNG;
 import org.moeaframework.core.Solution;
-import org.moeaframework.core.operator.ParentImmutabilityTest;
-import org.moeaframework.core.operator.TypeSafetyTest;
-import org.moeaframework.core.variable.Permutation;
+import org.moeaframework.core.operator.AbstractSubsetOperatorTest;
 import org.moeaframework.core.variable.Subset;
 
-/**
- * Tests for {@link Add} mutation.
- */
-public class AddTest {
-
-	/**
-	 * Tests if the add mutation operator is type-safe.
-	 */
-	@Test
-	public void testTypeSafety() {
-		TypeSafetyTest.testTypeSafety(new Add(1.0));
+public class AddTest extends AbstractSubsetOperatorTest<Add> {
+	
+	@Override
+	public Add createInstance() {
+		return new Add(1.0);
 	}
 
-	/**
-	 * Tests various probabilities to ensure add mutation is applied the
-	 * correct number of times on average.
-	 */
 	@Test
 	public void testProbabilities() {
 		testProbability(0.0);
@@ -63,7 +51,7 @@ public class AddTest {
 		int count = 0;
 		int skipped = 0;
 
-		for (int i = 0; i < TestThresholds.SAMPLES; i++) {
+		for (int i = 0; i < TestEnvironment.SAMPLES; i++) {
 			int n = PRNG.nextInt(1, 20);
 			int l = PRNG.nextInt(0, n);
 			int u = PRNG.nextInt(l, n);
@@ -79,43 +67,26 @@ public class AddTest {
 			
 			if ((subset.size() == newSubset.size()) && (subset.size() == subset.getU())) {
 				skipped++;
-			} else if (testSubset(subset, newSubset)) {
+			} else if (testAdd(subset, newSubset)) {
 				count++;
 			}
 		}
 
-		Assert.assertEquals(probability, (double)count / (TestThresholds.SAMPLES - skipped),
-				TestThresholds.VARIATION_EPS);
+		Assert.assertEquals(probability, (double)count / (TestEnvironment.SAMPLES - skipped),
+				TestEnvironment.LOW_PRECISION);
 	}
 
 	/**
-	 * Returns {@code true} if the result is a valid add; {@code false}
-	 * otherwise.
+	 * Returns {@code true} if the result is a valid add; {@code false} otherwise.
 	 * 
 	 * @param v1 the first subset
 	 * @param v2 the second subset
-	 * @return {@code true} if the result is a valid add; {@code false}
-	 *         otherwise
+	 * @return {@code true} if the result is a valid add; {@code false} otherwise
 	 */
-	protected boolean testSubset(Subset v1, Subset v2) {
+	protected boolean testAdd(Subset v1, Subset v2) {
 		Set<Integer> set = v2.getSet();
 		set.removeAll(v1.getSet());
 		return set.size() == 1;
-	}
-
-	/**
-	 * Tests if the parents remain unchanged during variation.
-	 */
-	@Test
-	public void testParentImmutability() {
-		Replace ins = new Replace(1.0);
-
-		Solution solution = new Solution(1, 0);
-		solution.setVariable(0, new Permutation(100));
-
-		Solution[] parents = new Solution[] { solution };
-
-		ParentImmutabilityTest.test(parents, ins);
 	}
 
 }

@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -18,21 +18,20 @@
 package org.moeaframework.util.tree;
 
 /**
- * The node for truncating, or bounding, a number within a range.  If the
- * number is outside the defined range, the number is set to the nearest number
- * within the range.  The inputs and
- * outputs to this node are shown below:
+ * The node for truncating, or bounding, a number within a range.  If the number is outside the defined range, the
+ * number is set to the nearest number within the range.
  * 
- * <table border="1" cellpadding="3" cellspacing="0">
- *   <tr class="TableHeadingColor">
- *     <th width="25%" align="left">Name</th>
- *     <th width="25%" align="left">Type</th>
- *     <th width="50%" align="left">Description</th>
+ * <table style="margin-top: 1em; width: 100%">
+ *   <caption style="text-align: left">Node signature:</caption>
+ *   <tr>
+ *     <th style="width: 15%; text-align: left">Name</th>
+ *     <th style="width: 15%; text-align: left">Type</th>
+ *     <th style="width: 70%; text-align: left">Description</th>
  *   </tr>
  *   <tr>
  *     <td>Argument 1</td>
  *     <td>Number</td>
- *     <td>The first number</td>
+ *     <td>The number to be truncated</td>
  *   </tr>
  *   <tr>
  *     <td>Return Value</td>
@@ -43,6 +42,8 @@ package org.moeaframework.util.tree;
  */
 public class Truncate extends Node {
 	
+	private static final long serialVersionUID = -1309869749799625350L;
+
 	/**
 	 * The minimum value in the range.
 	 */

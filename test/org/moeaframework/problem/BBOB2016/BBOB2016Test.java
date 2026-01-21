@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,102 +17,126 @@
  */
 package org.moeaframework.problem.BBOB2016;
 
-import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintStream;
+import java.util.Arrays;
 
-import org.junit.Assert;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.DefaultParser;
+import org.junit.Assume;
 import org.junit.Test;
-import org.moeaframework.Executor;
-import org.moeaframework.TestUtils;
-import org.moeaframework.core.NondominatedPopulation;
-import org.moeaframework.core.PRNG;
+import org.moeaframework.Assert;
+import org.moeaframework.TestEnvironment;
+import org.moeaframework.core.Solution;
+import org.moeaframework.core.variable.RealVariable;
+import org.moeaframework.problem.Problem;
+import org.moeaframework.util.io.LineReader;
+import org.moeaframework.util.io.Resources;
 
-/**
- * To run these tests, you'll first need to compile CocoJNI.dll.  Copy the
- * .c and .h files from this package into the code-experiments/build/java
- * folder within the Coco Framework repository.  Then run:
- * 
- *     gcc -Wl,--kill-at -I "C:\Program Files\Java\jdk1.7.0_45\include"
- *         -I "C:\Program Files\Java\jdk1.7.0_45\include\win32" -shared
- *         -o CocoJNI.dll org_moeaframework_problem_BBOB2016_CocoJNI.c
- *         
- * You will likely need to change the paths to your version of the Java
- * Development Kit.  If any interfaces changed, you may need to update the
- * .h and .c files.  Run:
- * 
- *     javah -jni -cp test org.moeaframework.problem.BBOB2016.CocoJNI
- *     
- * from the root of the MOEA Framework source code to recreate the header file,
- * rename CocoJNI.c to org_moeaframework_problem_BBOB2016_CocoJNI.c, and
- * replace all occurrences of:
- * 
- *     Java_CocoJNI_
- *     
- * with:
- * 
- *     Java_org_moeaframework_problem_BBOB2016_CocoJNI_
- *     
- * in the C code.
- * 
- * A working version of the DLL is distributed with these tests, but must
- * first be moved to the root MOEA Framework directory.
- */
 public class BBOB2016Test {
+
+	@Test
+	public void testSuite() {
+		int[] functions = new int[] { 1, 2, 6, 8, 13, 14, 15, 17, 20, 21 };
+		int[] dimensions = new int[] { 2, 3, 5, 10, 20, 40 };
+		int[] instances = new int[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 };
+
+		for (int i = 0; i < functions.length; i++) {
+			for (int j = i; j < functions.length; j++) {
+				for (int instance : instances) {
+					for (int dimension : dimensions) {
+						Problem problem = new BBOB2016Problems().getProblem(String.format(
+								"bbob_f%d_i%d_d%d,bbob_f%d_i%d_d%d",
+								functions[i], instance, dimension, functions[j], instance, dimension));
+
+						Assert.assertNotNull(problem);
+					}
+				}
+			}
+		}
+	}
+
+	@Test
+	public void testNameFormat() {
+		Assert.assertNotNull(new BBOB2016Problems().getProblem("bbob_f1_i1_d2,bbob_f21_i15_d40"));
+		Assert.assertNotNull(new BBOB2016Problems().getProblem("bbob_f1_i1_d2__bbob_f21_i15_d40"));
+		Assert.assertNotNull(new BBOB2016Problems().getProblem("bbob-biobj(bbob_f1_i1_d2__bbob_f21_i15_d40)"));
+	}
 	
 	@Test
-	public void test() throws IOException {
-		// skip test if the Coco DLL does not exist
-		TestUtils.assumeFileExists(new File("CocoJNI.dll"));
-		
-		// capture the output to collect all BBOB2016-Biobj problem names
-		PrintStream oldOutput = System.out;
-		ByteArrayOutputStream baos = new ByteArrayOutputStream();
-		System.setOut(new PrintStream(baos));
-		
-		CocoProblemWrapper.printProblemNames();
-		
-		System.out.close();
-		System.setOut(oldOutput);
-		
-		// parse the output and test each problem instance
-		BufferedReader reader = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(baos.toByteArray())));
-		String problemName = null;
-		
-		int count = 0;
-		
-		while ((problemName = reader.readLine()) != null) {
-			count++;
-			
-			PRNG.setSeed(1000);
-			NondominatedPopulation result1 = new Executor()
-					.withProblem(problemName)
-					.withAlgorithm("NSGAII")
-					.withMaxEvaluations(10000)
-					.run();
-			
-			PRNG.setSeed(1000);
-			NondominatedPopulation result2 = new Executor()
-					.withProblem(CocoProblemWrapper.findProblem("NSGAII", problemName))
-					.withAlgorithm("NSGAII")
-					.withMaxEvaluations(10000)
-					.run();
-			
-			boolean equal = TestUtils.equals(result1, result2);
-			System.out.println(problemName + " " + (equal ? "ok!" : "does not match!") + " " + count);
-			
-			if (!equal) {
-				Assert.fail("Output from " + problemName + " differs");
+	public void testUnrecognizedProblem() {
+		Assert.assertNull(new BBOB2016Problems().getProblem(""));
+		Assert.assertNull(new BBOB2016Problems().getProblem("Foo"));
+		Assert.assertNull(new BBOB2016Problems().getProblem("bbob-biobj()"));
+		Assert.assertNull(new BBOB2016Problems().getProblem("bbob-biobj(Foo)"));
+		Assert.assertNull(new BBOB2016Problems().getProblem("bbob-biobj(bbob_f1_i1_d2__Foo)"));
+		Assert.assertNull(new BBOB2016Problems().getProblem("bbob-biobj(Foo_bbob_f1_i1_d2)"));
+		Assert.assertNull(new BBOB2016Problems().getProblem("bbob-biobj(bbob_fFoo_i1_d2__bbob_f21_i15_d40)"));
+		Assert.assertNull(new BBOB2016Problems().getProblem("bbob-biobj(bbob_f1_iFoo_d2__bbob_f21_i15_d40)"));
+		Assert.assertNull(new BBOB2016Problems().getProblem("bbob-biobj(bbob_f1_i1_dFoo__bbob_f21_i15_d40)"));
+		Assert.assertNull(new BBOB2016Problems().getProblem("bbob-biobj(bbob_f1_i1_d2__bbob_fFoo_i15_d40)"));
+		Assert.assertNull(new BBOB2016Problems().getProblem("bbob-biobj(bbob_f1_i1_d2__bbob_f21_iFoo_d40)"));
+		Assert.assertNull(new BBOB2016Problems().getProblem("bbob-biobj(bbob_f1_i1_d2__bbob_f21_i15_dFoo)"));
+	}
+
+	@Test
+	public void testEvaluation() throws Exception {
+		try (LineReader reader = Resources.asLineReader(getClass(), "BBOB2016.Test.dat")) {
+			for (String line : reader) {
+				String[] tokens = line.split("\s+");
+				int index = 0;
+				
+				Problem problem = new BBOB2016Problems().getProblem(tokens[index++]);
+				
+				Assert.assertEquals(Integer.parseInt(tokens[index++]), problem.getNumberOfVariables());
+				Assert.assertEquals(Integer.parseInt(tokens[index++]), problem.getNumberOfObjectives());
+				Assert.assertEquals(Integer.parseInt(tokens[index++]), problem.getNumberOfConstraints());
+				
+				// load sample from input
+				double[] x = new double[problem.getNumberOfVariables()];
+				double[] fx = new double[problem.getNumberOfObjectives()];
+				double[] cx = new double[problem.getNumberOfConstraints()];
+				
+				for (int i = 0; i < problem.getNumberOfVariables(); i++) {
+					x[i] = Double.parseDouble(tokens[index++]);
+				}
+				
+				for (int i = 0; i < problem.getNumberOfObjectives(); i++) {
+					fx[i] = Double.parseDouble(tokens[index++]);
+				}
+				
+				for (int i = 0; i < problem.getNumberOfConstraints(); i++) {
+					cx[i] = Double.parseDouble(tokens[index++]);
+				}
+				
+				// evaluate sample
+				Solution solution = problem.newSolution();
+				RealVariable.setReal(solution, x);
+				problem.evaluate(solution);
+				
+				// compare output
+				try {
+					Assert.assertArrayEquals(fx, solution.getObjectiveValues(), TestEnvironment.LOW_PRECISION);
+					Assert.assertArrayEquals(cx, solution.getConstraintValues(), TestEnvironment.LOW_PRECISION);
+				} catch (AssertionError e) {
+					System.out.println("Detected difference in " + problem.getName() + " (Expected / Actual):");
+					System.out.println("  > Variables: " + Arrays.toString(x) + " / " + Arrays.toString(RealVariable.getReal(solution)));
+					System.out.println("  > Objectives: " + Arrays.toString(fx) + " / " + Arrays.toString(solution.getObjectiveValues()));
+					System.out.println("  > Constraints: " + Arrays.toString(cx) + " / " + Arrays.toString(solution.getConstraintValues()));
+					
+					throw e;
+				}
 			}
-			
-			if (count == 100) {
-				// stop after testing every instance at least once
-				break;
-			}
+		}
+	}
+	
+	@Test
+	public void testGenerator() throws Exception {
+		BBOB2016TestGenerator generator = new BBOB2016TestGenerator();
+		CommandLine commandLine = new DefaultParser().parse(generator.getOptions(), new String[0]);
+		
+		try {
+			generator.run(commandLine);
+		} catch (UnsatisfiedLinkError e) {
+			Assume.assumeNoException("CocoJNI is not available or configured correctly", e);
 		}
 	}
 

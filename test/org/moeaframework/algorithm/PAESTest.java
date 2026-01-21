@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,39 +17,38 @@
  */
 package org.moeaframework.algorithm;
 
-import java.io.IOException;
-
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.moeaframework.Retryable;
+import org.moeaframework.Assert;
 import org.moeaframework.CIRunner;
+import org.moeaframework.Retryable;
+import org.moeaframework.core.TypedProperties;
+import org.moeaframework.mock.MockRealProblem;
+import org.moeaframework.problem.Problem;
 
-/**
- * Tests the {@link PAES} class.  The MOEA Framework's implementation tends
- * to outperform the JMetal implementation.
- */
 @RunWith(CIRunner.class)
 @Retryable
-public class PAESTest extends AlgorithmTest {
+public class PAESTest extends JMetalAlgorithmTest {
 	
-	@Test
-	public void testDTLZ1() throws IOException {
-		test("DTLZ1_2", "PAES", "PAES-JMetal", true);
+	public PAESTest() {
+		super("PAES", true);
 	}
 	
 	@Test
-	public void testDTLZ2() throws IOException {
-		test("DTLZ2_2", "PAES", "PAES-JMetal", true);
-	}
-	
-	@Test
-	public void testDTLZ7() throws IOException {
-		test("DTLZ7_2", "PAES", "PAES-JMetal", true);
-	}
-	
-	@Test
-	public void testUF1() throws IOException {
-		test("UF1", "PAES", "PAES-JMetal", true);
+	public void testConfiguration() {
+		Problem problem = new MockRealProblem(2);
+		PAES algorithm = new PAES(problem);
+		
+		Assert.assertEquals(algorithm.getArchive().getCapacity(), algorithm.getConfiguration().getInt("archiveSize"));
+		Assert.assertEquals(algorithm.getArchive().getBisections(), algorithm.getConfiguration().getInt("bisections"));
+		
+		TypedProperties properties = new TypedProperties();
+		properties.setInt("archiveSize", 200);
+		properties.setInt("bisections", 3);
+		
+		algorithm.applyConfiguration(properties);
+		Assert.assertEquals(200, algorithm.getArchive().getCapacity());
+		Assert.assertEquals(3, algorithm.getArchive().getBisections());
 	}
 
 }

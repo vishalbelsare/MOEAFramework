@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,16 +17,24 @@
  */
 package org.moeaframework.problem.misc;
 
-import org.junit.Ignore;
 import org.junit.Test;
+import org.moeaframework.Assert;
+import org.moeaframework.problem.Problem;
 import org.moeaframework.problem.ProblemTest;
 
 public class OKA2Test extends ProblemTest {
 
 	@Test
-	@Ignore("Problem no longer in JMetal 5.9")
-	public void testJMetal() throws Exception {
-		//test(new org.uma.jmetal.problem.multiobjective.OKA2(), new OKA2());
+	public void test() {
+		Problem problem = new OKA2();
+		
+		Assert.assertArrayEquals(new double[] { 0.0, 3.0/4.0 + Math.pow(5.0, 1.0/3.0) },
+				evaluateAt(problem, 0.0, 0.0, 0.0).getObjectiveValues(),
+				0.0001);
+		
+		Assert.assertArrayEquals(new double[] { Math.PI/2.0, 7.0/16.0 + Math.pow(5.0, 1.0/3.0) },
+				evaluateAt(problem, Math.PI/2.0, 0.0, 0.0).getObjectiveValues(),
+				0.0001);
 	}
 
 }

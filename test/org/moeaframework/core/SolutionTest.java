@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,178 +17,164 @@
  */
 package org.moeaframework.core;
 
+import java.util.Map;
+
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.moeaframework.Assert;
+import org.moeaframework.TestEnvironment;
+import org.moeaframework.core.constraint.Equal;
+import org.moeaframework.core.constraint.LessThanOrEqual;
+import org.moeaframework.core.objective.Maximize;
+import org.moeaframework.core.objective.Minimize;
+import org.moeaframework.core.population.NondominatedPopulation;
 import org.moeaframework.core.variable.RealVariable;
+import org.moeaframework.mock.MockSolution;
 
 /**
- * Tests the {@link Solution} class. Due to the central role of this class, many
- * obvious properties are tested to ensure complete correctness.
+ * Due to the central role of this class, many obvious properties are tested to ensure complete correctness.
  */
 public class SolutionTest {
 
-	/**
-	 * The shared solution used by these tests.
-	 */
 	private Solution solution;
 
-	/**
-	 * Constructs the shared solution used by these tests.
-	 */
 	@Before
 	public void setUp() {
 		solution = new Solution(1, 2, 2);
-
-		solution.setVariable(0, new RealVariable(0.5, 0.0, 1.0));
-		solution.setObjective(0, 1.0);
-		solution.setObjective(1, 2.0);
-		solution.setConstraint(0, 0.0);
-		solution.setConstraint(1, 1.0);
+		solution.setVariable(0, new RealVariable(0.0, 1.0));
+		solution.setObjective(0, new Minimize());
+		solution.setObjective(1, new Maximize());
+		solution.setConstraint(0, new Equal(0.0));
+		solution.setConstraint(1, new LessThanOrEqual(0.0));
+		
+		RealVariable.setReal(solution.getVariable(0), 0.5);
+		
+		solution.setObjectiveValue(0, 1.0);
+		solution.setObjectiveValue(1, 2.0);
+		solution.setConstraintValue(0, 0.0);
+		solution.setConstraintValue(1, 1.0);
 
 		solution.setAttribute("foo", "bar");
 	}
 
-	/**
-	 * Removes references to shared objects so they can be garbage collected.
-	 */
 	@After
 	public void tearDown() {
 		solution = null;
 	}
+	
+	@Test
+	public void testDefaultTypesOnGet() {
+		solution = new Solution(0, 1, 1);
+		Assert.assertInstanceOf(Minimize.class, solution.getObjective(0));
+		Assert.assertInstanceOf(Equal.class, solution.getConstraint(0));
+	}
+	
+	@Test
+	public void testDefaultTypesOnSet() {
+		solution = new Solution(0, 1, 1);
+		solution.setObjectiveValue(0, 1.0);
+		solution.setConstraintValue(0, 1.0);
+		Assert.assertInstanceOf(Minimize.class, solution.getObjective(0));
+		Assert.assertInstanceOf(Equal.class, solution.getConstraint(0));
+	}
 
-	/**
-	 * Tests if the {@code getVariable} method returns the correct value.
-	 */
 	@Test
 	public void testGetVariable() {
 		Assert.assertEquals(1, solution.getNumberOfVariables());
-		Assert.assertEquals(0.5, ((RealVariable)solution.getVariable(0))
-				.getValue(), Settings.EPS);
+		Assert.assertEquals(0.5, RealVariable.getReal(solution.getVariable(0)), TestEnvironment.HIGH_PRECISION);
 	}
 
-	/**
-	 * Tests if the {@code getObjective} method returns the correct value.
-	 */
 	@Test
-	public void testGetObjective() {
+	public void testGetObjectiveValue() {
 		Assert.assertEquals(2, solution.getNumberOfObjectives());
-		Assert.assertEquals(1.0, solution.getObjective(0), Settings.EPS);
-		Assert.assertEquals(2.0, solution.getObjective(1), Settings.EPS);
+		Assert.assertEquals(1.0, solution.getObjectiveValue(0), TestEnvironment.HIGH_PRECISION);
+		Assert.assertEquals(2.0, solution.getObjectiveValue(1), TestEnvironment.HIGH_PRECISION);
 	}
 
-	/**
-	 * Tests if the {@code getConstraint} method returns the correct value.
-	 */
 	@Test
-	public void testGetConstraint() {
+	public void testGetConstraintValue() {
 		Assert.assertEquals(2, solution.getNumberOfConstraints());
-		Assert.assertEquals(0.0, solution.getConstraint(0), Settings.EPS);
-		Assert.assertEquals(1.0, solution.getConstraint(1), Settings.EPS);
+		Assert.assertEquals(0.0, solution.getConstraintValue(0), TestEnvironment.HIGH_PRECISION);
+		Assert.assertEquals(1.0, solution.getConstraintValue(1), TestEnvironment.HIGH_PRECISION);
 	}
 
-	/**
-	 * Tests if the {@code setVariable} method sets the value correctly.
-	 */
 	@Test
 	public void testSetVariable() {
-		solution.setVariable(0, new RealVariable(0.75, 0.0, 1.0));
-		Assert.assertEquals(0.75, ((RealVariable)solution.getVariable(0))
-				.getValue(), Settings.EPS);
+		solution.setVariable(0, new RealVariable(0.0, 1.0).withValue(0.75));
+		Assert.assertEquals(0.75, RealVariable.getReal(solution.getVariable(0)), TestEnvironment.HIGH_PRECISION);
 	}
 
-	/**
-	 * Tests if the {@code setObjective} method sets the value correctly.
-	 */
 	@Test
-	public void testSetObjective() {
-		solution.setObjective(1, 1.5);
-		Assert.assertEquals(1.5, solution.getObjective(1), Settings.EPS);
+	public void testSetObjectiveValue() {
+		solution.setObjectiveValue(1, 1.5);
+		Assert.assertEquals(1.5, solution.getObjectiveValue(1), TestEnvironment.HIGH_PRECISION);
 	}
 
-	/**
-	 * Tests if the {@code setConstraint} method sets the value correctly.
-	 */
 	@Test
-	public void testSetConstraint() {
-		solution.setConstraint(1, 2.0);
-		Assert.assertEquals(2.0, solution.getConstraint(1), Settings.EPS);
+	public void testSetConstraintValue() {
+		solution.setConstraintValue(1, 2.0);
+		Assert.assertEquals(2.0, solution.getConstraintValue(1), TestEnvironment.HIGH_PRECISION);
 	}
 
-	/**
-	 * Tests if the {@code getObjectives} method returns the values correctly.
-	 */
 	@Test
-	public void testGetObjectives() {
-		double[] objectives = solution.getObjectives();
+	public void testGetObjectiveValues() {
+		double[] objectives = solution.getObjectiveValues();
 
 		// returned array contains correct data
 		Assert.assertEquals(2, objectives.length);
-		Assert.assertEquals(1.0, objectives[0], Settings.EPS);
-		Assert.assertEquals(2.0, objectives[1], Settings.EPS);
+		Assert.assertEquals(1.0, objectives[0], TestEnvironment.HIGH_PRECISION);
+		Assert.assertEquals(2.0, objectives[1], TestEnvironment.HIGH_PRECISION);
 
 		// returned array is independent from internal state
 		objectives[0] = 0.0;
-		Assert.assertEquals(1.0, solution.getObjective(0), Settings.EPS);
+		Assert.assertEquals(1.0, solution.getObjectiveValue(0), TestEnvironment.HIGH_PRECISION);
 	}
-
-	/**
-	 * Tests if the {@code getConstraints} method returns the values correctly.
-	 */
+	
 	@Test
-	public void testGetConstraints() {
-		double[] constraints = solution.getConstraints();
+	public void testGetConstraintValues() {
+		double[] constraints = solution.getConstraintValues();
 
 		// returned array contains correct data
 		Assert.assertEquals(2, constraints.length);
-		Assert.assertEquals(0.0, constraints[0], Settings.EPS);
-		Assert.assertEquals(1.0, constraints[1], Settings.EPS);
+		Assert.assertEquals(0.0, constraints[0], TestEnvironment.HIGH_PRECISION);
+		Assert.assertEquals(1.0, constraints[1], TestEnvironment.HIGH_PRECISION);
 
 		// returned array is independent from internal state
 		constraints[0] = 1.0;
-		Assert.assertEquals(0.0, solution.getConstraint(0), Settings.EPS);
+		Assert.assertEquals(0.0, solution.getConstraintValue(0), TestEnvironment.HIGH_PRECISION);
 	}
 
-	/**
-	 * Tests if the {@code setObjectives} method sets the values correctly.
-	 */
 	@Test
-	public void testSetObjectives() {
+	public void testSetObjectiveValues() {
 		double[] objectives = new double[] { 3.0, 4.0 };
-		solution.setObjectives(objectives);
+		solution.setObjectiveValues(objectives);
 
 		// stored array contains correct data
 		Assert.assertEquals(2, solution.getNumberOfObjectives());
-		Assert.assertEquals(3.0, solution.getObjective(0), Settings.EPS);
-		Assert.assertEquals(4.0, solution.getObjective(1), Settings.EPS);
+		Assert.assertEquals(3.0, solution.getObjectiveValue(0), TestEnvironment.HIGH_PRECISION);
+		Assert.assertEquals(4.0, solution.getObjectiveValue(1), TestEnvironment.HIGH_PRECISION);
 
 		// stored array is independent from external state
 		objectives[0] = 0.0;
-		Assert.assertEquals(3.0, solution.getObjective(0), Settings.EPS);
+		Assert.assertEquals(3.0, solution.getObjectiveValue(0), TestEnvironment.HIGH_PRECISION);
 	}
 
-	/**
-	 * Tests if the {@code setConstraints} method sets the values correctly.
-	 */
 	@Test
-	public void testSetConstraints() {
+	public void testSetConstraintValues() {
 		double[] constraints = new double[] { 3.0, 4.0 };
-		solution.setConstraints(constraints);
+		solution.setConstraintValues(constraints);
 
 		// stored array contains correct data
 		Assert.assertEquals(2, solution.getNumberOfConstraints());
-		Assert.assertEquals(3.0, solution.getConstraint(0), Settings.EPS);
-		Assert.assertEquals(4.0, solution.getConstraint(1), Settings.EPS);
+		Assert.assertEquals(3.0, solution.getConstraintValue(0), TestEnvironment.HIGH_PRECISION);
+		Assert.assertEquals(4.0, solution.getConstraintValue(1), TestEnvironment.HIGH_PRECISION);
 
 		// stored array is independent from external state
 		constraints[0] = 0.0;
-		Assert.assertEquals(3.0, solution.getConstraint(0), Settings.EPS);
+		Assert.assertEquals(3.0, solution.getConstraintValue(0), TestEnvironment.HIGH_PRECISION);
 	}
 
-	/**
-	 * Tests if the {@code getAttribute} method works correctly.
-	 */
 	@Test
 	public void testGetAttribute() {
 		// get valid attribute
@@ -200,9 +186,6 @@ public class SolutionTest {
 		Assert.assertNull(solution.getAttribute("bar"));
 	}
 
-	/**
-	 * Tests if the {@code setAttribute} method works correctly.
-	 */
 	@Test
 	public void testSetAttribute() {
 		// overwriting an attribute
@@ -220,159 +203,91 @@ public class SolutionTest {
 		Assert.assertFalse(solution.hasAttribute("foo"));
 		Assert.assertNull(solution.getAttribute("foo"));
 	}
+	
+	@Test
+	public void testRemoveAttribute() {
+		solution.setAttribute("foo", "other");
+		solution.removeAttribute("foo");
+		Assert.assertFalse(solution.hasAttribute("foo"));
+		Assert.assertNull(solution.getAttribute("foo"));
+	}
+	
+	@Test
+	public void testAddAttributes() {
+		solution.addAttributes(Map.of("foo", "other"));
+		Assert.assertEquals("other", solution.getAttribute("foo"));
+	}
 
-	/**
-	 * Tests if the {@code setVariable} method correctly detects invalid
-	 * indices.
-	 */
 	@Test(expected = IndexOutOfBoundsException.class)
 	public void testSetVariableBoundsChecking1() {
-		solution.setVariable(2, new RealVariable(0.5, 0.0, 1.0));
+		solution.setVariable(2, new RealVariable(0.0, 1.0));
 	}
 
-	/**
-	 * Tests if the {@code setVariable} method correctly detects invalid
-	 * indices.
-	 */
 	@Test(expected = IndexOutOfBoundsException.class)
 	public void testSetVariableBoundsChecking2() {
-		solution.setVariable(-1, new RealVariable(0.5, 0.0, 1.0));
+		solution.setVariable(-1, new RealVariable(0.0, 1.0));
 	}
 
-	/**
-	 * Tests if the {@code getVariable} method correctly detects invalid
-	 * indices.
-	 */
 	@Test(expected = IndexOutOfBoundsException.class)
 	public void testGetVariableBoundsChecking1() {
 		solution.getVariable(2);
 	}
 
-	/**
-	 * Tests if the {@code getVariable} method correctly detects invalid
-	 * indices.
-	 */
 	@Test(expected = IndexOutOfBoundsException.class)
 	public void testGetVariableBoundsChecking2() {
 		solution.getVariable(-1);
 	}
 
-	/**
-	 * Tests if the {@code setObjective} method correctly detects invalid
-	 * indices.
-	 */
 	@Test(expected = IndexOutOfBoundsException.class)
 	public void testSetObjectiveBoundsChecking1() {
-		solution.setObjective(2, 1.0);
+		solution.setObjectiveValue(2, 1.0);
 	}
 
-	/**
-	 * Tests if the {@code setObjective} method correctly detects invalid
-	 * indices.
-	 */
 	@Test(expected = IndexOutOfBoundsException.class)
 	public void testSetObjectiveBoundsChecking2() {
-		solution.setObjective(-1, 1.0);
+		solution.setObjectiveValue(-1, 1.0);
 	}
 
-	/**
-	 * Tests if the {@code getObjective} method correctly detects invalid
-	 * indices.
-	 */
 	@Test(expected = IndexOutOfBoundsException.class)
 	public void testGetObjectiveBoundsChecking1() {
 		solution.getObjective(2);
 	}
 
-	/**
-	 * Tests if the {@code getObjective} method correctly detects invalid
-	 * indices.
-	 */
 	@Test(expected = IndexOutOfBoundsException.class)
 	public void testGetObjectiveBoundsChecking2() {
 		solution.getObjective(-1);
 	}
 
-	/**
-	 * Tests if the {@code setObjectives} method correctly detects invalid
-	 * indices.
-	 */
 	@Test(expected = IllegalArgumentException.class)
 	public void testSetObjectivesBoundsChecking() {
-		solution.setObjectives(new double[] { 0.0, 1.0, 2.0 });
+		solution.setObjectiveValues(new double[] { 0.0, 1.0, 2.0 });
 	}
 
-	/**
-	 * Tests if the {@code setConstraint} method correctly detects invalid
-	 * indices.
-	 */
 	@Test(expected = IndexOutOfBoundsException.class)
 	public void testSetConstraintBoundsChecking1() {
-		solution.setConstraint(2, 1.0);
+		solution.setConstraintValue(2, 1.0);
 	}
 
-	/**
-	 * Tests if the {@code setConstraint} method correctly detects invalid
-	 * indices.
-	 */
 	@Test(expected = IndexOutOfBoundsException.class)
 	public void testSetConstraintBoundsChecking2() {
-		solution.setConstraint(-1, 1.0);
+		solution.setConstraintValue(-1, 1.0);
 	}
 
-	/**
-	 * Tests if the {@code getConstraint} method correctly detects invalid
-	 * indices.
-	 */
 	@Test(expected = IndexOutOfBoundsException.class)
 	public void testGetConstraintBoundsChecking1() {
 		solution.getConstraint(2);
 	}
 
-	/**
-	 * Tests if the {@code getConstraint} method correctly detects invalid
-	 * indices.
-	 */
 	@Test(expected = IndexOutOfBoundsException.class)
 	public void testGetConstraintBoundsChecking2() {
 		solution.getConstraint(-1);
 	}
 
-	/**
-	 * Tests if the {@code setConstraints} method correctly detects invalid
-	 * indices.
-	 */
 	@Test(expected = IllegalArgumentException.class)
 	public void testSetConstraintsBoundsChecking() {
-		solution.setConstraints(new double[] { 0.0, 1.0, 2.0 });
-	}
-
-	/**
-	 * Tests if the constructor, when given an array of objectives, correctly
-	 * initializes the solution.
-	 */
-	@Test
-	public void testObjectiveConstructor() {
-		double[] objectives = new double[] { 1.0, 2.0 };
-		Solution solution = new Solution(objectives);
-
-		// correct internal state
-		Assert.assertEquals(0, solution.getNumberOfVariables());
-		Assert.assertEquals(2, solution.getNumberOfObjectives());
-		Assert.assertEquals(0, solution.getNumberOfConstraints());
-		Assert.assertEquals(0, solution.getAttributes().size());
-		Assert.assertEquals(1.0, solution.getObjective(0), Settings.EPS);
-		Assert.assertEquals(2.0, solution.getObjective(1), Settings.EPS);
-
-		// check if objectives were defensively copied
-		objectives[0] = 0.0;
-		Assert.assertEquals(1.0, solution.getObjective(0), Settings.EPS);
+		solution.setConstraintValues(new double[] { 0.0, 1.0, 2.0 });
 	}
 	
-	/**
-	 * Tests if the deep copy method works correctly, property cloning all
-	 * attributes.
-	 */
 	@Test
 	public void testDeepCopy() {
 		double[] array = new double[] { 1.0, 2.0 };
@@ -380,12 +295,9 @@ public class SolutionTest {
 		
 		Solution copy = solution.deepCopy();
 		
-		Assert.assertTrue(array != copy.getAttribute("key"));
+		Assert.assertEquals(solution, copy, true);
 	}
 
-	/**
-	 * Tests if the copy constructor works correctly.
-	 */
 	@Test
 	public void testCopyConstructor() {
 		Solution copy = new Solution(solution);
@@ -395,51 +307,155 @@ public class SolutionTest {
 		Assert.assertFalse(copy.equals(solution));
 
 		// copy has the same variables
-		Assert.assertEquals(solution.getNumberOfVariables(), copy
-				.getNumberOfVariables());
+		Assert.assertEquals(solution.getNumberOfVariables(), copy.getNumberOfVariables());
 		for (int i = 0; i < copy.getNumberOfVariables(); i++) {
 			Assert.assertEquals(solution.getVariable(i), copy.getVariable(i));
+			Assert.assertNotSame(solution.getVariable(i), copy.getVariable(i));
 		}
 
 		// copy has the same objectives
-		Assert.assertEquals(solution.getNumberOfObjectives(), copy
-				.getNumberOfObjectives());
+		Assert.assertEquals(solution.getNumberOfObjectives(), copy.getNumberOfObjectives());
 		for (int i = 0; i < copy.getNumberOfObjectives(); i++) {
-			Assert.assertEquals(solution.getObjective(i), copy.getObjective(i),
-					Settings.EPS);
+			Assert.assertEquals(solution.getObjective(i), copy.getObjective(i), TestEnvironment.HIGH_PRECISION);
+			Assert.assertNotSame(solution.getObjective(i), copy.getObjective(i));
 		}
 
 		// copy has the same constraints
-		Assert.assertEquals(solution.getNumberOfConstraints(), copy
-				.getNumberOfConstraints());
+		Assert.assertEquals(solution.getNumberOfConstraints(), copy.getNumberOfConstraints());
 		for (int i = 0; i < copy.getNumberOfConstraints(); i++) {
-			Assert.assertEquals(solution.getConstraint(i), copy
-					.getConstraint(i), Settings.EPS);
+			Assert.assertEquals(solution.getConstraint(i), copy.getConstraint(i), TestEnvironment.HIGH_PRECISION);
+			Assert.assertNotSame(solution.getConstraint(i), copy.getConstraint(i));
 		}
 
 		// the copy's variables are independent from the original
-		((RealVariable)copy.getVariable(0)).setValue(1.0);
-		Assert.assertEquals(0.5, ((RealVariable)solution.getVariable(0))
-				.getValue(), Settings.EPS);
+		RealVariable.setReal(copy.getVariable(0), 1.0);
+		Assert.assertEquals(0.5, RealVariable.getReal(solution.getVariable(0)), TestEnvironment.HIGH_PRECISION);
 
 		// the equals method works to detect the change
 		Assert.assertFalse(solution.equals(copy));
 		Assert.assertFalse(copy.equals(solution));
 	}
+	
+	@Test
+	public void testIsFeasible() {
+		Assert.assertFalse(solution.isFeasible());
 
-	/**
-	 * Tests if the {@code violatesConstraints} method returns {@code 0} if
-	 * all constraints are satisfied and a non-zero value otherwise.
-	 */
+		solution.setConstraintValue(1, 0.0);
+		Assert.assertTrue(solution.isFeasible());
+
+		// solution with no constraints
+		Assert.assertTrue(new Solution(0, 0, 0).isFeasible());
+	}
+
 	@Test
 	public void testViolatesConstraints() {
 		Assert.assertTrue(solution.violatesConstraints());
 
-		solution.setConstraint(1, 0.0);
+		solution.setConstraintValue(1, 0.0);
 		Assert.assertFalse(solution.violatesConstraints());
 
 		// solution with no constraints
 		Assert.assertFalse(new Solution(0, 0, 0).violatesConstraints());
+	}
+	
+	@Test
+	public void testSumOfConstraintViolations() {
+		Assert.assertEquals(1.0, solution.getSumOfConstraintViolations(), TestEnvironment.HIGH_PRECISION);
+		
+		solution.setConstraintValue(0, -1.0);
+		Assert.assertEquals(2.0, solution.getSumOfConstraintViolations(), TestEnvironment.HIGH_PRECISION);
+
+		solution.setConstraintValues(new double[] { 0.0, 0.0 });
+		Assert.assertEquals(0.0, solution.getSumOfConstraintViolations(), TestEnvironment.HIGH_PRECISION);
+
+		// solution with no constraints
+		Assert.assertEquals(0.0, new Solution(0, 0, 0).getSumOfConstraintViolations(), TestEnvironment.HIGH_PRECISION);
+	}
+	
+	@Test
+	public void testEuclideanDistance() {
+		Solution s1 = MockSolution.of().withObjectives(0.0, 1.0, 0.0);
+		Solution s2 = MockSolution.of().withObjectives(0.0, 0.0, -1.0);
+
+		Assert.assertEquals(Math.sqrt(2.0), s1.euclideanDistance(s2), TestEnvironment.HIGH_PRECISION);
+		Assert.assertEquals(Math.sqrt(2.0), s2.euclideanDistance(s1), TestEnvironment.HIGH_PRECISION);
+		Assert.assertEquals(0.0, s1.euclideanDistance(s1), TestEnvironment.HIGH_PRECISION);
+		Assert.assertEquals(0.0, s2.euclideanDistance(s2), TestEnvironment.HIGH_PRECISION);
+	}
+	
+	@Test
+	public void testManhattanDistance() {
+		Solution s1 = MockSolution.of().withObjectives(0.0, 1.0, 0.0);
+		Solution s2 = MockSolution.of().withObjectives(0.0, 0.0, -1.0);
+
+		Assert.assertEquals(2.0, s1.manhattanDistance(s2), TestEnvironment.HIGH_PRECISION);
+		Assert.assertEquals(2.0, s2.manhattanDistance(s1), TestEnvironment.HIGH_PRECISION);
+		Assert.assertEquals(0.0, s1.manhattanDistance(s1), TestEnvironment.HIGH_PRECISION);
+		Assert.assertEquals(0.0, s2.manhattanDistance(s2), TestEnvironment.HIGH_PRECISION);
+	}
+	
+	@Test
+	public void testChebyshevDistance() {
+		Solution s1 = MockSolution.of().withObjectives(0.0, 1.0, 0.0);
+		Solution s2 = MockSolution.of().withObjectives(0.0, 0.0, -1.0);
+
+		Assert.assertEquals(1.0, s1.chebyshevDistance(s2), TestEnvironment.HIGH_PRECISION);
+		Assert.assertEquals(1.0, s2.chebyshevDistance(s1), TestEnvironment.HIGH_PRECISION);
+		Assert.assertEquals(0.0, s1.chebyshevDistance(s1), TestEnvironment.HIGH_PRECISION);
+		Assert.assertEquals(0.0, s2.chebyshevDistance(s2), TestEnvironment.HIGH_PRECISION);
+	}
+	
+	@Test(expected = IllegalArgumentException.class)
+	public void testEuclideanDistanceThrowsIfLengthDiffers() {
+		Solution s1 = MockSolution.of().withObjectives(0.0, 1.0, 0.0);
+		Solution s2 = MockSolution.of().withObjectives(0.0, -1.0);
+		s1.euclideanDistance(s2);
+	}
+	
+	@Test(expected = IllegalArgumentException.class)
+	public void testManhattanDistanceThrowsIfLengthDiffers() {
+		Solution s1 = MockSolution.of().withObjectives(0.0, 1.0, 0.0);
+		Solution s2 = MockSolution.of().withObjectives(0.0, -1.0);
+		s1.manhattanDistance(s2);
+	}
+	
+	@Test(expected = IllegalArgumentException.class)
+	public void testChebyshevDistanceThrowsIfLengthDiffers() {
+		Solution s1 = MockSolution.of().withObjectives(0.0, 1.0, 0.0);
+		Solution s2 = MockSolution.of().withObjectives(0.0, -1.0);
+		s1.chebyshevDistance(s2);
+	}
+	
+	@Test
+	public void testDistanceToNearestSolution() {
+		NondominatedPopulation population = new NondominatedPopulation();
+		population.add(MockSolution.of().withObjectives(0.0, 1.0));
+		population.add(MockSolution.of().withObjectives(1.0, 0.0));
+		
+		Assert.assertEquals(0.0,
+				MockSolution.of().withObjectives(0.0, 1.0).distanceToNearestSolution(population),
+				TestEnvironment.HIGH_PRECISION);
+		
+		Assert.assertEquals(0.0,
+				MockSolution.of().withObjectives(1.0, 0.0).distanceToNearestSolution(population),
+				TestEnvironment.HIGH_PRECISION);
+		
+		Assert.assertEquals(Math.sqrt(0.5),
+				MockSolution.of().withObjectives(0.5, 0.5).distanceToNearestSolution(population),
+				TestEnvironment.HIGH_PRECISION);
+		
+		Assert.assertEquals(Math.sqrt(0.125),
+				MockSolution.of().withObjectives(0.25, 0.75).distanceToNearestSolution(population),
+				TestEnvironment.HIGH_PRECISION);
+	}
+	
+	@Test(expected = IllegalArgumentException.class)
+	public void testDistanceToNearestSolutionThrowsIfLengthDiffers() {
+		NondominatedPopulation population = new NondominatedPopulation();
+		population.add(MockSolution.of().withObjectives(0.0, 1.0));
+		population.add(MockSolution.of().withObjectives(1.0, 0.0));
+		
+		MockSolution.of().withObjectives(0.0, 1.0, 0.5).distanceToNearestSolution(population);
 	}
 
 }

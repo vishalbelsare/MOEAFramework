@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -21,10 +21,10 @@
  * <p>
  * References:
  * <ol>
- *   <li>Deb et al.  "Scalable Test Problems for Evolutionary Multi-Objective
- *       Optimization."  TIK-Technical Report No 112, 2001.
- *   <li>Deb et al. "Scalable Multi-Objective Optimization Test Problems."
- *       Congress on Evolutionary Computation. pp 825-830, 2002.
+ *   <li>Deb et al.  "Scalable Test Problems for Evolutionary Multi-Objective Optimization."  TIK-Technical Report
+ *       No 112, 2001.
+ *   <li>Deb et al. "Scalable Multi-Objective Optimization Test Problems."  Congress on Evolutionary Computation.
+ *       pp 825-830, 2002.
  * </ol>
  */
 package org.moeaframework.problem.DTLZ;

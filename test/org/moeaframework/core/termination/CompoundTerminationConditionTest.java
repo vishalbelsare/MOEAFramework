@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,50 +17,49 @@
  */
 package org.moeaframework.core.termination;
 
-import org.junit.Assert;
-import org.junit.Test;
+import java.time.Duration;
 
-/**
- * Tests the {@link CompoundTerminationCondition} class.
- */
+import org.junit.Test;
+import org.moeaframework.Assert;
+import org.moeaframework.Wait;
+import org.moeaframework.mock.MockAlgorithm;
+
 public class CompoundTerminationConditionTest {
 	
 	@Test
-	public void testNFE() throws InterruptedException {
+	public void testNFE() {
 		MockAlgorithm algorithm = new MockAlgorithm();
-		MaxElapsedTime timeTermination = new MaxElapsedTime(1000);
+		MaxElapsedTime timeTermination = new MaxElapsedTime(Duration.ofSeconds(1));
 		MaxFunctionEvaluations nfeTermination = new MaxFunctionEvaluations(10000);
-		CompoundTerminationCondition compound = new CompoundTerminationCondition(
-				timeTermination, nfeTermination);
+		CompoundTerminationCondition compound = new CompoundTerminationCondition(timeTermination, nfeTermination);
 		
 		compound.initialize(algorithm);
 		Assert.assertFalse(compound.shouldTerminate(algorithm));
 		
-		Thread.sleep(250);
+		Wait.spinFor(Duration.ofMillis(250));
 		algorithm.setNumberOfEvaluations(1000);
 		Assert.assertFalse(compound.shouldTerminate(algorithm));
 		
-		Thread.sleep(250);
+		Wait.spinFor(Duration.ofMillis(250));
 		algorithm.setNumberOfEvaluations(10001);
 		Assert.assertTrue(compound.shouldTerminate(algorithm));
 	}
 	
 	@Test
-	public void testTime() throws InterruptedException {
+	public void testTime() {
 		MockAlgorithm algorithm = new MockAlgorithm();
-		MaxElapsedTime timeTermination = new MaxElapsedTime(1000);
+		MaxElapsedTime timeTermination = new MaxElapsedTime(Duration.ofSeconds(1));
 		MaxFunctionEvaluations nfeTermination = new MaxFunctionEvaluations(10000);
-		CompoundTerminationCondition compound = new CompoundTerminationCondition(
-				timeTermination, nfeTermination);
+		CompoundTerminationCondition compound = new CompoundTerminationCondition(timeTermination, nfeTermination);
 		
 		compound.initialize(algorithm);
 		Assert.assertFalse(compound.shouldTerminate(algorithm));
 		
-		Thread.sleep(550);
+		Wait.spinFor(Duration.ofMillis(550));
 		algorithm.setNumberOfEvaluations(1000);
 		Assert.assertFalse(compound.shouldTerminate(algorithm));
 		
-		Thread.sleep(550);
+		Wait.spinFor(Duration.ofMillis(550));
 		algorithm.setNumberOfEvaluations(2000);
 		Assert.assertTrue(compound.shouldTerminate(algorithm));
 	}

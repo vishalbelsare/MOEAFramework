@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -21,110 +21,112 @@ import java.util.Random;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.moeaframework.Retryable;
-import org.moeaframework.TestThresholds;
 import org.moeaframework.CIRunner;
+import org.moeaframework.Retryable;
+import org.moeaframework.TestEnvironment;
 import org.moeaframework.core.PRNG;
 import org.moeaframework.core.Solution;
 import org.moeaframework.core.operator.ParentCentricVariationTest;
-import org.moeaframework.core.operator.ParentImmutabilityTest;
-import org.moeaframework.core.operator.TypeSafetyTest;
 import org.moeaframework.core.variable.RealVariable;
 
 @RunWith(CIRunner.class)
-public class SBXTest extends ParentCentricVariationTest {
-
-	/**
-	 * Tests if the grammar crossover operator is type-safe.
-	 */
-	@Test
-	public void testTypeSafety() {
-		TypeSafetyTest.testTypeSafety(new SBX(1.0, 20.0));
+public class SBXTest extends ParentCentricVariationTest<SBX> {
+	
+	@Override
+	public SBX createInstance() {
+		return new SBX(1.0, 20.0);
 	}
 
-	/**
-	 * Tests if the offspring form clusters distributed around each parent.
-	 */
 	@Test
 	@Retryable
-	public void testDistribution1() {
-		SBX sbx = new SBX(1.0, 20.0);
+	public void testDistribution() {
+		SBX sbx = createInstance();
 
 		Solution s1 = new Solution(2, 0);
-		s1.setVariable(0, new RealVariable(2.0, -10.0, 10.0));
-		s1.setVariable(1, new RealVariable(2.0, -10.0, 10.0));
+		s1.setVariable(0, new RealVariable(-10.0, 10.0).withValue(2.0));
+		s1.setVariable(1, new RealVariable(-10.0, 10.0).withValue(2.0));
 
 		Solution s2 = new Solution(2, 0);
-		s2.setVariable(0, new RealVariable(-2.0, -10.0, 10.0));
-		s2.setVariable(1, new RealVariable(-2.0, -10.0, 10.0));
+		s2.setVariable(0, new RealVariable(-10.0, 10.0).withValue(-2.0));
+		s2.setVariable(1, new RealVariable(-10.0, 10.0).withValue(-2.0));
 
 		Solution[] parents = new Solution[] { s1, s2 };
 
-		Solution[] offspring = new Solution[TestThresholds.SAMPLES];
+		Solution[] offspring = new Solution[TestEnvironment.SAMPLES];
 
-		for (int i = 0; i < TestThresholds.SAMPLES; i += 2) {
+		for (int i = 0; i < TestEnvironment.SAMPLES; i += 2) {
 			Solution[] children = sbx.evolve(parents);
 			offspring[i] = children[0];
 			offspring[i + 1] = children[1];
 		}
 
-		Solution[] centroids = new Solution[] { s1, s2, newSolution(2.0, -2.0),
-				newSolution(-2.0, 2.0) };
+		Solution[] centroids = new Solution[] { s1, s2, newSolution(2.0, -2.0), newSolution(-2.0, 2.0) };
 
-		check(centroids, offspring);
+		checkDistribution(centroids, offspring);
 	}
 	
-	/**
-	 * Similar to {@code testDistribution1}, except the parents are swapped.
-	 */
 	@Test
-	public void testDistribution2() {
-		SBX sbx = new SBX(1.0, 20.0);
+	@Retryable
+	public void testDistributionSwappedParents() {
+		SBX sbx = createInstance();
 
 		Solution s1 = new Solution(2, 0);
-		s1.setVariable(0, new RealVariable(-2.0, -10.0, 10.0));
-		s1.setVariable(1, new RealVariable(-2.0, -10.0, 10.0));
+		s1.setVariable(0, new RealVariable(-10.0, 10.0).withValue(-2.0));
+		s1.setVariable(1, new RealVariable(-10.0, 10.0).withValue(-2.0));
 
 		Solution s2 = new Solution(2, 0);
-		s2.setVariable(0, new RealVariable(2.0, -10.0, 10.0));
-		s2.setVariable(1, new RealVariable(2.0, -10.0, 10.0));
+		s2.setVariable(0, new RealVariable(-10.0, 10.0).withValue(2.0));
+		s2.setVariable(1, new RealVariable(-10.0, 10.0).withValue(2.0));
 
 		Solution[] parents = new Solution[] { s1, s2 };
 
-		Solution[] offspring = new Solution[TestThresholds.SAMPLES];
+		Solution[] offspring = new Solution[TestEnvironment.SAMPLES];
 
-		for (int i = 0; i < TestThresholds.SAMPLES; i += 2) {
+		for (int i = 0; i < TestEnvironment.SAMPLES; i += 2) {
 			Solution[] children = sbx.evolve(parents);
 			offspring[i] = children[0];
 			offspring[i + 1] = children[1];
 		}
 
-		Solution[] centroids = new Solution[] { s1, s2, newSolution(2.0, -2.0),
-				newSolution(-2.0, 2.0) };
+		Solution[] centroids = new Solution[] { s1, s2, newSolution(2.0, -2.0), newSolution(-2.0, 2.0) };
 
-		check(centroids, offspring);
+		checkDistribution(centroids, offspring);
 	}
-
-	/**
-	 * Tests if the parents remain unchanged during variation.
-	 */
+	
 	@Test
-	public void testParentImmutability() {
-		SBX sbx = new SBX(1.0, 20.0);
+	@Retryable
+	public void testDistributionSymmetric() {
+		SBX sbx = new SBX(1.0, 20.0, true, true);
 
-		Solution[] parents = new Solution[] { newSolution(0.0, 0.0),
-				newSolution(0.0, 1.0) };
+		Solution s1 = new Solution(2, 0);
+		s1.setVariable(0, new RealVariable(-10.0, 10.0).withValue(2.0));
+		s1.setVariable(1, new RealVariable(-10.0, 10.0).withValue(2.0));
 
-		ParentImmutabilityTest.test(parents, sbx);
+		Solution s2 = new Solution(2, 0);
+		s2.setVariable(0, new RealVariable(-10.0, 10.0).withValue(-2.0));
+		s2.setVariable(1, new RealVariable(-10.0, 10.0).withValue(-2.0));
+
+		Solution[] parents = new Solution[] { s1, s2 };
+
+		Solution[] offspring = new Solution[TestEnvironment.SAMPLES];
+
+		for (int i = 0; i < TestEnvironment.SAMPLES; i += 2) {
+			Solution[] children = sbx.evolve(parents);
+			offspring[i] = children[0];
+			offspring[i + 1] = children[1];
+		}
+
+		Solution[] centroids = new Solution[] { s1, s2, newSolution(2.0, -2.0), newSolution(-2.0, 2.0) };
+
+		checkDistribution(centroids, offspring);
 	}
 	
 	/**
-	 * Test to ensure the SBX operator works correctly if the PRNG draws a
-	 * value of 1.0.  The SBX code results in out-of-bounds values if this
-	 * happens and must be guarded against.
+	 * Test to ensure the SBX operator works correctly if the PRNG draws a value of 1.0.  The SBX code results in
+	 * out-of-bounds values if this happens and must be guarded against.
 	 */
 	@Test
-	public void testRNGError() {
+	public void testHandleOutOfBoundRNGValues() {
 		Random originalRandom = PRNG.getRandom();
 		
 		PRNG.setRandom(new Random() {
@@ -138,20 +140,19 @@ public class SBXTest extends ParentCentricVariationTest {
 			
 		});
 		
-		SBX sbx = new SBX(1.0, 20.0);
+		SBX sbx = createInstance();
 
 		Solution s1 = new Solution(2, 0);
-		s1.setVariable(0, new RealVariable(-2.0, -10.0, 10.0));
-		s1.setVariable(1, new RealVariable(-2.0, -10.0, 10.0));
+		s1.setVariable(0, new RealVariable(-10.0, 10.0).withValue(-2.0));
+		s1.setVariable(1, new RealVariable(-10.0, 10.0).withValue(-2.0));
 
 		Solution s2 = new Solution(2, 0);
-		s2.setVariable(0, new RealVariable(2.0, -10.0, 10.0));
-		s2.setVariable(1, new RealVariable(2.0, -10.0, 10.0));
+		s2.setVariable(0, new RealVariable(-10.0, 10.0).withValue(2.0));
+		s2.setVariable(1, new RealVariable(-10.0, 10.0).withValue(2.0));
 
 		Solution[] parents = new Solution[] { s1, s2 };
 
-		// if error, RealVariable#setValue will throw an
-		// IllegalArgumentException 
+		// if error, RealVariable#setValue will throw an IllegalArgumentException
 		sbx.evolve(parents);
 		
 		PRNG.setRandom(originalRandom);

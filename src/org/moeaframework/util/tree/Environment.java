@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -21,9 +21,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * The execution context, or environment, storing the named variables used by
- * a program.  Defined functions are first-class objects and also stored in the
- * environment.
+ * The execution context, or environment, storing the named variables used by a program.  Defined functions are
+ * first-class objects and also stored in the environment.
  */
 public class Environment {
 	
@@ -45,8 +44,7 @@ public class Environment {
 	}
 	
 	/**
-	 * Constructs a new environment enclosed within the specified enclosing
-	 * environment.
+	 * Constructs a new environment enclosed within the specified enclosing environment.
 	 * 
 	 * @param parent the enclosing environment
 	 */
@@ -54,19 +52,18 @@ public class Environment {
 		super();
 		this.parent = parent;
 		
-		memory = new HashMap<String, Object>();
+		memory = new HashMap<>();
 	}
 	
 	/**
-	 * Returns the content of the named variable stored in this environment or
-	 * its enclosing environment; or {@code null} if the variable has not yet
-	 * been defined.
+	 * Returns the content of the named variable stored in this environment or its enclosing environment; or
+	 * {@code null} if the variable has not yet been defined.
 	 * 
+	 * @param <T> the type of the variable
 	 * @param type the type of the variable
 	 * @param name the name of the variable
-	 * @return the content of the named variable stored in this environment or
-	 *         its enclosing environment; or {@code null} if the variable has
-	 *         not yet been defined
+	 * @return the content of the named variable stored in this environment or its enclosing environment; or
+	 *         {@code null} if the variable has not yet been defined
 	 */
 	public <T> T get(Class<T> type, String name) {
 		Object value = memory.get(name);

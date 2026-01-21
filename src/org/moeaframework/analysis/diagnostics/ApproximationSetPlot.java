@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,25 +17,13 @@
  */
 package org.moeaframework.analysis.diagnostics;
 
-import java.awt.BasicStroke;
 import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Paint;
-import java.util.List;
 
-import org.jfree.chart.ChartFactory;
-import org.jfree.chart.ChartPanel;
-import org.jfree.chart.JFreeChart;
-import org.jfree.chart.plot.DatasetRenderingOrder;
-import org.jfree.chart.plot.PlotOrientation;
-import org.jfree.chart.plot.XYPlot;
-import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
-import org.jfree.data.xy.XYSeries;
-import org.jfree.data.xy.XYSeriesCollection;
-import org.moeaframework.analysis.collector.Accumulator;
-import org.moeaframework.core.EpsilonBoxDominanceArchive;
-import org.moeaframework.core.NondominatedPopulation;
-import org.moeaframework.core.Solution;
+import org.moeaframework.analysis.plot.Style;
+import org.moeaframework.analysis.plot.XYPlotBuilder;
+import org.moeaframework.analysis.series.ResultSeries;
+import org.moeaframework.core.population.EpsilonBoxDominanceArchive;
+import org.moeaframework.core.population.NondominatedPopulation;
 import org.moeaframework.util.Localization;
 
 /**
@@ -48,8 +36,7 @@ public class ApproximationSetPlot extends ResultPlot {
 	/**
 	 * The localization instance for produce locale-specific strings.
 	 */
-	private static Localization localization = Localization.getLocalization(
-			ApproximationSetPlot.class);
+	private static final Localization LOCALIZATION = Localization.getLocalization(ApproximationSetPlot.class);
 	
 	/**
 	 * The &epsilon; value used when displaying the approximation set.
@@ -60,117 +47,47 @@ public class ApproximationSetPlot extends ResultPlot {
 	 * Constructs a new plot do display the Pareto approximation set.
 	 * 
 	 * @param frame the {@code DiagnosticTool} instance containing this plot
-	 * @param metric the metric to display
 	 */
-	public ApproximationSetPlot(DiagnosticTool frame, String metric) {
-		super(frame, metric);
+	public ApproximationSetPlot(DiagnosticTool frame) {
+		super(frame, "Approximation Set");
 		
 		setLayout(new BorderLayout());
 	}
 	
 	@Override
 	protected void update() {
-		XYSeriesCollection dataset = new XYSeriesCollection();
-		
-		for (ResultKey key : frame.getSelectedResults()) {
-			NondominatedPopulation population = new EpsilonBoxDominanceArchive(
-					EPSILON);
-			
-			for (Accumulator accumulator : controller.get(key)) {
-				if (!accumulator.keySet().contains(metric)) {
-					continue;
-				}
-				
-				List<?> list = (List<?>)accumulator.get(metric, 
-						accumulator.size(metric)-1);
-				
-				for (Object object : list) {
-					population.add((Solution)object);
-				}
-			}
-			
-			if (!population.isEmpty()) {
-				XYSeries series = new XYSeries(key, false, true);
-				
-				for (Solution solution : population) {
-					if (solution.getNumberOfObjectives() == 1) {
-						series.add(solution.getObjective(0), 
-								solution.getObjective(0));
-					} else if (solution.getNumberOfObjectives() > 1) {
-						series.add(solution.getObjective(0), 
-								solution.getObjective(1));
-					}
-				}
-				
-				dataset.addSeries(series);
-			}
-		}
-		
-		JFreeChart chart = ChartFactory.createScatterPlot(metric,
-				localization.getString("text.objective", 1),
-				localization.getString("text.objective", 2),
-				dataset,
-				PlotOrientation.VERTICAL,
-				true,
-				true,
-				false);
-		
-		XYPlot plot = chart.getXYPlot();
-		XYLineAndShapeRenderer renderer = new XYLineAndShapeRenderer(false, 
-				true);
-		
-		for (int i=0; i<dataset.getSeriesCount(); i++) {
-			Paint paint = frame.getPaintHelper().get(dataset.getSeriesKey(i));
+		XYPlotBuilder builder = new XYPlotBuilder();
+		builder.paintHelper(frame.getPaintHelper());
 
-			renderer.setSeriesStroke(i, new BasicStroke(3f, 1, 1));
-			renderer.setSeriesPaint(i, paint);
-			renderer.setSeriesFillPaint(i, paint);
-		}
-		
-		plot.setRenderer(renderer);
-		
-		//add overlay
-		if (controller.getShowLastTrace() &&
-				(controller.getLastAccumulator() != null) && 
-				controller.getLastAccumulator().keySet().contains(metric)) {
-			XYSeriesCollection dataset2 = new XYSeriesCollection();
-			NondominatedPopulation population = new EpsilonBoxDominanceArchive(
-					EPSILON);
+		// generate the plot data
+		for (ResultKey key : frame.getSelectedResults()) {
+			NondominatedPopulation population = new EpsilonBoxDominanceArchive(EPSILON);
 			
-			if (controller.getLastAccumulator().keySet().contains(metric)) {
-				List<?> list = (List<?>)controller.getLastAccumulator().get(
-						metric, controller.getLastAccumulator().size(metric)-1);
-				
-				for (Object object : list) {
-					population.add((Solution)object);
-				}
+			for (ResultSeries series : controller.get(key)) {
+				population.addAll(series.last().getPopulation());
 			}
 			
 			if (!population.isEmpty()) {
-				XYSeries series = new XYSeries(
-						localization.getString("text.last"),
-						false,
-						true);
-				
-				for (Solution solution : population) {
-					series.add(solution.getObjective(0), 
-							solution.getObjective(1));
-				}
-				
-				dataset2.addSeries(series);
+				builder.scatter(key.toString(), population);
 			}
-			
-			XYLineAndShapeRenderer renderer2 = new XYLineAndShapeRenderer(false,
-					true);
-			renderer2.setSeriesPaint(0, Color.BLACK);
-			
-			plot.setDataset(1, dataset2);
-			plot.setRenderer(1, renderer2);
-			plot.setDatasetRenderingOrder(DatasetRenderingOrder.FORWARD);
 		}
+		
+		// add last trace overlay
+		if (controller.showLastTrace().get() && (controller.getLastSeries() != null)) {
+			NondominatedPopulation population = new EpsilonBoxDominanceArchive(EPSILON);
+			population.addAll(controller.getLastSeries().last().getPopulation());
+			
+			if (!population.isEmpty()) {
+				builder.scatter(LOCALIZATION.getString("text.last"), population, Style.black());
+			}
+		}
+		
+		builder.title(metric);
+		builder.xLabel(LOCALIZATION.getString("text.objective", 1));
+		builder.yLabel(LOCALIZATION.getString("text.objective", 2));
 
 		removeAll();
-		add(new ChartPanel(chart), BorderLayout.CENTER);
+		add(builder.buildPanel(), BorderLayout.CENTER);
 		revalidate();
 		repaint();
 	}

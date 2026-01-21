@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,17 +17,27 @@
  */
 package org.moeaframework.core.spi;
 
-import org.junit.Assert;
+import org.apache.commons.lang3.StringUtils;
 import org.junit.Test;
-import org.moeaframework.core.NondominatedPopulation;
-import org.moeaframework.core.Problem;
-import org.moeaframework.problem.MockRealProblem;
+import org.moeaframework.Assert;
+import org.moeaframework.core.population.NondominatedPopulation;
+import org.moeaframework.mock.MockRealProblem;
+import org.moeaframework.problem.Problem;
 
 /**
- * Tests the {@link ProblemFactory} class.  Note that most of the
- * functionality is indirectly tested by other test functions.
+ * Note that most of the functionality is indirectly tested by other test functions.
  */
-public class ProblemFactoryTest {
+public class ProblemFactoryTest extends AbstractFactoryTest<ProblemProvider, ProblemFactory> {
+	
+	@Override
+	public Class<ProblemProvider> getProviderType() {
+		return ProblemProvider.class;
+	}
+	
+	@Override
+	public Class<ProblemFactory> getFactoryType() {
+		return ProblemFactory.class;
+	}
 	
 	@Test
 	public void testCustomProvider() {
@@ -53,26 +63,54 @@ public class ProblemFactoryTest {
 			
 		};
 		
-		ProblemFactory originalFactory = ProblemFactory.getInstance();
-		
 		ProblemFactory factory = new ProblemFactory();
 		factory.addProvider(provider);
-		ProblemFactory.setInstance(factory);
 		
 		Assert.assertNotNull(factory.getProblem("testProblem"));
 		Assert.assertNotNull(factory.getReferenceSet("testProblem"));
+	}
+	
+	@Test
+	public void testNoProvider() {
+		ProblemFactory factory = new ProblemFactory();
 		
-		try {
-			factory.getProblem("testProblemNonExistant");
+		Assert.assertThrows(ProviderNotFoundException.class, () -> factory.getProblem("testProblem"));
+		Assert.assertNull(factory.getReferenceSet("testProblem"));
+	}
+	
+	@Test
+	public void testRegisteredProblemProvider() {
+		RegisteredProblemProvider provider = new RegisteredProblemProvider();
+		provider.register("testProblem", MockRealProblem::new, null);
+		provider.registerDiagnosticToolProblem("testProblem");
+		
+		ProblemFactory factory = new ProblemFactory();
+		factory.addProvider(provider);
+		
+		Assert.assertNotNull(factory.getProblem("testProblem"));
+		Assert.assertNull(factory.getReferenceSet("testProblem"));
+		Assert.assertContains(factory.getAllRegisteredProblems(), "testProblem");
+		Assert.assertContains(factory.getAllDiagnosticToolProblems(), "testProblem");
+	}
+	
+	@Test
+	public void testDiagnosticToolProblems() {
+		for (String name : ProblemFactory.getInstance().getAllDiagnosticToolProblems()) {
+			System.out.println("Testing ProblemFactory on " + name);
 			
-			Assert.fail("failed to throw ProviderNotFoundException");
-		} catch (ProviderNotFoundException e) {
-			// ok
+			Problem problem = ProblemFactory.getInstance().getProblem(name);
+			Assert.assertNotNull(problem);
+			
+			NondominatedPopulation referenceSet = ProblemFactory.getInstance().getReferenceSet(name);
+			Assert.assertNotNull(referenceSet);
+			Assert.assertNotEmpty(referenceSet);
+
+			Assert.assertEquals(problem.getNumberOfObjectives(), referenceSet.get(0).getNumberOfObjectives());
+			
+			String swapCaseName = StringUtils.swapCase(name);
+			Assert.assertNotNull(ProblemFactory.getInstance().getProblem(swapCaseName));
+			Assert.assertNotNull(ProblemFactory.getInstance().getReferenceSet(swapCaseName));
 		}
-		
-		Assert.assertNull(factory.getReferenceSet("testProblemNonExistant"));
-		
-		ProblemFactory.setInstance(originalFactory);
 	}
 
 }

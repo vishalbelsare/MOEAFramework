@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,23 +17,27 @@
  */
 package org.moeaframework.algorithm;
 
-import java.io.NotSerializableException;
-import java.io.Serializable;
-import java.util.Arrays;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 
-import org.moeaframework.core.Algorithm;
-import org.moeaframework.core.Problem;
+import org.moeaframework.algorithm.extension.Extensions;
 import org.moeaframework.core.Solution;
+import org.moeaframework.core.Stateful;
+import org.moeaframework.problem.Problem;
+import org.moeaframework.util.validate.Validate;
 
 /**
- * Abstract class providing default implementations for several
- * {@link Algorithm} methods. All method extending this class must use the
- * {@link #evaluate} method to evaluate a solution. This is mandatory to ensure
- * the {@link #getNumberOfEvaluations()} method returns the correct result.
+ * Abstract class providing default implementations for several {@link Algorithm} methods.
  * <p>
- * Subclasses should avoid overriding the {@link #step()} method and instead
- * override the {@link #initialize()} and {@link #iterate()} methods
- * individually.
+ * When creating a new subclass, one should:
+ * <ol>
+ *   <li>Use the {@link #evaluate} or {@link #evaluateAll} methods provided by this class.  Do not call
+ *       {@link Problem#evaluate} directly as that will not count the number of function evaluations correctly.
+ *   <li>When possible, prefer evaluating all solutions at once by calling {@link #evaluateAll}.  Doing so allows
+ *       function evaluations to run in parallel when enabled.
+ *   <li>Implement the algorithm by overriding the {@link #initialize()} and {@link #iterate()} methods.
+ * </ol>
  */
 public abstract class AbstractAlgorithm implements Algorithm {
 
@@ -48,16 +52,19 @@ public abstract class AbstractAlgorithm implements Algorithm {
 	protected int numberOfEvaluations;
 
 	/**
-	 * {@code true} if the {@link #initialize()} method has been invoked;
-	 * {@code false} otherwise.
+	 * {@code true} if the {@link #initialize()} method has been invoked; {@code false} otherwise.
 	 */
 	protected boolean initialized;
 
 	/**
-	 * {@code true} if the {@link #terminate()} method has been invoked;
-	 * {@code false} otherwise.
+	 * {@code true} if the {@link #terminate()} method has been invoked; {@code false} otherwise.
 	 */
 	protected boolean terminated;
+	
+	/**
+	 * The extensions registered with this algorithm.
+	 */
+	private final Extensions extensions;
 
 	/**
 	 * Constructs an abstract algorithm for solving the specified problem.
@@ -66,31 +73,10 @@ public abstract class AbstractAlgorithm implements Algorithm {
 	 */
 	public AbstractAlgorithm(Problem problem) {
 		super();
+		
+		Validate.that("problem", problem).isNotNull();
 		this.problem = problem;
-	}
-
-	/**
-	 * Evaluates the specified solutions. This method calls
-	 * {@link #evaluate(Solution)} on each of the solutions. Subclasses should
-	 * prefer calling this method over {@code evaluate} whenever possible,
-	 * as this ensures the solutions can be evaluated in parallel.
-	 * 
-	 * @param solutions the solutions to evaluate
-	 */
-	public void evaluateAll(Iterable<Solution> solutions) {
-		for (Solution solution : solutions) {
-			evaluate(solution);
-		}
-	}
-	
-	/**
-	 * Evaluates the specified solutions.  This method is equivalent to
-	 * {@code evaluateAll(Arrays.asList(solutions))}.
-	 * 
-	 * @param solutions the solutions to evaluate
-	 */
-	public void evaluateAll(Solution[] solutions) {
-		evaluateAll(Arrays.asList(solutions));
+		this.extensions = new Extensions(this);
 	}
 
 	@Override
@@ -109,63 +95,52 @@ public abstract class AbstractAlgorithm implements Algorithm {
 		return problem;
 	}
 
-	/**
-	 * Performs any initialization that is required by this algorithm. This
-	 * method is called automatically by the first invocation of
-	 * {@link #step()}, but may also be called manually prior to any invocations
-	 * of {@code step}. Implementations should always invoke
-	 * {@code super.initialize()} to ensure the hierarchy is initialized
-	 * correctly.
-	 * 
-	 * @throws AlgorithmInitializationException if the algorithm has already
-	 *         been initialized
-	 */
-	protected void initialize() {
-		if (initialized) {
-			throw new AlgorithmInitializationException(this, 
-					"algorithm already initialized");
-		}
-
+	@Override
+	public void initialize() {
+		assertNotInitialized();
 		initialized = true;
+		extensions.onInitialize();
 	}
 
-	/**
-	 * Returns {@code true} if the {@link #initialize()} method has been
-	 * invoked; {@code false} otherwise.
-	 * 
-	 * @return {@code true} if the {@link #initialize()} method has been
-	 *         invoked; {@code false} otherwise
-	 */
+	@Override
 	public boolean isInitialized() {
 		return initialized;
 	}
+	
+	/**
+	 * Throws an exception if the algorithm is initialized.  Use this anywhere to check and fail if the algorithm is
+	 * already initialized.
+	 * 
+	 * @throws AlgorithmInitializationException if the algorithm is initialized
+	 */
+	public void assertNotInitialized() {
+		if (initialized) {
+			throw new AlgorithmInitializationException(this, "algorithm already initialized");
+		}
+	}
 
 	/**
-	 * This method first checks if the algorithm is initialized. If not, the
-	 * {@link #initialize()} method is invoked. If initialized, all calls to
-	 * {@code step} invoke {@link #iterate()}. Implementations should override
-	 * the {@code initialize} and {@code iterate} methods in preference to
-	 * modifying this method.
-	 * 
-	 * @throws AlgorithmTerminationException if the algorithm has already 
-	 *         terminated
+	 * {@inheritDoc}
+	 * <p>
+	 * Avoid overriding this method in subclasses.  Instead, prefer overriding {@link #initialize()} and
+	 * {@link #iterate()} with any algorithm-specific details.
 	 */
 	@Override
 	public void step() {
-		if (isTerminated()) {
-			throw new AlgorithmTerminationException(this, 
-					"algorithm already terminated");
-		} else if (!isInitialized()) {
+		terminated = false;
+		
+		if (!isInitialized()) {
 			initialize();
 		} else {
 			iterate();
 		}
+		
+		extensions.onStep();
 	}
 
 	/**
-	 * Performs one iteration of the algorithm. This method should be
-	 * overridden by implementations to perform each logical iteration of the
-	 * algorithm.
+	 * Performs one iteration of the algorithm.  This method should be overridden by implementations to perform each
+	 * logical iteration of the algorithm.
 	 */
 	protected abstract void iterate();
 
@@ -174,44 +149,42 @@ public abstract class AbstractAlgorithm implements Algorithm {
 		return terminated;
 	}
 
-	/**
-	 * Implementations should always invoke {@code super.terminate()} to ensure
-	 * the hierarchy is terminated correctly. This method is automatically
-	 * invoked during finalization, and need only be called directly if
-	 * non-Java resources are in use.
-	 * 
-	 * @throws AlgorithmTerminationException if the algorithm has already 
-	 *         terminated
-	 */
 	@Override
 	public void terminate() {
 		if (terminated) {
-			throw new AlgorithmTerminationException(this, 
-					"algorithm already terminated");
+			throw new AlgorithmTerminationException(this, "algorithm already terminated");
 		}
 
 		terminated = true;
+		extensions.onTerminate();
 	}
-
+	
 	@Override
-	protected void finalize() throws Throwable {
-		try {
-			if (!isTerminated()) {
-				terminate();
-			}
-		} finally {
-			super.finalize();
+	public Extensions getExtensions() {
+		return extensions;
+	}
+	
+	@Override
+	public void saveState(ObjectOutputStream stream) throws IOException {
+		if (!isInitialized()) {
+			throw new AlgorithmInitializationException(this, "algorithm not initialized");
 		}
+		
+		Stateful.writeTypeSafety(stream, this);
+		stream.writeInt(numberOfEvaluations);
+		
+		extensions.saveState(stream);
 	}
 
 	@Override
-	public Serializable getState() throws NotSerializableException {
-		throw new NotSerializableException(getClass().getName());
-	}
-
-	@Override
-	public void setState(Object state) throws NotSerializableException {
-		throw new NotSerializableException(getClass().getName());
+	public void loadState(ObjectInputStream stream) throws IOException, ClassNotFoundException {
+		assertNotInitialized();
+		initialized = true;
+		
+		Stateful.checkTypeSafety(stream, this);
+		numberOfEvaluations = stream.readInt();
+		
+		extensions.loadState(stream);
 	}
 
 }

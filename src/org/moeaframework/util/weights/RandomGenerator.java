@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -23,19 +23,17 @@ import java.util.List;
 import org.apache.commons.math3.stat.StatUtils;
 import org.apache.commons.math3.util.MathArrays;
 import org.moeaframework.core.PRNG;
+import org.moeaframework.util.validate.Validate;
 
 /**
- * Generates weights randomly.  This is the method proposed in [1] to replace
- * the normal boundary intersection method in the original MOEA/D.  If {@code N}
- * weights are requested, this method first generates {@code 50*N} random
- * weights.  From these weights, {@code N} are selected that are maximally
- * distant from all other weights.
+ * Generates weights randomly.  This is the method proposed in [1] to replace the normal boundary intersection
+ * method in the original MOEA/D.  If {@code N} weights are requested, this method first generates {@code 50*N}
+ * random weights.  From these weights, {@code N} are selected that are maximally distant from all other weights.
  * <p>
  * References:
  * <ol>
- * <li>Zhang, Q., et al.  "The Performance of a New Version of MOEA/D on
- *     CEC09 Unconstrained MOP Test Instances."  IEEE Congress on Evolutionary
- *     Computation, 2009.
+ *   <li>Zhang, Q., et al.  "The Performance of a New Version of MOEA/D on CEC09 Unconstrained MOP Test Instances."
+ *       IEEE Congress on Evolutionary Computation, 2009.
  * </ol>
  */
 public class RandomGenerator implements WeightGenerator {
@@ -51,8 +49,7 @@ public class RandomGenerator implements WeightGenerator {
 	private final int numberOfPoints;
 	
 	/**
-	 * Constructs a new weight generator that generates randomly-sampled
-	 * weights.
+	 * Constructs a new weight generator that generates randomly-sampled weights.
 	 * 
 	 * @param numberOfObjectives the number of objectives
 	 * @param numberOfPoints the number of weights to generate
@@ -61,6 +58,9 @@ public class RandomGenerator implements WeightGenerator {
 		super();
 		this.numberOfObjectives = numberOfObjectives;
 		this.numberOfPoints = numberOfPoints;
+		
+		Validate.that("numberOfObjectives", numberOfObjectives).isGreaterThanOrEqualTo(1);
+		Validate.that("numberOfPoints", numberOfPoints).isGreaterThanOrEqualTo(0);
 	}
 	
 	/**
@@ -69,7 +69,7 @@ public class RandomGenerator implements WeightGenerator {
 	 * @return the weights
 	 */
 	private List<double[]> initializeWeights2D() {
-		List<double[]> weights = new ArrayList<double[]>();
+		List<double[]> weights = new ArrayList<>();
 		
 		// add boundary weights
 		weights.add(new double[] { 0.0, 1.0 });
@@ -90,7 +90,7 @@ public class RandomGenerator implements WeightGenerator {
 	 */
 	private List<double[]> initializeWeightsND() {
 		int N = 50;
-		List<double[]> candidates = new ArrayList<double[]>(numberOfPoints * N);
+		List<double[]> candidates = new ArrayList<>(numberOfPoints * N);
 
 		// create random weights
 		for (int i = 0; i < numberOfPoints * N; i++) {
@@ -109,7 +109,7 @@ public class RandomGenerator implements WeightGenerator {
 			candidates.add(weight);
 		}
 		
-		List<double[]> weights = new ArrayList<double[]>(numberOfPoints * N);
+		List<double[]> weights = new ArrayList<>(numberOfPoints * N);
 
 		// add boundary weights (1,0,...,0), (0,1,...,0), ..., (0,...,0,1)
 		for (int i = 0; i < numberOfObjectives; i++) {
@@ -118,8 +118,7 @@ public class RandomGenerator implements WeightGenerator {
 			weights.add(weight);
 		}
 
-		// fill in remaining weights with the weight vector with the largest
-		// distance from the assigned weights
+		// fill in remaining weights with the weight vector with the largest distance from the assigned weights
 		while (weights.size() < numberOfPoints) {
 			double[] weight = null;
 			double distance = Double.NEGATIVE_INFINITY;
@@ -128,8 +127,7 @@ public class RandomGenerator implements WeightGenerator {
 				double d = Double.POSITIVE_INFINITY;
 
 				for (int j = 0; j < weights.size(); j++) {
-					d = Math.min(d, MathArrays.distance(candidates.get(i),
-							weights.get(j)));
+					d = Math.min(d, MathArrays.distance(candidates.get(i), weights.get(j)));
 				}
 
 				if (d > distance) {

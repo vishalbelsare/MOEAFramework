@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -19,43 +19,40 @@ package org.moeaframework.util.statistics;
 
 import java.util.List;
 
+import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.commons.math3.stat.inference.TestUtils;
 
 /**
- * The Two-Sample t test determines if the mean of two populations are
- * different. The independent flag in the constructor is used to choose between
- * the unpaired (independent) and paired (dependent) test.
- * <p>
+ * The Two-Sample t test determines if the mean of two populations are different.  The independent flag in the
+ * constructor is used to choose between the unpaired (independent) and paired (dependent) test.
  * <ul>
- * <li>Null Hypothesis: The two population means are equal.
- * <li>Alternative Hypothesis: The two population means are not equal.
+ *   <li>Null Hypothesis: The two population means are equal.
+ *   <li>Alternative Hypothesis: The two population means are not equal.
  * </ul>
  * <p>
  * Assumptions:
  * <ol>
- * <li>Samples are randomly selected from the corresponding population
- * <li>The distribution of the underlying populations is normal
+ *   <li>Samples are randomly selected from the corresponding population
+ *   <li>The distribution of the underlying populations is normal
  * </ol>
  * <p>
  * References:
  * <ol>
- * <li>Sheskin, D.J. "Handbook of Parametric and Nonparametric Statistical
- * Procedures, Third Edition." Chapman & Hall/CRC. 2004.
+ *   <li>Sheskin, D.J. "Handbook of Parametric and Nonparametric Statistical Procedures, Third Edition." Chapman &amp;
+ *       Hall/CRC. 2004.
  * </ol>
  */
 public class TwoSampleTTest extends IntervalRatioStatisticalTest {
 
 	/**
-	 * {@code true} if using the unpaired T test; {@code false} if using the
-	 * paired T test.
+	 * {@code true} if using the unpaired T test; {@code false} if using the paired T test.
 	 */
 	private final boolean independent;
 
 	/**
 	 * Constructs a two sample T test.
 	 * 
-	 * @param independent uses the unpaired T test if {@code true}; the paired T
-	 *        test if {@code false}
+	 * @param independent uses the unpaired T test if {@code true}; the paired T test if {@code false}
 	 */
 	public TwoSampleTTest(boolean independent) {
 		super(2);
@@ -73,6 +70,12 @@ public class TwoSampleTTest extends IntervalRatioStatisticalTest {
 	public void addAll(double[] values, int group) {
 		super.addAll(values, group);
 	}
+	
+	// make method public
+	@Override
+	public DescriptiveStatistics getStatistics(int group) {
+		return super.getStatistics(group);
+	}
 
 	/**
 	 * {@inheritDoc}
@@ -87,8 +90,7 @@ public class TwoSampleTTest extends IntervalRatioStatisticalTest {
 		if (independent) {
 			return TestUtils.tTest(categories.get(0), categories.get(1), alpha);
 		} else {
-			return TestUtils.pairedTTest(categories.get(0), categories.get(1),
-					alpha);
+			return TestUtils.pairedTTest(categories.get(0), categories.get(1), alpha);
 		}
 	}
 

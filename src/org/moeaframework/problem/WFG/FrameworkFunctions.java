@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -21,12 +21,10 @@ package org.moeaframework.problem.WFG;
  * 
  * Copyright 2005 The Walking Fish Group (WFG).
  *
- * This material is provided "as is", with no warranty expressed or implied.
- * Any use is at your own risk. Permission to use or copy this software for
- * any purpose is hereby granted without fee, provided this notice is
- * retained on all copies. Permission to modify the code and to distribute
- * modified code is granted, provided a notice that the code was modified is
- * included with the above copyright notice.
+ * This material is provided "as is", with no warranty expressed or implied.  Any use is at your own risk.  Permission
+ * to use or copy this software for any purpose is hereby granted without fee, provided this notice is retained on all
+ * copies.  Permission to modify the code and to distribute modified code is granted, provided a notice that the code
+ * was modified is included with the above copyright notice.
  *
  * http://www.wfg.csse.uwa.edu.au/
  */
@@ -37,19 +35,6 @@ class FrameworkFunctions {
 	 */
 	private FrameworkFunctions() {
 		super();
-	}
-
-	public static double[] normalize_z(double[] z, double[] z_max) {
-		double[] result = new double[z.length];
-
-		for (int i = 0; i < z.length; i++) {
-			assert (z[i] >= 0.0) && (z[i] <= z_max[i]);
-			assert z_max[i] > 0.0;
-
-			result[i] = z[i] / z_max[i];
-		}
-
-		return result;
 	}
 
 	public static double[] calculate_x(double[] t_p, int[] A) {
@@ -71,8 +56,7 @@ class FrameworkFunctions {
 		return result;
 	}
 
-	public static double[] calculate_f(double D, double[] x, double[] h,
-			double[] S) {
+	public static double[] calculate_f(double D, double[] x, double[] h, double[] S) {
 		assert D > 0.0;
 		assert Misc.vector_in_01(x);
 		assert Misc.vector_in_01(h);

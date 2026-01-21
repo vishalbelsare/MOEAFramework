@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -19,7 +19,7 @@ package org.moeaframework.problem.misc;
 
 import org.moeaframework.core.PRNG;
 import org.moeaframework.core.Solution;
-import org.moeaframework.core.variable.EncodingUtils;
+import org.moeaframework.core.variable.RealVariable;
 import org.moeaframework.problem.AbstractProblem;
 import org.moeaframework.problem.AnalyticalProblem;
 
@@ -34,13 +34,11 @@ import org.moeaframework.problem.AnalyticalProblem;
  * <p>
  * References:
  * <ol>
- *   <li>Fonseca C. M. and Fleming, P. J. (1995).  "Multiobjective Genetic
- *       Algorithms Made Easy: Selection, Sharing and Mating Restriction."
- *       Genetic Algorithms and Engineering Systems: Innovations and
- *       Applications, 12-14 Sept. 1995, pp. 45-52.
- *   <li>Van Veldhuizen, D. A. (1999).  "Multiobjective Evolutionary Algorithms: 
- *       Classifications, Analyses, and New Innovations."  Air Force Institute
- *       of Technology, Ph.D. Thesis, Appendix B.
+ *   <li>Fonseca C. M. and Fleming, P. J. (1995).  "Multiobjective Genetic Algorithms Made Easy: Selection, Sharing and
+ *       Mating Restriction."  Genetic Algorithms and Engineering Systems: Innovations and Applications, 12-14 Sept.
+ *       1995, pp. 45-52.
+ *   <li>Van Veldhuizen, D. A. (1999).  "Multiobjective Evolutionary Algorithms:  Classifications, Analyses, and New
+ *       Innovations."  Air Force Institute of Technology, Ph.D. Thesis, Appendix B.
  * </ol>
  */
 public class Fonseca2 extends AbstractProblem implements AnalyticalProblem {
@@ -53,8 +51,7 @@ public class Fonseca2 extends AbstractProblem implements AnalyticalProblem {
 	}
 
 	/**
-	 * Constructs the Fonseca (2) problem with the specified number of decision
-	 * variables.
+	 * Constructs the Fonseca (2) problem with the specified number of decision variables.
 	 * 
 	 * @param numberOfVariables the number of decision variables
 	 */
@@ -64,7 +61,7 @@ public class Fonseca2 extends AbstractProblem implements AnalyticalProblem {
 
 	@Override
 	public void evaluate(Solution solution) {
-		double[] x = EncodingUtils.getReal(solution);
+		double[] x = RealVariable.getReal(solution);
 		double f1 = 0.0;
 		double f2 = 0.0;
 		
@@ -76,8 +73,8 @@ public class Fonseca2 extends AbstractProblem implements AnalyticalProblem {
 		f1 = 1.0 - Math.exp(-f1);
 		f2 = 1.0 - Math.exp(-f2);
 		
-		solution.setObjective(0, f1);
-		solution.setObjective(1, f2);
+		solution.setObjectiveValue(0, f1);
+		solution.setObjectiveValue(1, f2);
 	}
 
 	@Override
@@ -85,7 +82,7 @@ public class Fonseca2 extends AbstractProblem implements AnalyticalProblem {
 		Solution solution = new Solution(numberOfVariables, 2);
 
 		for (int i=0; i<numberOfVariables; i++) {
-			solution.setVariable(i, EncodingUtils.newReal(-4.0, 4.0));
+			solution.setVariable(i, new RealVariable(-4.0, 4.0));
 		}
 
 		return solution;
@@ -94,11 +91,10 @@ public class Fonseca2 extends AbstractProblem implements AnalyticalProblem {
 	@Override
 	public Solution generate() {
 		Solution solution = newSolution();
-		double x = PRNG.nextDouble(-1.0 / Math.sqrt(numberOfVariables),
-				1.0 / Math.sqrt(numberOfVariables));
+		double x = PRNG.nextDouble(-1.0 / Math.sqrt(numberOfVariables), 1.0 / Math.sqrt(numberOfVariables));
 		
 		for (int i = 0; i < numberOfVariables; i++) {
-			EncodingUtils.setReal(solution.getVariable(i), x);
+			RealVariable.setReal(solution.getVariable(i), x);
 		}
 		
 		evaluate(solution);

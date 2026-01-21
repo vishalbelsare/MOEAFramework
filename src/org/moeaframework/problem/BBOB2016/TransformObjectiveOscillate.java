@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -19,11 +19,10 @@ package org.moeaframework.problem.BBOB2016;
 
 import org.moeaframework.core.Solution;
 
-/* 
- * The following source code is derived from the Coco Framework available at
- * <https://github.com/numbbo/coco> under the 3-clause BSD license. The
- * original code is copyright 2013 by the NumBBO/CoCO team.  See the AUTHORS
- * file located in the Coco Framework repository for more details.
+/*
+ * The following source code is derived from the Coco Framework available at <https://github.com/numbbo/coco> under the
+ * 3-clause BSD license.  The original code is copyright 2013 by the NumBBO/CoCO team.  See the AUTHORS file located in
+ * the Coco Framework repository for more details.
  */
 
 /**
@@ -50,7 +49,7 @@ public class TransformObjectiveOscillate extends BBOBTransformation {
 		function.evaluate(solution);
 		
 		for (int i = 0; i < numberOfObjectives; i++) {
-			double y = solution.getObjective(i);
+			double y = solution.getObjectiveValue(i);
 			
 			if (y != 0.0) {
 				double tmp = Math.log(Math.abs(y)) / ALPHA;
@@ -64,7 +63,7 @@ public class TransformObjectiveOscillate extends BBOBTransformation {
 				}
 			}
 			
-			solution.setObjective(i, y);
+			solution.setObjectiveValue(i, y);
 		}
 	}
 

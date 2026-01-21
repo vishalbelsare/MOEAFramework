@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -18,25 +18,21 @@
 package org.moeaframework.core.fitness;
 
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.moeaframework.TestUtils;
-import org.moeaframework.analysis.sensitivity.ProblemStub;
-import org.moeaframework.core.Settings;
+import org.moeaframework.Assert;
+import org.moeaframework.TestEnvironment;
 import org.moeaframework.core.Solution;
+import org.moeaframework.mock.MockProblem;
+import org.moeaframework.mock.MockSolution;
 
-/**
- * Tests the {@link AdditiveEpsilonIndicatorFitnessEvaluator} class.
- */
 public class AdditiveEpsilonIndicatorFitnessEvaluatorTest {
 	
 	private AdditiveEpsilonIndicatorFitnessEvaluator fitness;
 	
 	@Before
 	public void setUp() {
-		fitness = new AdditiveEpsilonIndicatorFitnessEvaluator(
-				new ProblemStub(3));
+		fitness = new AdditiveEpsilonIndicatorFitnessEvaluator(new MockProblem(3));
 	}
 	
 	@After
@@ -46,29 +42,26 @@ public class AdditiveEpsilonIndicatorFitnessEvaluatorTest {
 
 	@Test
 	public void testEqual() {
-		Solution solution1 = TestUtils.newSolution(0.0, 0.5, 1.0);
-		Solution solution2 = TestUtils.newSolution(0.0, 0.5, 1.0);
+		Solution solution1 = MockSolution.of().withObjectives(0.0, 0.5, 1.0);
+		Solution solution2 = MockSolution.of().withObjectives(0.0, 0.5, 1.0);
 		
-		Assert.assertEquals(0.0, fitness.calculateIndicator(solution1, 
-				solution2), Settings.EPS);
+		Assert.assertEquals(0.0, fitness.calculateIndicator(solution1, solution2), TestEnvironment.HIGH_PRECISION);
 	}
 	
 	@Test
 	public void testBetter() {
-		Solution solution1 = TestUtils.newSolution(0.0, 0.5, 1.0);
-		Solution solution2 = TestUtils.newSolution(0.0, 0.75, 1.0);
+		Solution solution1 = MockSolution.of().withObjectives(0.0, 0.5, 1.0);
+		Solution solution2 = MockSolution.of().withObjectives(0.0, 0.75, 1.0);
 		
-		Assert.assertEquals(0.0, fitness.calculateIndicator(solution1, 
-				solution2), Settings.EPS);
+		Assert.assertEquals(0.0, fitness.calculateIndicator(solution1, solution2), TestEnvironment.HIGH_PRECISION);
 	}
 	
 	@Test
 	public void testWorse() {
-		Solution solution1 = TestUtils.newSolution(0.5, 0.75, 0.75);
-		Solution solution2 = TestUtils.newSolution(0.0, 0.5, 1.0);
+		Solution solution1 = MockSolution.of().withObjectives(0.5, 0.75, 0.75);
+		Solution solution2 = MockSolution.of().withObjectives(0.0, 0.5, 1.0);
 		
-		Assert.assertEquals(0.5, fitness.calculateIndicator(solution1, 
-				solution2), Settings.EPS);
+		Assert.assertEquals(0.5, fitness.calculateIndicator(solution1, solution2), TestEnvironment.HIGH_PRECISION);
 	}
 	
 }

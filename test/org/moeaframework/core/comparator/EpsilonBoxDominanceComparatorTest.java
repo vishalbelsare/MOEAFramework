@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -18,52 +18,31 @@
 package org.moeaframework.core.comparator;
 
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.moeaframework.Assert;
 import org.moeaframework.core.Solution;
+import org.moeaframework.mock.MockSolution;
 
-/**
- * Tests the {@link EpsilonBoxDominanceComparator} class.
- */
 public class EpsilonBoxDominanceComparatorTest {
 
-	/**
-	 * The &epsilon;-box dominance comparator used for testing.
-	 */
 	private EpsilonBoxDominanceComparator comparator;
 
-	/**
-	 * Setup the comparator for use by all test methods.
-	 */
 	@Before
 	public void setUp() {
 		comparator = new EpsilonBoxDominanceComparator(0.5);
 	}
 
-	/**
-	 * Removes references to shared objects so they can be garbage collected.
-	 */
 	@After
 	public void tearDown() {
 		comparator = null;
 	}
 
-	/**
-	 * Tests if the comparator correctly detects dominance.
-	 */
 	@Test
 	public void testDominance() {
-		Solution solution1 = new Solution(0, 2, 1);
-		Solution solution2 = new Solution(0, 2, 1);
-		Solution solution3 = new Solution(0, 2, 1);
-
-		solution1.setObjectives(new double[] { 0.0, 0.0 });
-		solution1.setConstraint(0, 1.0);
-		solution2.setObjectives(new double[] { 1.0, 1.0 });
-		solution2.setConstraint(0, 0.0);
-		solution3.setObjectives(new double[] { 1.0, 0.0 });
-		solution3.setConstraint(0, 0.0);
+		Solution solution1 = MockSolution.of().withObjectives(0.0, 0.0).withConstraints(1.0);
+		Solution solution2 = MockSolution.of().withObjectives(1.0, 1.0).withConstraints(0.0);
+		Solution solution3 = MockSolution.of().withObjectives(1.0, 0.0).withConstraints(0.0);
 
 		Assert.assertTrue(comparator.compare(solution1, solution2) > 0);
 		Assert.assertFalse(comparator.isSameBox());
@@ -79,18 +58,10 @@ public class EpsilonBoxDominanceComparatorTest {
 		Assert.assertFalse(comparator.isSameBox());
 	}
 
-	/**
-	 * Tests if the comparator correctly detects non-dominance.
-	 */
 	@Test
 	public void testNondominance() {
-		Solution solution1 = new Solution(0, 2, 1);
-		Solution solution2 = new Solution(0, 2, 1);
-
-		solution1.setObjectives(new double[] { 0.75, 0.25 });
-		solution1.setConstraint(0, 1.0);
-		solution2.setObjectives(new double[] { 0.25, 0.75 });
-		solution2.setConstraint(0, 1.0);
+		Solution solution1 = MockSolution.of().withObjectives(0.75, 0.25).withConstraints(1.0);
+		Solution solution2 = MockSolution.of().withObjectives(0.25, 0.75).withConstraints(1.0);
 
 		Assert.assertTrue(comparator.compare(solution1, solution2) == 0);
 		Assert.assertFalse(comparator.isSameBox());

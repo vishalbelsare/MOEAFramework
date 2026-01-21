@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,111 +17,133 @@
  */
 package org.moeaframework.core;
 
+import java.io.File;
 import java.io.IOException;
 
-import org.junit.Assert;
 import org.junit.Test;
-import org.moeaframework.core.NondominatedPopulation.DuplicateMode;
+import org.moeaframework.Assert;
+import org.moeaframework.TempFiles;
+import org.moeaframework.core.population.NondominatedPopulation;
+import org.moeaframework.core.population.NondominatedPopulation.DuplicateMode;
 
 /**
- * Tests the {@link Settings} class.  These tests ensure that valid settings
- * are provided, and that there should be no errors when accessing these
- * settings.
+ * These tests ensure that valid default settings are provided and there are no errors parsing settings.
  */
 public class SettingsTest {
 
 	@Test
+	public void testVersion() {
+		Assert.assertNotNull(Settings.getVersion());
+	}
+	
+	@Test
+	public void testPython() {
+		Assert.assertNotNull(Settings.getPythonCommand());
+	}
+	
+	@Test
+	public void testVerbose() {
+		Assert.assertFalse(Settings.isVerbose());
+	}
+	
+	@Test
 	public void testContinuityCorrection() {
-		Settings.isContinuityCorrection();
+		Assert.assertFalse(Settings.isContinuityCorrection());
+	}
+	
+	@Test
+	public void testProtectedFunctions() {
+		Assert.assertTrue(Settings.isProtectedFunctions());
 	}
 
 	@Test
 	public void testHypervolumeDelta() {
-		Assert.assertTrue(Settings.getHypervolumeDelta() >= 0.0);
+		Assert.assertGreaterThanOrEqual(Settings.getHypervolumeDelta(), 0.0);
 	}
 
 	@Test
 	public void testHypervolume() {
-		Settings.getHypervolume();
+		Assert.assertNull(Settings.getHypervolume());
 	}
 
 	@Test
 	public void testHypervolumeEnabled() {
-		Settings.isHypervolumeEnabled();
-	}
-
-	@Test
-	public void testPISAAlgorithms() {
-		Assert.assertTrue(Settings.getPISAAlgorithms().length >= 0);
-	}
-
-	@Test
-	public void testPISAPollRate() {
-		Assert.assertTrue(Settings.getPISAPollRate() >= 0);
-	}
-
-	@Test
-	public void testPISACommand() {
-		for (String algorithm : Settings.getPISAAlgorithms()) {
-			Assert.assertNotNull(Settings.getPISACommand(algorithm));
-		}
-	}		
-
-	@Test
-	public void testPISAConfiguration() {
-		for (String algorithm : Settings.getPISAAlgorithms()) {
-			Assert.assertNotNull(Settings.getPISAConfiguration(algorithm));
-		}
-	}
-	
-	@Test
-	public void testPISAParameters() {
-		for (String algorithm : Settings.getPISAAlgorithms()) {
-			for (String parameter : Settings.getPISAParameters(algorithm)) {
-				Assert.assertNotNull(Settings.getPISAParameterDefaultValue(
-						algorithm, parameter));
-			}
-		}
-	}
-	
-	@Test
-	public void testDiagnosticToolAlgorithms() {
-		Assert.assertNotNull(Settings.getDiagnosticToolAlgorithms());
-	}
-	
-	@Test
-	public void testDiagnosticToolProblems() {
-		Assert.assertNotNull(Settings.getDiagnosticToolProblems());
-	}
-	
-	@Test
-	public void testParseCommand() throws IOException {
-		String command = "java -jar \"C:\\Program Files\\Test\\test.jar\" \"\"\"";
-		String[] expected = new String[] { "java", "-jar", 
-				"C:\\Program Files\\Test\\test.jar", "\"" };
-		String[] actual = Settings.parseCommand(command);
-		
-		Assert.assertArrayEquals(expected, actual);
+		Assert.assertTrue(Settings.isHypervolumeEnabled());
 	}
 	
 	@Test
 	public void testDuplicateMode() {
-		Assert.assertEquals(DuplicateMode.NO_DUPLICATE_OBJECTIVES,
-				Settings.getDuplicateMode());
+		Assert.assertEquals(DuplicateMode.NO_DUPLICATE_OBJECTIVES, Settings.getDuplicateMode());
 	}
 	
 	@Test
 	public void testDuplicateModeCaseSensitivity() {
-		Settings.PROPERTIES.setString(Settings.KEY_DUPLICATE_MODE,
-				DuplicateMode.ALLOW_DUPLICATES.name().toLowerCase());
+		try (PropertyScope scope = Settings.createScope()
+				.with(Settings.KEY_DUPLICATE_MODE, DuplicateMode.ALLOW_DUPLICATES.name().toLowerCase())) {
+			Assert.assertEquals(DuplicateMode.ALLOW_DUPLICATES, Settings.getDuplicateMode());
+			Assert.assertEquals(DuplicateMode.ALLOW_DUPLICATES, new NondominatedPopulation().getDuplicateMode());
+		}
+	}
+	
+	@Test
+	public void testCreateKey() {
+		Assert.assertEquals("", Settings.createKey(""));
 		
-		Assert.assertEquals(DuplicateMode.ALLOW_DUPLICATES,
-				Settings.getDuplicateMode());
+		Assert.assertEquals("foo", Settings.createKey("foo"));
+		Assert.assertEquals("foo", Settings.createKey("foo."));
 		
-		Assert.assertEquals(DuplicateMode.ALLOW_DUPLICATES,
-				new NondominatedPopulation().duplicateMode);
+		Assert.assertEquals("foo.bar", Settings.createKey("foo", "bar"));
+		Assert.assertEquals("foo.bar", Settings.createKey("foo.", "bar"));
 		
-		Settings.PROPERTIES.remove(Settings.KEY_DUPLICATE_MODE);
+		Assert.assertEquals("foo.bar.1.2", Settings.createKey("foo", "bar", "1", "2"));
+		Assert.assertEquals("foo.bar.1.2", Settings.createKey("foo.", "bar", "1", "2"));
+	}
+	
+	@Test
+	public void testReloadClearsProperties() {
+		Assert.assertFalse(Settings.PROPERTIES.contains("foo"));
+		
+		Settings.PROPERTIES.setString("foo", "bar");
+		Assert.assertTrue(Settings.PROPERTIES.contains("foo"));
+		Settings.reload();
+		
+		Assert.assertFalse(Settings.PROPERTIES.contains("foo"));
+	}
+	
+	@Test
+	public void testSystemProperty() {
+		Assert.assertFalse(Settings.PROPERTIES.contains("org.moeaframework.test.test_property"));
+		
+		System.setProperty("org.moeaframework.test.test_property", "foo");
+		Settings.reload();
+		
+		Assert.assertTrue(Settings.PROPERTIES.contains("org.moeaframework.test.test_property"));
+	}
+	
+	@Test
+	public void testPropertiesFile() throws IOException {
+		Assert.assertFalse(Settings.PROPERTIES.contains("org.moeaframework.test.test_property_in_file"));
+		
+		File file = TempFiles.createFile().withContent("org.moeaframework.test.test_property_in_file=foo");
+		System.setProperty(Settings.KEY_CONFIGURATION_FILE, file.getAbsolutePath());
+		Settings.reload();
+		
+		Assert.assertTrue(Settings.PROPERTIES.contains("org.moeaframework.test.test_property_in_file"));
+	}
+	
+	@Test
+	public void testScope() {
+		Assert.assertFalse(Settings.PROPERTIES.contains("foo"));
+		
+		try (PropertyScope scope = Settings.createScope().with("foo", "bar")) {
+			Assert.assertTrue(Settings.PROPERTIES.contains("foo"));
+			
+			Settings.PROPERTIES.setInt("number", 5);
+			Assert.assertEquals(5, Settings.PROPERTIES.getInt("number"));
+		}
+		
+		Assert.assertFalse(Settings.PROPERTIES.contains("foo"));
+		Assert.assertFalse(Settings.PROPERTIES.contains("number"));
 	}
 
 }

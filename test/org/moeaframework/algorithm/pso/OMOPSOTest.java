@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,53 +17,66 @@
  */
 package org.moeaframework.algorithm.pso;
 
-import java.io.IOException;
-
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.moeaframework.Retryable;
+import org.moeaframework.Assert;
 import org.moeaframework.CIRunner;
-import org.moeaframework.algorithm.AlgorithmTest;
+import org.moeaframework.Retryable;
+import org.moeaframework.TestEnvironment;
+import org.moeaframework.algorithm.JMetalAlgorithmTest;
+import org.moeaframework.core.TypedProperties;
+import org.moeaframework.mock.MockRealProblem;
+import org.moeaframework.problem.Problem;
 
-/**
- * Tests the {@link OMOPSO} class.
- */
 @RunWith(CIRunner.class)
 @Retryable
-public class OMOPSOTest extends AlgorithmTest {
+public class OMOPSOTest extends JMetalAlgorithmTest {
 	
-	@BeforeClass
-	public static void setUp() {
-		OMOPSO.TESTING_MODE = true;
-	}
-	
-	@AfterClass
-	public static void tearDown() {
-		OMOPSO.TESTING_MODE = false;
+	public OMOPSOTest() {
+		super("OMOPSO");
 	}
 	
 	@Test
-	public void testDTLZ1() throws IOException {
-		test("DTLZ1_2", "OMOPSO", "OMOPSO-JMetal");
+	public void testMaxIterations() {
+		Problem problem = new MockRealProblem(2);
+		
+		OMOPSO algorithm = new OMOPSO(problem);
+		Assert.assertEquals(-1, algorithm.getMaxIterations());
+		
+		algorithm.run(10000);
+		Assert.assertEquals(100, algorithm.getMaxIterations());
 	}
 	
 	@Test
-	@Ignore("need to investigate - differences showing up after upgrading to JMetal 5.9")
-	public void testDTLZ2() throws IOException {
-		test("DTLZ2_2", "OMOPSO", "OMOPSO-JMetal");
-	}
-	
-	@Test
-	public void testDTLZ7() throws IOException {
-		test("DTLZ7_2", "OMOPSO", "OMOPSO-JMetal");
-	}
-	
-	@Test
-	public void testUF1() throws IOException {
-		test("UF1", "OMOPSO", "OMOPSO-JMetal");
+	public void testConfiguration() {
+		Problem problem = new MockRealProblem(2);
+		
+		OMOPSO algorithm = new OMOPSO(problem);
+		
+		Assert.assertArrayEquals(algorithm.getArchive().getComparator().getEpsilons().toArray(),
+				algorithm.getConfiguration().getDoubleArray("epsilon"),
+				TestEnvironment.HIGH_PRECISION);
+		
+		algorithm.applyConfiguration(TypedProperties.of("epsilon", 0.1));
+		Assert.assertArrayEquals(new double[] { 0.1 },
+				algorithm.getArchive().getComparator().getEpsilons().toArray(),
+				TestEnvironment.HIGH_PRECISION);
+		
+		Assert.assertArrayEquals(new double[] { 0.1 },
+				algorithm.getConfiguration().getDoubleArray("epsilon"),
+				TestEnvironment.HIGH_PRECISION);
+
+		algorithm.applyConfiguration(TypedProperties.of("epsilon", 0.1, 0.2));
+		Assert.assertArrayEquals(new double[] { 0.1, 0.2 },
+				algorithm.getArchive().getComparator().getEpsilons().toArray(),
+				TestEnvironment.HIGH_PRECISION);
+		
+		Assert.assertArrayEquals(new double[] { 0.1, 0.2 },
+				algorithm.getConfiguration().getDoubleArray("epsilon"),
+				TestEnvironment.HIGH_PRECISION);
+		
+		algorithm.applyConfiguration(TypedProperties.of("maxIterations", 20));
+		Assert.assertEquals(20, algorithm.getMaxIterations());
 	}
 
 }

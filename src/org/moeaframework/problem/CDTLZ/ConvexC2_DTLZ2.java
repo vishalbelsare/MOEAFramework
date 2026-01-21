@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -18,6 +18,7 @@
 package org.moeaframework.problem.CDTLZ;
 
 import org.moeaframework.core.Solution;
+import org.moeaframework.core.constraint.GreaterThanOrEqual;
 import org.moeaframework.core.variable.RealVariable;
 
 /**
@@ -26,8 +27,7 @@ import org.moeaframework.core.variable.RealVariable;
 public class ConvexC2_DTLZ2 extends ConvexDTLZ2 {
 
 	/**
-	 * Constructs a convex C2-DTLZ2 test problem with the specified number of
-	 * variables and objectives.
+	 * Constructs a convex C2-DTLZ2 test problem with the specified number of variables and objectives.
 	 * 
 	 * @param numberOfVariables the number of variables for this problem
 	 * @param numberOfObjectives the number of objectives for this problem
@@ -37,9 +37,8 @@ public class ConvexC2_DTLZ2 extends ConvexDTLZ2 {
 	}
 
 	/**
-	 * Constructs a convex C2-DTLZ2 test problem with the specified number of
-	 * objectives.  This is equivalent to calling
-	 * {@code new DTLZ2(numberOfObjectives+9, numberOfObjectives)}.
+	 * Constructs a convex C2-DTLZ2 test problem with the specified number of objectives.  This is equivalent to
+	 * calling {@code new DTLZ2(numberOfObjectives+9, numberOfObjectives)}.
 	 * 
 	 * @param numberOfObjectives the number of objectives for this problem
 	 */
@@ -54,12 +53,13 @@ public class ConvexC2_DTLZ2 extends ConvexDTLZ2 {
 	
 	@Override
 	public Solution newSolution() {
-		Solution solution = new Solution(numberOfVariables, numberOfObjectives,
-				1);
+		Solution solution = new Solution(numberOfVariables, numberOfObjectives, 1);
 
 		for (int i = 0; i < numberOfVariables; i++) {
 			solution.setVariable(i, new RealVariable(0.0, 1.0));
 		}
+		
+		solution.setConstraint(0, GreaterThanOrEqual.to(0.0));
 
 		return solution;
 	}
@@ -72,18 +72,17 @@ public class ConvexC2_DTLZ2 extends ConvexDTLZ2 {
 		double c = 0.0;
 		
 		for (int i = 0; i < numberOfObjectives; i++) {
-			lambda += solution.getObjective(i);
+			lambda += solution.getObjectiveValue(i);
 		}
 		
 		lambda /= numberOfObjectives;
 		
 		for (int i = 0; i < numberOfObjectives; i++) {
-			c += Math.pow(solution.getObjective(i) - lambda, 2.0);
+			c += Math.pow(solution.getObjectiveValue(i) - lambda, 2.0);
 		}
 		
 		c -= Math.pow(getR(), 2.0);
-		
-		solution.setConstraint(0, c >= 0 ? 0.0 : c);
+		solution.setConstraintValue(0, c);
 	}
 	
 	private double getR() {

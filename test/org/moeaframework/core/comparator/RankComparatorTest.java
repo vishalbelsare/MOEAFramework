@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,74 +17,51 @@
  */
 package org.moeaframework.core.comparator;
 
-import static org.moeaframework.core.FastNondominatedSorting.RANK_ATTRIBUTE;
-
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.moeaframework.Assert;
 import org.moeaframework.core.Solution;
+import org.moeaframework.core.attribute.Rank;
 
-/**
- * Tests the {@link RankComparator} class.
- */
 public class RankComparatorTest {
 
-	/**
-	 * The rank comparator used for testing.
-	 */
 	private RankComparator comparator;
 
-	/**
-	 * Setup the comparator for use by all test methods.
-	 */
 	@Before
 	public void setUp() {
 		comparator = new RankComparator();
 	}
 
-	/**
-	 * Removes references to shared objects so they can be garbage collected.
-	 */
 	@After
 	public void tearDown() {
 		comparator = null;
 	}
 
-	/**
-	 * Tests if the comparator correctly detects dominance.
-	 */
 	@Test
 	public void testDominance() {
 		Solution solution1 = new Solution(0, 0);
 		Solution solution2 = new Solution(0, 0);
 
-		solution1.setAttribute(RANK_ATTRIBUTE, 0);
-		solution2.setAttribute(RANK_ATTRIBUTE, 1);
+		Rank.setAttribute(solution1, 0);
+		Rank.setAttribute(solution2, 1);
 
 		Assert.assertTrue(comparator.compare(solution1, solution2) < 0);
 		Assert.assertTrue(comparator.compare(solution2, solution1) > 0);
 	}
 
-	/**
-	 * Tests if the comparator correctly detects non-dominance.
-	 */
 	@Test
 	public void testNondominance() {
 		Solution solution1 = new Solution(0, 0);
 		Solution solution2 = new Solution(0, 0);
 
-		solution1.setAttribute(RANK_ATTRIBUTE, 1);
-		solution2.setAttribute(RANK_ATTRIBUTE, 1);
+		Rank.setAttribute(solution1, 1);
+		Rank.setAttribute(solution2, 1);
 
 		Assert.assertTrue(comparator.compare(solution1, solution2) == 0);
 		Assert.assertTrue(comparator.compare(solution2, solution1) == 0);
 	}
 
-	/**
-	 * Tests if an exception is thrown when comparing solutions missing the rank
-	 * attribute.
-	 */
 	@Test(expected = NullPointerException.class)
 	public void testMissingCrowdingAttribute() {
 		Solution solution1 = new Solution(0, 0);

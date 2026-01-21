@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,13 +17,15 @@
  */
 package org.moeaframework.core.termination;
 
-import org.moeaframework.core.Algorithm;
-import org.moeaframework.core.TerminationCondition;
+import java.util.Iterator;
+
+import org.moeaframework.algorithm.Algorithm;
+import org.moeaframework.util.Iterators;
 
 /**
  * Terminates a run when one or more termination conditions are satisfied.
  */
-public class CompoundTerminationCondition implements TerminationCondition {
+public class CompoundTerminationCondition implements TerminationCondition, Iterable<TerminationCondition> {
 	
 	/**
 	 * The termination conditions.
@@ -31,8 +33,7 @@ public class CompoundTerminationCondition implements TerminationCondition {
 	private final TerminationCondition[] conditions;
 	
 	/**
-	 * Constructs a new termination condition based on at least one individual
-	 * termination condition being satsified.
+	 * Constructs a new termination condition based on at least one individual termination condition being satisfied.
 	 * 
 	 * @param conditions the termination conditions
 	 */
@@ -54,13 +55,32 @@ public class CompoundTerminationCondition implements TerminationCondition {
 		
 		for (TerminationCondition condition : conditions) {
 			if (condition.shouldTerminate(algorithm)) {
-				// do not break here in case an implementation needs to be
-				// executed every step
+				// do not break here in case an implementation needs to be executed every step
 				shouldTerminate = true;
 			}
 		}
 		
 		return shouldTerminate;
+	}
+	
+	@Override
+	public double getPercentComplete(Algorithm algorithm) {
+		double overallPercentComplete = 0.0;
+		
+		for (TerminationCondition condition : conditions) {
+			double percentComplete = condition.getPercentComplete(algorithm);
+			
+			if (!Double.isNaN(percentComplete)) {
+				overallPercentComplete = Math.max(percentComplete, overallPercentComplete);
+			}
+		}
+		
+		return overallPercentComplete;
+	}
+
+	@Override
+	public Iterator<TerminationCondition> iterator() {
+		return Iterators.of(conditions);
 	}
 
 }

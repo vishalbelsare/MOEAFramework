@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -17,29 +17,21 @@
  */
 package org.moeaframework.util.statistics;
 
-import org.junit.Assert;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.moeaframework.core.Settings;
+import org.moeaframework.Assert;
+import org.moeaframework.TestEnvironment;
 
-/**
- * Tests the {@link OrdinalStatisticalTest} class.
- */
 public class OrdinalStatisticalTestTest {
 
-	/**
-	 * The shared ordinal statistical test.
-	 */
 	private OrdinalStatisticalTest test = null;
 
-	/**
-	 * Constructs the shared ordinal statistical test.
-	 */
 	@Before
 	public void setUp() {
 		test = new OrdinalStatisticalTest(2) {
 
+			@Override
 			public boolean test(double alpha) {
 				throw new UnsupportedOperationException();
 			}
@@ -47,18 +39,11 @@ public class OrdinalStatisticalTestTest {
 		};
 	}
 
-	/**
-	 * Removes references to shared objects so they can be garbage collected.
-	 */
 	@After
 	public void tearDown() {
 		test = null;
 	}
 
-	/**
-	 * Tests if the {@link OrdinalStatisticalTest#update} procedure correctly
-	 * ranks observations.
-	 */
 	@Test
 	public void testUpdate() {
 		test.add(2.0, 0);
@@ -81,37 +66,36 @@ public class OrdinalStatisticalTestTest {
 		checkRank(3.0, 6);
 		checkRank(4.0, 7);
 	}
+	
+	@Test
+	public void testStatistics() {
+		test.add(2.0, 0);
+		test.add(-1.0, 1);
+		test.add(-2.0, 1);
+		test.add(3.0, 0);
+		test.add(5.0, 1);
+		test.add(-1.0, 0);
+		test.add(-3.0, 0);
+		
+		Assert.assertEquals(4, test.getStatistics(0).getN());
+		Assert.assertEquals(3, test.getStatistics(1).getN());
+	}
 
-	/**
-	 * Asserts that any observations in the shared test with the specified value
-	 * also have the specified rank.
-	 * 
-	 * @param value the value of the observation
-	 * @param rank the asserted rank of the observation
-	 */
 	public void checkRank(double value, double rank) {
 		for (RankedObservation observation : test.data) {
 			if (observation.getValue() == value) {
-				Assert.assertEquals(rank, observation.getRank(), Settings.EPS);
+				Assert.assertEquals(rank, observation.getRank(), TestEnvironment.HIGH_PRECISION);
 			}
 		}
 	}
 
-	/**
-	 * Tests if the {@link OrdinalStatisticalTest#add} method correctly throws
-	 * an exception for invalid groups.
-	 */
 	@Test(expected = IllegalArgumentException.class)
-	public void testGroupException1() {
+	public void testInvalidGroupException1() {
 		test.add(0.0, -1);
 	}
 
-	/**
-	 * Tests if the {@link OrdinalStatisticalTest#add} method correctly throws
-	 * an exception for invalid groups.
-	 */
 	@Test(expected = IllegalArgumentException.class)
-	public void testGroupException2() {
+	public void testInvalidGroupException2() {
 		test.add(0.0, 2);
 	}
 

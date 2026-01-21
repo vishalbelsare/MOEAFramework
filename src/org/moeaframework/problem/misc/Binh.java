@@ -1,4 +1,4 @@
-/* Copyright 2009-2020 David Hadka
+/* Copyright 2009-2025 David Hadka
  *
  * This file is part of the MOEA Framework.
  *
@@ -19,13 +19,12 @@ package org.moeaframework.problem.misc;
 
 import org.moeaframework.core.PRNG;
 import org.moeaframework.core.Solution;
-import org.moeaframework.core.variable.EncodingUtils;
+import org.moeaframework.core.variable.RealVariable;
 import org.moeaframework.problem.AbstractProblem;
 import org.moeaframework.problem.AnalyticalProblem;
 
 /**
- * The Binh problem.  The optimum solutions like on the line between
- * {@code (0, 0)} and {@code (5, 5)}.
+ * The Binh problem.  The optimum solutions like on the line between {@code (0, 0)} and {@code (5, 5)}.
  * <p>
  * Properties:
  * <ul>
@@ -35,12 +34,10 @@ import org.moeaframework.problem.AnalyticalProblem;
  * <p>
  * References:
  * <ol>
- *   <li>Binh, T. and Korn, U. (1996).  "An Evolution Strategy for the 
- *       Multiobjective Optimization."  Proceedings of the Second International
- *       Conference on Genetic Algorithms, pp. 23-28.
- *   <li>Van Veldhuizen, D. A (1999).  "Multiobjective Evolutionary Algorithms: 
- *       Classifications, Analyses, and New Innovations."  Air Force Institute
- *       of Technology, Ph.D. Thesis, Appendix B.
+ *   <li>Binh, T. and Korn, U. (1996).  "An Evolution Strategy for the Multiobjective Optimization."  Proceedings of
+ *       the Second International Conference on Genetic Algorithms, pp. 23-28.
+ *   <li>Van Veldhuizen, D. A (1999).  "Multiobjective Evolutionary Algorithms: Classifications, Analyses, and New
+ *       Innovations."  Air Force Institute of Technology, Ph.D. Thesis, Appendix B.
  * </ol>
  */
 public class Binh extends AbstractProblem implements AnalyticalProblem {
@@ -54,21 +51,21 @@ public class Binh extends AbstractProblem implements AnalyticalProblem {
 
 	@Override
 	public void evaluate(Solution solution) {
-		double x = EncodingUtils.getReal(solution.getVariable(0));
-		double y = EncodingUtils.getReal(solution.getVariable(1));
+		double x = RealVariable.getReal(solution.getVariable(0));
+		double y = RealVariable.getReal(solution.getVariable(1));
 		double f1 = Math.pow(x, 2.0) + Math.pow(y, 2.0);
 		double f2 = Math.pow(x-5.0, 2.0) + Math.pow(y-5.0, 2.0);
 		
-		solution.setObjective(0, f1);
-		solution.setObjective(1, f2);
+		solution.setObjectiveValue(0, f1);
+		solution.setObjectiveValue(1, f2);
 	}
 
 	@Override
 	public Solution newSolution() {
 		Solution solution = new Solution(2, 2);
 		
-		solution.setVariable(0, EncodingUtils.newReal(-5.0, 10.0));
-		solution.setVariable(1, EncodingUtils.newReal(-5.0, 10.0));
+		solution.setVariable(0, new RealVariable(-5.0, 10.0));
+		solution.setVariable(1, new RealVariable(-5.0, 10.0));
 		
 		return solution;
 	}
@@ -78,8 +75,8 @@ public class Binh extends AbstractProblem implements AnalyticalProblem {
 		Solution solution = newSolution();
 		double x = PRNG.nextDouble(0.0, 5.0);
 		
-		EncodingUtils.setReal(solution.getVariable(0), x);
-		EncodingUtils.setReal(solution.getVariable(1), x);
+		RealVariable.setReal(solution.getVariable(0), x);
+		RealVariable.setReal(solution.getVariable(1), x);
 		
 		evaluate(solution);
 		return solution;
